@@ -1,6 +1,6 @@
 \chapter{无人机着舰环境数学建模}
 \label{chap:main}
-无人机着舰的过程设计到无人机系统和舰船系统两大部分，因此为了研究这两部分直接的关系，必须对降落过程进行适当的数学模型，以利于对无人机控制和引导系统进行数学仿真和物理实验。
+无人机着舰的过程设计到无人机系统和舰船系统两大部分，因此为了研究这两部分直接的关系，必须对降落过程进行适当的数学模型\cite{beardsmall}，以利于对无人机控制和引导系统进行数学仿真和物理实验。
 
 \section{无人机系统坐标系定义}
 
@@ -161,13 +161,18 @@ V_a &= \sqrt{(u_r)^2+(v_r)^2+(w_r)^2} \\
 
 \subsection{无人机空间位置定义}
 因为飞机着舰过程的运动范围相对较小，由此对问题的坐标的整体构架主要选用Flat-Earth模型来替代WGS-84模型。首先，对于无人机在系统惯性系$\mathcal{F}^i$的位置定义为$(p_n\ p_e\ p_d)^T$，其中$n$, $e$  和$d$ 描述系统坐标系正北、正东和指向地心的方向。定义$h = -p_d$，用于描述无人机的飞行高度。无人机在系统惯性系的速度在机体坐标系$\mathcal{F}^b$的投影为$(u, v, w)$，无人机在机体坐标系$\mathcal{F}^b$的旋转角速度为$(p, q, r)$。则可以得到无人机速度在两个坐标系的相互转换关系
-\begin{align}
-&\frac{d}{dt} \begin{bmatrix} p_n \\ p_e \\ p_d \end{bmatrix}   =  (\mathcal{R}_v^b)^T \begin{bmatrix} u \\  v \\ w \end{bmatrix}  \\
-&\begin{bmatrix} \dot{p}_n \\ \dot{p}_e \\ \dot{p}_d \end{bmatrix} = \begin{bmatrix}  cos \theta \cos \psi   &     -\cos\phi \sin\psi + \sin\phi \sin\theta \cos\psi                        &  \sin\phi \sin\psi + \cos\phi \sin\theta \cos\psi       \\
+\begin{equation}
+\frac{d}{dt} \begin{bmatrix} p_n \\ p_e \\ p_d \end{bmatrix}   =  (\mathcal{R}_v^b)^T \begin{bmatrix} u \\  v \\ w \end{bmatrix}  
+\end{equation}
+\begin{equation}
+\resizebox{.9 \textwidth}{!} 
+{ $
+\begin{bmatrix} \dot{p}_n \\ \dot{p}_e \\ \dot{p}_d \end{bmatrix} = \begin{bmatrix}  cos \theta \cos \psi   &     -\cos\phi \sin\psi + \sin\phi \sin\theta \cos\psi                        &  \sin\phi \sin\psi + \cos\phi \sin\theta \cos\psi       \\
 \cos\theta \sin\psi    & \cos\phi \cos\psi + \sin\phi \sin\theta\sin\psi   & -\sin\phi \cos\psi + \cos\phi \sin\theta \sin\psi \\
 -\sin\theta  & \sin\phi \cos\theta & \cos\phi \cos\theta
 \end{bmatrix} \begin{bmatrix} u \\  v \\ w \end{bmatrix}
-\end{align}
+$}
+\end{equation}
 进一步化解可以得到
 \begin{align}
 \begin{bmatrix} p \\ q \\ r \end{bmatrix}  &=   \begin{bmatrix}
@@ -222,9 +227,7 @@ C_Z(\alpha) &= -C_D(\alpha) \cos \alpha -  C_L(\alpha) \sin \alpha \\
 C_X(\alpha) &= -C_{D_q} \sin \alpha -  C_{L_q} \cos \alpha \\
 C_X(\alpha) &= -C_{D_{\delta_e}}  \sin \alpha -  C_{L_{\delta_e}} \cos \alpha \\
 \end{align}
-因为升力和阻力作用在无人机稳定坐标系$\mathcal{F}^s$上，因此将上述力转换到
-
-无人机的机体坐标系可以得到
+因为升力和阻力作用在无人机稳定坐标系$\mathcal{F}^s$上，因此将上述力转换到无人机的机体坐标系后，进一步得到
 \begin{align}
 \begin{bmatrix} f_x    \\ f_z  \end{bmatrix} = \begin{bmatrix}
 \cos \alpha    & - \sin \alpha  \\
@@ -253,7 +256,7 @@ n = \frac{1}{2} \rho V_a^2 S b C_n (\beta, p, r, \delta_a, \delta_r)
 其中$\Omega = \mathsf{k}_{\Omega} \delta_{t}$是螺旋桨的转速，$\mathsf{k}_{T_p}$是电机常数。
 
 \subsection{无人机的平动分析}
-对于无人机的平动，定义无人机的质量为$\mathsf{m}$和其受到的全部外力$\mathbf{f}$，根据顿第二定律可以得到
+对于无人机的平动，无人机的质量为$\mathsf{m}$和其受到的全部外力$\mathbf{f}$，根据顿第二定律可以得到
 \begin{equation}
 \mathsf{m} \frac{d \mathbf{V}_g}{d t_i} = \mathbf{f}
 \end{equation}
@@ -340,7 +343,7 @@ n = \frac{1}{2} \rho V_a^2 S b C_n (\beta, p, r, \delta_a, \delta_r)
 	\label{fig:chp02_05_uav_course_frame}
 \end{figure}
 
-定义无人机在惯性系的坐标为$(p_n\ p_e\ p_d)^T$，无人机速度$\mathbf{V}_g$在惯性系的分量为$(\dot{p}_n\ \dot{p}_e\ \dot{p}_d)^T$，该速度的大小用$V_g = ||\mathbf{V}_g|$来表达，如图\ref{fig:chp02_05_uav_course_frame}所示。根据空间几何关系可以得到
+定义无人机在惯性系的坐标为$(p_n\ p_e\ p_d)^T$，无人机速度$\mathbf{V}_g$在惯性系的分量为$(\dot{p}_n\ \dot{p}_e\ \dot{p}_d)^T$，该速度的大小用$V_g = ||\mathbf{V}_g||$来表达，如图\ref{fig:chp02_05_uav_course_frame}所示。根据空间几何关系可以得到
 \begin{equation}
 \begin{bmatrix} \dot{p}_n \\\dot{p}_e \\ \dot{p}_d \end{bmatrix}  = {V}_g \begin{bmatrix} \cos \psi \cos \gamma \\ \sin \psi \cos \gamma  \\- \sin \gamma \end{bmatrix}
 \end{equation}
@@ -369,7 +372,7 @@ n = \frac{1}{2} \rho V_a^2 S b C_n (\beta, p, r, \delta_a, \delta_r)
 |\phi^c| \le \bar{\phi} \\
 |\gamma^c| \le \bar{\gamma}
 \end{align}
-其中
+其中$\bar{\phi}$和$\bar{\gamma}$为无人机系统的最大横滚角和下滑角约束。
 
 
 \section{舰船系统坐标系定义}
@@ -401,18 +404,106 @@ n = \frac{1}{2} \rho V_a^2 S b C_n (\beta, p, r, \delta_a, \delta_r)
 
 着舰点坐标系与舰船龙骨坐标系之间的转换关系定义为
 \begin{equation}
-\begin{bmatrix} x_{Sh,td} \\ v_{Sh,td} \\w_{Sh,td} \end{bmatrix} = \begin{bmatrix} x_{Sh,k} \\ v_{Sh,k} \\w_{Sh,k} \end{bmatrix} +\mathcal{R}_{Sh,k}^{Sh,td} \begin{bmatrix} \Delta x_{Sh,k}^{Sh,td} \\ \Delta y_{Sh,k}^{Sh,td} \\ \Delta z_{Sh,k}^{Sh,td} 
+\begin{bmatrix} x_{Sh,td} \\ y_{Sh,td} \\z_{Sh,td} \end{bmatrix} = \begin{bmatrix} x_{Sh,k} \\ y_{Sh,k} \\z_{Sh,k} \end{bmatrix} +\mathcal{R}_{Sh,k}^{Sh,td} \begin{bmatrix} \Delta x_{Sh,k}^{Sh,td} \\ \Delta y_{Sh,k}^{Sh,td} \\ \Delta z_{Sh,k}^{Sh,td} 
 \end{bmatrix}
 \end{equation}
-其中$\Delta x_{Sh,k}^{Sh,td}$，$\Delta y_{Sh,k}^{Sh,td}$和$\Delta z_{Sh,k}^{Sh,td}$是着舰坐标系原点在舰船龙骨坐标系的坐标，$\mathcal{R}_{Sh,k}^{Sh,td}$是从舰船坐标系旋转到着舰点坐标系的旋转矩阵，该旋转矩阵的表达形式与无人机机体惯性坐标系转换到无人机机体坐标系的旋转矩阵相同，$(x_{Sh,k}\ v_{Sh,k}\ w_{Sh,k})$是舰船惯性坐标系上一点，该点在舰船着舰点坐标系上的坐标为$(x_{Sh,td}\ v_{Sh,td}\ w_{Sh,td})$。
-
+其中$\Delta x_{Sh,k}^{Sh,td}$，$\Delta y_{Sh,k}^{Sh,td}$和$\Delta z_{Sh,k}^{Sh,td}$是着舰坐标系原点在舰船龙骨坐标系的坐标，$\mathcal{R}_{Sh,k}^{Sh,td}$是从舰船坐标系旋转到着舰点坐标系的旋转矩阵，该旋转矩阵的表达形式与无人机机体惯性坐标系转换到无人机机体坐标系的旋转矩阵相同，$(x_{Sh,k}\ y_{Sh,k}\ z_{Sh,k})$是舰船惯性坐标系上一点，该点在舰船着舰点坐标系上的坐标为$(x_{Sh,td}\ y_{Sh,td}\ z_{Sh,td})$。
 
 \section{舰载引导系统坐标系定义}
+由于舰船的运动，对于降落过程中的无人机需要提供有效的局部导航数据，本文设计的舰载引导系统坐标系主要用于描述引导系统对无人机的测量和导航。
+\subsection{引导系统坐标系}
+引导系统坐标系（Guidance Coordination System， $\mathcal{O}_c$)该坐标系的原点位于左侧引导系统的转台转轴的中心，$\mathbf{i}^{O,c}$轴指向右侧引导系统，并与着舰点坐标系的$\mathbf{j}^{Sh,td}$轴平行，$\mathbf{j}^{O,c}$轴与跑道纵向平行，指向远端无人机方向。该坐标系在舰船运动过程中与甲板固连，与期望着舰点坐标系的位置保持不变。一般而言，对于无人机着舰而言，期望着舰点的位置位于第一道和第二道拦阻索之间，靠近第二道拦阻索，如图\ref{fig:chp02_10_guidance_sys}所示；对于无人机装网回收而言，期望降落位置一般位于无人机回收网的几何中心。
+\begin{figure}[htb]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp02/chp02_10_guidance_sys.pdf}
+	\caption{舰载引导系统相关坐标系}
+	\label{fig:chp02_10_guidance_sys}
+\end{figure}
+
+\subsection{左右引导单元坐标系}
+左侧引导系统坐标系（$\mathcal{O}_l$）和右侧引导系统坐标系（$\mathcal{O}_r$），这两个坐标系的原点别位于左侧和右侧引导系统的转台转轴中心，三个坐标轴的方向分别与光学引导系统相同。该引导单元坐标系也是用于立体解算无人机空间位置的主要坐标系。
+
+\subsection{地心地固坐标系}
+地心地固坐标系（Earth-Centered Earth-Fixed Coordinate System (ECEF)，$\mathcal{O}_e$），该坐标系采用1984年\cite{WGS84}指定的地心空间右手坐标系（The World Geodetic System (WGS-84)），原点位于地球中心，$x$轴指向地球0°经线和0°纬线的交叉点，$y$轴指向地球的北极点。该坐标系通常用于大地测量、地图绘制和导航。本文后续试验中使用的该坐标系相关参数为 $R_{Ea}=6,378,137.0\ m$，$R_{Eb} = 6,356,752.0\ m$ ，$f=1/298.257223563$ 和 $e=0.08181919$。
+
+\subsection{GPS坐标系}
+GPS坐标系（The Geodetic Coordination System，$\mathcal{O}_g$）中的任意一点通常用$(\lambda\ \varphi\ h)$表示，其中 $\lambda$ 表示目标当前位置的经度， $\varphi$ 表示目标当前位置的纬度， $h$ 表示当前位置的高度。该数值一般通过GPS解算模块获得。
+
+\subsection{GPS坐标系与地心地固坐标系之间的转换关系}
+定义GPS经纬坐标系中任意一点$\mathbf{P}^g=(\lambda, \varphi, h)$，该点在地心地固坐标系的表达为
+
+\begin{equation}
+\textbf{P}^e
+=
+\left[\begin{array}{c}
+X_e\\
+Y_e\\
+Z_e\\
+\end{array}\right]
+=
+\left[\begin{array}{c}
+(N_E+h)\cos \varphi \cos \lambda\\
+(N_E+h)\cos \varphi \sin \lambda\\
+(N_E(1-e^2)+h)\sin \varphi\\
+\end{array}\right]
+\end{equation}
+
+其中$N_E$是基于当前纬度位置的参数，根据上文所述的相关参数，该数值通常通过下式进行计算。
+
+\begin{equation}
+N_E=\frac{R_{Ea}}{\sqrt{1-e^2 \sin^2 \varphi}}.
+\end{equation}
+
+\subsection{地心地固坐标系与系统惯性坐标系之间的转换关系}
+定义系统惯性系原点在地心地固坐标系的原点为$\mathbf{P}_0^e(x_0\ y_0\ z_0)$，该点的GPS经纬坐标为$\mathbf{P}_0^g(\lambda_0\ \varphi_0\ h_0)$，地心坐标系中任意一点$\mathbf{P}^e$在系统惯性坐标系的表达为
+
+\begin{equation}
+\textbf{P}^i=\mathcal{R}_e^n(\textbf{P}^e - \textbf{P}_0^e)
+\end{equation}
+
+其中转换矩阵$\mathcal{R}_e^n$为
+
+\begin{equation}
+\mathcal{R}_e^n=\left[\begin{array}{ccc}
+-\sin \varphi _{0} \cos \lambda _{0} & -\sin \varphi _{0} \sin \lambda _{0} & \cos \varphi _{0}  \\
+-\sin \lambda _{0}           &           \cos \lambda _{0}            &          0           \\
+-\cos \varphi _{0} \cos \lambda _{0} & -\cos \varphi _{0} \sin \lambda _{0} & -\sin \varphi _{0}
+\end{array}\right]
+\end{equation}
+
+\subsection{舰船惯性坐标系与引导坐标系之间的转换关系}
+定义在舰船惯性坐标系中的一点为$\mathbf{P}^{Sh,i}(X_{Sh,i}\ Y_{Sh,i}\ Z_{Sh,i})$，该点对应在引导坐标系的坐标为$\mathbf{P}^{c}(X_c\ Y_c\ Z_c)$，这两点之间的转换关系可以通过平移和旋转运算$(X_{Sh,i}, Y_{Sh,i}, Z_{Sh,i})\xrightarrow{\textbf{R}_{Sh,i}^c,T}(X_c, Y_c, Z_c) $得到，其矩阵表达形式为
+
+\begin{equation}
+\left[\begin{array}{c}
+X_{Sh,i}\\
+Y_{Sh,i}\\
+Z_{Sh,i}\\
+\end{array}\right]=\mathcal{R}_{Sh,i}^c
+\left[\begin{array}{c}
+X_{c}\\
+Y_{c}\\
+Z_{c}\\
+\end{array}\right]+T_{Sh,i}^c
+\end{equation}
+其中
+\begin{equation}
+\mathcal{R}_{Sh,i}^c=\left[\begin{array}{ccc}
+r_{11} & r_{12} & r_{13} \\
+r_{21} & r_{22} & r_{23} \\
+r_{31} & r_{32} & r_{33} 
+\end{array}\right]
+\ \ 
+T_{Sh,i}^c=\left[\begin{array}{ccc}
+t_{Sh,i}^c\\
+t_{Sh,i}^c\\
+t_{Sh,i}^c\\
+\end{array}\right]
+\end{equation}
+理想情况下，舰船惯性坐标系与引导坐标系之间的几何关系可以通过定义旋转和平移量获得，但由于引导系统的安装误差，该矩阵通常通过外部标定方法得到。
 
 
-
-
-
+​
 
 
 
