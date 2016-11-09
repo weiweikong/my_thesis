@@ -6,12 +6,12 @@
 
 
 \subsection{系统惯性坐标系}
-系统惯性坐标系（Inertial Frame，$\mathcal{F}^i$），该坐标系一般定义位于地球表面的一点，三个轴的方向$(\mathbf{i}^i, \mathbf{j}^i,\mathbf{k}^i)$与地球的北向、动向和指向地心方向相同，即NED坐标系。通常该坐标系定义为飞机的起飞点或降落点，本文中我们选用无人机被舰船引导系统捕获时，舰船的此刻所在的点为原点。
+系统惯性坐标系（Inertial Frame，$\mathcal{F}^i$），该坐标系一般定义位于地球表面的一点，三个轴的方向$(\mathbf{i}^i, \mathbf{j}^i,\mathbf{k}^i)$与地球的北向、动向和指向地心方向相同，即NED坐标系。通常该坐标系定义为飞机的起飞点或降落点，本文中我们选用无人机被舰船引导系统捕获时，舰船的此刻所在的点为原点，如图\ref{fig:chp02_01_sys_interial_frame}所示。
 \begin{figure}[htb]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp02/chp02_01_sys_interial_frame.pdf}
-	\caption{系统坐标系}
-	\label{fig:_05}
+	\caption{系统惯性坐标系}
+	\label{fig:chp02_01_sys_interial_frame}
 \end{figure}
 
 \subsection{无人机惯性坐标系}
@@ -28,9 +28,9 @@
 
 无人机第二惯性辅助坐标系（$\mathcal{F}^{v2}$），该坐标系过绕人机第一惯性辅助坐标系$\mathbf{j}^{v1}$轴按右手规则旋转旋转得到，其旋转角度定义为$\theta$，即俯仰角（Pitch Angle）。
 
-无人机机体坐标系（$\mathcal{F}^b$，Body Frame ），该坐标系绕无人机第二惯性辅助坐标系$\mathbf{i}^{v2}$轴按右手规则旋转旋转得到，其旋转角度定义为$\phi$，即横滚角（Roll Angle），有时该角度也被称为倾斜角（Bank Angle）。
+无人机机体坐标系（$\mathcal{F}^b$，Body Frame ），该坐标系绕无人机第二惯性辅助坐标系$\mathbf{i}^{v2}$轴按右手规则旋转旋转得到，其旋转角度定义为$\phi$，即横滚角（Roll Angle），有时该角度也被称为倾斜角（Bank Angle）。上述四个坐标系之间的转换关系如图\ref{fig:chp02_02_uav_rpy}所示。
 
-由机体惯性坐标系$\mathcal{F}^v$转换到机体坐标系$\mathcal{F}^b$的转换矩阵为
+根据上述四个坐标系的几何关系，可以得到由机体惯性坐标系$\mathcal{F}^v$转换到机体坐标系$\mathcal{F}^b$的转换矩阵为
 \begin{multline}
 \mathcal{R}_v^b(\phi, \theta, \psi) =\mathcal{R}_{v2}^b(\phi)\mathcal{R}_{v1}^{v2}(\theta)\mathcal{R}_v^{v1}(\psi) \\
 =\begin{bmatrix}
@@ -51,20 +51,18 @@
 \end{equation}
 
 稳定坐标系$\mathcal{F}^s$转换为风坐标系$\mathcal{F}^w$的转换矩阵为
-$$
+\begin{equation} 
 \mathcal{R}_s^w(\beta) = \begin{bmatrix} \sin \beta  & \cos \beta  &  0      \\  - \sin \beta & \cos \beta   &0 \\  0   & 0 &1  \end{bmatrix}
-$$
+\end{equation}
 
 风坐标系$\mathcal{F}^w$转换为机体坐标系$\mathcal{F}^b$转换矩阵为
 
-$$
+\begin{equation} 
 \mathcal{R}_w^b (\alpha,\beta) = \begin{bmatrix} \cos \beta \cos \alpha & - \sin \beta \cos \alpha  & - \sin \alpha      \\	 \sin \beta & \cos \beta   & 0 \\	\cos \beta   & -\sin \beta \sin \alpha & \cos \alpha \end{bmatrix}
-$$
+\end{equation}
 
-\subsection{无人机稳定坐标系}
-无人机稳定坐标系（$\mathcal{F}^s$，Stability Frame），该坐标系绕无人机机体坐标系$\mathbf{j}^b$按左手规则旋转得到。其中，定义无人机相对于机体周边空气的速度向量为$\mathbf{V}_a$，其大小为$V_a$。为使机翼产生升力，机翼与风速的夹角必须为正，该角度定义为攻角。这里使用左手系的原因是为更方便的定义定义攻角$\alpha$的正负，即沿稳定坐标系$\mathbf{j^s}$按右手系转动到机体坐标系的角度为正。稳定坐标系的$\mathbf{i}^s$轴与空速向量$\mathbf{V}_a$在$\mathbf{i}^b$-$\mathbf{k}^b$的投影方向平行。
-
-
+\subsection{无人机风向坐标系}
+无人机风向坐标系（$\mathcal{F}^w$，Wind Frame），该坐标系的$\mathbf{i}^w$轴与风速方向相同，可以通过旋转稳定坐标系的$\mathbf{k}^s$轴$\beta$角度得到，该角度$\beta$被定义为侧滑角。无人机攻角和侧滑角的定义如图\ref{fig:chp02_03_uav_aoa_bank}所示。
 \begin{figure}[htb]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp02/chp02_03_uav_aoa_bank.pdf}
@@ -72,44 +70,350 @@ $$
 	\label{fig:chp02_03_uav_aoa_bank}
 \end{figure}
 
-\subsection{无人机风向坐标系}
-无人机风向坐标系（$\mathcal{F}^w$，Wind Frame），该坐标系的$\mathbf{i}^w$轴与风速方向相同，可以通过旋转稳定坐标系的$\mathbf{k}^s$轴$\beta$角度得到，该角度$\beta$被定义为侧滑角。
+\subsection{无人机稳定坐标系}
+无人机稳定坐标系（$\mathcal{F}^s$，Stability Frame），该坐标系绕无人机机体坐标系$\mathbf{j}^b$按左手规则旋转得到，该坐标系表达如图\ref{fig:chp02_03_uav_aoa_bank}。其中，定义无人机相对于机体周边空气的速度向量为$\mathbf{V}_a$，其大小为$V_a$。为使机翼产生升力，机翼与风速的夹角必须为正，该角度定义为攻角。这里使用左手系的原因是为更方便的定义定义攻角$\alpha$的正负，即沿稳定坐标系$\mathbf{j^s}$按右手系转动到机体坐标系的角度为正。稳定坐标系的$\mathbf{i}^s$轴与空速向量$\mathbf{V}_a$在$\mathbf{i}^b$-$\mathbf{k}^b$的投影方向平行。
+
+定义$\mathbf{V}_a$为空速（Airspeed），即无人机相对于周边流体的速度。
+该向量在风坐标系$\mathcal{F}^w$的表达为
+\begin{equation} 
+\mathbf{V}_a^w=\begin{bmatrix} V_a \\ 0 \\ 0 \end{bmatrix}
+\end{equation}
+该向量在机体坐标系$\mathcal{F}^b$的表达为
+\begin{equation} 
+\mathbf{V}_a^b = \begin{bmatrix} u_r \\ v_r \\ w_r \end{bmatrix}
+\end{equation}
+
+$\mathbf{V}_g$定义为地速（Ground Speed），即无人机相对于系统惯性系的速度
+无人机相对于惯性系的速度该向量在机体坐标系$\mathcal{F}^b$的表达为
+\begin{equation}
+\mathbf{V}_g^b=\begin{bmatrix} u \\ v \\w \end{bmatrix}
+\end{equation}
+
+$\mathbf{V}_w$定义为风速（Wind Speed），即风相对于系统惯性系的速度。
+风速在机体坐标系$\mathcal{F}^b$的表达为
+\begin{equation}
+\mathbf{V}_w^b=\begin{bmatrix} u_w \\ v_w \\w_w \end{bmatrix} \\
+=\mathcal{R}_v^b(\phi, \theta, \psi) \begin{bmatrix} w_n \\ w_e \\ w_d \end{bmatrix}
+\end{equation}
+其中$(w_n, w_e, w_d)$是风速在无人机惯性坐标系的表达。
+上述三个速度直接的关系为
+\begin{equation}
+\mathbf{V}_a = \mathbf{V}_b - \mathbf{V}_w
+\end{equation}
+
+上述三个关系的表达如图\ref{fig:chp02_04_uav_wind_frame}所示，根据上述关系，可以得到风速在机体坐标系的另一个表达
+\begin{equation}
+\mathbf{V}_a^b  = \begin{bmatrix} u_r \\ v_r \\ w_r \end{bmatrix} =   \begin{bmatrix} u - u_w \\ v - v_w \\ w- w_w \end{bmatrix}
+\end{equation}
+根据风坐标系$\mathcal{F}^w$与$\mathcal{F}^b$机体坐标系的转换关系，风速在机体坐标系还可以表达为
+\begin{equation}
+\mathbf{V}_a^b  = \begin{bmatrix} u_r \\ v_r \\ w_r \end{bmatrix} \\
+=  \mathcal{R}_w^b \begin{bmatrix} V_a \\ 0 \\ 0 \end{bmatrix} \\
+=  \begin{bmatrix}	\cos \beta \cos \alpha & - \sin \beta \cos \alpha  & - \sin \alpha      \\	 \sin \beta & \cos \beta   & 0 \\ 	\cos \beta   & -\sin \beta \sin \alpha & \cos \alpha \end{bmatrix} \begin{bmatrix} V_a \\ 0 \\ 0 \end{bmatrix}
+\end{equation}
+由此可以得到上式更简便的表达
+\begin{equation}
+\begin{bmatrix} u_r \\ v_r \\ w_r \end{bmatrix}  = {V}_a \begin{bmatrix} \cos \alpha \cos \beta \\ \sin \beta  \\ \sin \alpha \cos \beta \end{bmatrix}
+\end{equation}
+注意，此处的$V_a$是风速向量的标量。
+
+在已知风速相对于机体坐标系的向量表达时，可以进一步得到风速、攻角和侧滑角的计算
+\begin{align}
+V_a &= \sqrt{(u_r)^2+(v_r)^2+(w_r)^2} \\
+\alpha &=  \tan^{-1}\frac{w_r}{u_r}  \\
+\beta  &=  \sin^{-1} \big( \frac{u_r}{\sqrt{(u_r)^2+(v_r)^2+(w_r)^2}} \big)
+\end{align}
+
 \begin{figure}[htb]   
 	\centering
 	\includegraphics[width=0.8\textwidth]{figs/chp02/chp02_04_uav_wind_frame.pdf}
-	\caption{无人机惯性坐标系}
+	\caption{无人机地速、风速和空速三角形}
 	\label{fig:chp02_04_uav_wind_frame}
 \end{figure}
 
+ 
 
 
-\subsection{无人机轨迹坐标系}
+
+
+\section{无人机系统运动学和动力学分析}
+\subsection{三维空间向量微分}
+假设在机体坐标系$\mathcal{F}^b$存在一个运动的向量$\mathbf{p}$，如图\ref{fig:chp02_06_vector_rotation}所示，该向量的数学表达为 
+\begin{equation}
+\mathbf{p }= p_x \mathbf{i}^b +  p_y \mathbf{j}^b +  p_z \mathbf{k}^b
+\end{equation}
+\begin{figure}[htb]   
+	\centering
+	\includegraphics[width=0.8\textwidth]{figs/chp02/chp02_06_vector_rotation.pdf}
+	\caption{三维空间向量微分}
+	\label{fig:chp02_06_vector_rotation}
+\end{figure}
+
+此时机体坐标系$\mathcal{F}^b$与惯性坐标系$\mathcal{F}^i$只存绕转动向量$\mathbf{\omega}_{b/i}$的转动，不存在平动。由此得到该运动向量$\mathbf{p}$相对于系统坐标系$\mathcal{F}^i$的微分为
+\begin{equation} \label{chp02_vector_derivative}
+\frac{d}{dt_i} \mathbf{p} = \frac{d}{dt_b} \mathbf{p} + \mathbf{\omega}_{b/i} \times \mathbf{p}
+\end{equation}
+其中等式右侧的第一项具体表达为
+\begin{equation}
+\frac{d}{dt_i} \mathbf{p} = \dot{p}_x \mathbf{i}^b +  \dot{p}_y \mathbf{j}^b +  \dot{p}_z \mathbf{k}^b
+\end{equation}
+该部分可以通过设计无人机状态的观测器的获得。
+
+\subsection{无人机空间位置定义}
+因为飞机着舰过程的运动范围相对较小，由此对问题的坐标的整体构架主要选用Flat-Earth模型来替代WGS-84模型。首先，对于无人机在系统惯性系$\mathcal{F}^i$的位置定义为$(p_n\ p_e\ p_d)^T$，其中$n$, $e$  和$d$ 描述系统坐标系正北、正东和指向地心的方向。定义$h = -p_d$，用于描述无人机的飞行高度。无人机在系统惯性系的速度在机体坐标系$\mathcal{F}^b$的投影为$(u, v, w)$，无人机在机体坐标系$\mathcal{F}^b$的旋转角速度为$(p, q, r)$。则可以得到无人机速度在两个坐标系的相互转换关系
+\begin{align}
+&\frac{d}{dt} \begin{bmatrix} p_n \\ p_e \\ p_d \end{bmatrix}   =  (\mathcal{R}_v^b)^T \begin{bmatrix} u \\  v \\ w \end{bmatrix}  \\
+&\begin{bmatrix} \dot{p}_n \\ \dot{p}_e \\ \dot{p}_d \end{bmatrix} = \begin{bmatrix}  cos \theta \cos \psi   &     -\cos\phi \sin\psi + \sin\phi \sin\theta \cos\psi                        &  \sin\phi \sin\psi + \cos\phi \sin\theta \cos\psi       \\
+\cos\theta \sin\psi    & \cos\phi \cos\psi + \sin\phi \sin\theta\sin\psi   & -\sin\phi \cos\psi + \cos\phi \sin\theta \sin\psi \\
+-\sin\theta  & \sin\phi \cos\theta & \cos\phi \cos\theta
+\end{bmatrix} \begin{bmatrix} u \\  v \\ w \end{bmatrix}
+\end{align}
+进一步化解可以得到
+\begin{align}
+\begin{bmatrix} p \\ q \\ r \end{bmatrix}  &=   \begin{bmatrix}
+1 &  0   & -\sin \theta      \\
+0 &  \cos \phi  & \sin \phi \cos \theta \\	
+0 & -\sin \phi   & \cos \phi \cos \theta
+\end{bmatrix} \begin{bmatrix} \dot{\phi} \\ \dot{\theta} \\ \dot{\psi} \end{bmatrix} \\
+\begin{bmatrix} \dot{\phi} \\ \dot{\theta} \\ \dot{\psi} \end{bmatrix}  &=  \begin{bmatrix}
+1 &  \sin \phi \tan \theta  & - \cos \phi \tan \theta      \\
+0 & \cos \phi   & -\sin \phi \\
+0  & \sin \phi \sec \theta & \cos \phi \sec \theta
+\end{bmatrix} \begin{bmatrix} p \\ q \\ r \end{bmatrix}
+\end{align}
+
+\subsection{无人机的外部力和力矩分析}
+无人机的质量定义为$\mathsf{m}$，所受全部外力定义为$\mathbf{f}$，主要由重力$\mathbf{f}_g$、空气动力$\mathbf{f}_a$和电机拉力$\mathbf{f}_p$三部分组成
+\begin{equation}
+\mathbf{f} = \mathbf{f}_g + \mathbf{f}_a + \mathbf{f}_p
+\end{equation}
+
+重力在无人机惯性坐标系$\mathcal{F}^v$的表达为
+\begin{equation}
+\mathbf{f}_g^v = \begin{bmatrix}0  \\ 0  \\ \mathsf{m}g  \end{bmatrix}
+\end{equation}
+
+重力在无人机机体坐标系$\mathcal{F}^b$的表达为
+\begin{equation}
+\mathbf{f}_g^b =\mathcal{R}^b_v \begin{bmatrix}0  \\ 0  \\ \mathsf{m}g  \end{bmatrix} \\
+= \begin{bmatrix} -\mathsf{m} g \sin \theta  \\ \mathsf{m}g \cos \theta \sin \phi  \\ \mathsf{m}g \cos\theta \cos \phi  \end{bmatrix}
+\end{equation}
+
+根据空气动力定义，在水平方向，无人机受到的升力$F_{lift}$、阻力$F_{drag}$和力矩$m$，其基本定义为
+\begin{align}
+F_{filt} = \frac{1}{2} V_a^2SC_L(\alpha, q, \delta_e) \\
+F_{drag} = \frac{1}{2} V_a^2SC_D(\alpha, q, \delta_e) \\
+m = \frac{1}{2} V_a^2ScC_m(\alpha, q, \delta_e)
+\end{align}
+其中$S$是机翼面积，$c$是机翼平均舷长，$C_L$、$C_D$和$C_m$是非线性空气动力参数。此外，无人机的控制面为三个，副翼偏移$\delta_a$，方向舵偏移$\delta_r$和升降舵偏移$\delta_e$。
+
+根据本文目标无人机的空气特性，由此将上述气动力参数进一步展开为
+\begin{align}
+C_L(\alpha, q, \delta_e) &= C_X(\alpha) + {C_X}_q(\alpha) \frac{c}{2V_a}  q+ C_{X_{{\delta}_e}}(\alpha) \delta_e \\
+C_D(\alpha, q, \delta_e) &= C_{Y_{0}} + C_{Y_{\beta}} \beta + C_{Y_r}(\alpha) \frac{b}{2V_a} r+ C_{Y_{\delta_\alpha}} \delta_\alpha +  C_{Y_{\delta_r}} \delta_r  \\ 
+C_m(\alpha, q, \delta_e) &= C_Z(\alpha) + C_{Z_q}(\alpha) \frac{c}{2V_a}  q+ C_{Z_{\delta_e}} \delta_e
+\end{align}
+其中
+\begin{align}
+C_X(\alpha) &= -C_D(\alpha) \cos \alpha +  C_L(\alpha) \sin \alpha \\
+C_{X_q}(\alpha) &= -C_{D_q} \cos \alpha +  C_{L_q} \sin \alpha \\
+C_{X_{\delta_e}}(\alpha) &= -C_{D_{\delta_e}} \cos \alpha +  C_{L_{\delta_e}} \sin \alpha \\
+C_Z(\alpha) &= -C_D(\alpha) \cos \alpha -  C_L(\alpha) \sin \alpha \\
+C_X(\alpha) &= -C_{D_q} \sin \alpha -  C_{L_q} \cos \alpha \\
+C_X(\alpha) &= -C_{D_{\delta_e}}  \sin \alpha -  C_{L_{\delta_e}} \cos \alpha \\
+\end{align}
+因为升力和阻力作用在无人机稳定坐标系$\mathcal{F}^s$上，因此将上述力转换到
+
+无人机的机体坐标系可以得到
+\begin{align}
+\begin{bmatrix} f_x    \\ f_z  \end{bmatrix} = \begin{bmatrix}
+\cos \alpha    & - \sin \alpha  \\
+\sin \alpha       & \cos \alpha  \\
+\end{bmatrix} \begin{bmatrix} -F_{drag}    \\ -F_{lift}  \end{bmatrix}
+\end{align}
+在竖直方向，无人机受到竖直方向的力和力矩为
+\begin{align}
+f_y = \frac{1}{2} \rho V_a^2 S C_y (\beta, p, r, \delta_a, \delta_r) \\
+l  = \frac{1}{2} \rho V_a^2 S b  C_l (\beta, p, r, \delta_a, \delta_r) \\
+n = \frac{1}{2} \rho V_a^2 S b C_n (\beta, p, r, \delta_a, \delta_r)
+\end{align}
+其中，$C_y$、$C_l$和$C_n$是非线性空气动力参数。
+
+螺旋桨的推力建模为
+\begin{equation}
+\mathbf{f}_p = \frac{1}{2} \rho S_{prop} C_{prop}  \begin{bmatrix} (\mathsf{k}_{motor} \delta_t)^2 - V_a^2  \\ 0  \\ 0  \end{bmatrix}
+\end{equation}
+其中$\mathsf{k}_{motor}$是电机效率常数，$\delta_t$是电机的控制量，$S_{prop}$是螺旋桨的面积，$C_{prop}$是螺旋桨参数。
+
+螺旋桨的力矩建模为
+\begin{equation}
+\mathbf{T}_p = -\mathsf{k}_{T_p} (\mathsf{k}_{\Omega} \delta_{t})^2
+\end{equation}
+
+其中$\Omega = \mathsf{k}_{\Omega} \delta_{t}$是螺旋桨的转速，$\mathsf{k}_{T_p}$是电机常数。
+
+\subsection{无人机的平动分析}
+对于无人机的平动，定义无人机的质量为$\mathsf{m}$和其受到的全部外力$\mathbf{f}$，根据顿第二定律可以得到
+\begin{equation}
+\mathsf{m} \frac{d \mathbf{V}_g}{d t_i} = \mathbf{f}
+\end{equation}
+代入\ref{chp02_vector_derivative}公式，可以得到
+\begin{equation}
+\mathsf{m}(\frac{d \mathbf{V}_g }{dt_b}+ \mathbf{\omega}_{b/i} \times \mathbf{V}_g)=\mathbf{f}
+\end{equation}
+同理，在机体坐标系$\mathcal{F}^b$可以得到
+\begin{equation}
+\mathsf{m}(\frac{d \mathbf{V}^b_g }{dt_b}+ \mathbf{\omega}_{b/i}^b \times \mathbf{V}^b_g)=\mathbf{f}^b
+\end{equation}
+其中$\mathbf{V}_g^b=(u, v, w)^T$描述无人机惯性系的速度向量在机体坐标系的表达，$\frac{d \mathbf{V}_g }{dt_b}=(\dot{u}, \dot{v}, \dot{w})^T$描述无人机速度在机体坐标系的变化率，$\mathbf{\omega}_{b/i}^b=(p, q, r)^T$描述无人机机体坐标系的转动角速度，$\mathbf{f}^b = (f_x, f_y, f_z)^T$描述外部合力向量在机体坐标系的表达。进一步可以得到
+\begin{equation}
+\begin{bmatrix} \dot{u} \\ \dot{v} \\ \dot{w}  \end{bmatrix} = \begin{bmatrix} rv-qw \\ pw-ru \\ qu-pv  \end{bmatrix} + \frac{1}{\mathsf{m}} \begin{bmatrix} f_x \\ f_y \\ f_z  \end{bmatrix}
+\end{equation}
+
+
+
+\subsection{无人机的转动分析}
+对于无人机对转动，定义角动量$\mathbf{h}$和全部外力矩$\mathbf{m}$，由此可以得到
+\begin{equation}
+\frac{ d \mathbf{h}}{d t_i}=\mathbf{m}
+\end{equation}
+同理，对上式求在惯性系的微分
+\begin{equation}
+\frac{ d \mathbf{h}}{d t_i} = \frac{d\mathbf{h}}{dt_b} + \mathbf{\omega}_{b/i} \times \mathbf{h} = \mathbf{m}
+\end{equation}
+同理，在机体坐标系的表达为
+\begin{equation}
+\frac{ d \mathbf{h}^b}{d t_i} = \frac{d\mathbf{h}^b}{dt_b} + \mathbf{\omega}^b_{b/i} \times \mathbf{h}^b = \mathbf{m}^b
+\end{equation}
+对于刚体来说，角动量的表达通过惯量矩阵$\mathbf{J}$来定义
+\begin{equation}
+\mathbf{h}^b=\mathbf{J}  \mathbf{\omega}^b_{b/i}
+\end{equation}
+其中
+\begin{align}
+\mathbf{J} =\begin{bmatrix}	\int(y^2 + z^2)~d\mathsf{m} & -\int xy \ d\mathsf{m}        & -\int xz~d\mathsf{m} \\	-\int xy~d\mathsf{m}        & \int(x^2 + z^2)~d\mathsf{m} & -\int yz~d\mathsf{m} \\	-\int xz~d\mathsf{m}        & -\int yz~d\mathsf{m}  & \int(x^2 + y^2)~d\mathsf{m} \end{bmatrix}
+\end{align}
+根据无人机机体的对称性，该矩阵可以化简为
+\begin{align}
+\mathbf{J} = \begin{bmatrix}	J_x     & 0   & -J_{xz} \\	0       & J_y & 0       \\	-J_{xz} & 0   & J_z  \end{bmatrix}
+\end{align}
+改矩阵的逆为
+\begin{align}
+\mathbf{J}^{-1}=\frac{\mathrm{adj}(\mathbf{J}) }{\mathrm{det}(\mathbf{J}) } = \begin{bmatrix}	J_z / \Gamma     & 0   & J_{xz}/ \Gamma \\	0       & 1/ \Gamma & 0       \\	J_{xz}/ \Gamma & 0   & J_z/ \Gamma \end{bmatrix}
+\end{align}
+其中$ \Gamma = J_xJ_z - J_{xz}^2$ 。
+
+同时，定义上式中的分量
+\begin{align}
+\dot{\mathbf{\omega}}^b_{b/i}=\frac{ d \mathbf{\omega}^b_{b/i}}{dt_b} = \begin{bmatrix} \dot{p} \\ \dot{q} \\ \dot{r}  \end{bmatrix}
+\end{align}
+该分量描述在机体坐标系角速度的变化率。
+
+根据上述公式可以得到对角速度变化率的求解
+\begin{equation}
+\dot{\mathbf{\omega}}^b_{b/i} = \mathbf{J}^{-1}[{- \mathbf{\omega}}^b_{b/i} \times (\mathbf{J{\mathbf{\omega}}^b_{b/i}})+\mathbf{m}^b]
+\end{equation}
+定义无人机力矩在机体坐标系的表达$\mathbf{m}^b = (l, m, n)$
+
+则可以得到对角速度变化率的进一步表达
+\begin{equation}
+\begin{bmatrix} \dot{p} \\ \dot{q} \\ \dot{r}  \end{bmatrix} =  \begin{bmatrix} \Gamma_1pq - \Gamma_2qr + \Gamma_3 l + \Gamma_4 n \\ \Gamma_5pr - \Gamma_6(p^2-r^2) + \frac{1}{Jy}m \\ \Gamma_7pq - \Gamma_1qr + \Gamma_4l + \Gamma_8 n  \end{bmatrix}
+\end{equation}
+其中各个分量的表达为
+\begin{align}
+\Gamma_1 &= \frac{J_{xz}(J_x-J_y+J_z)}{\Gamma}  \\
+\Gamma_2 &= \frac{J_z(J_z-J_y) + J_{xz}^2}{\Gamma}  \\
+\Gamma_3 &= \frac{J_z}{\Gamma}  \\
+\Gamma_4 &= \frac{J_{xz}}{\Gamma}  \\
+\Gamma_5 &= \frac{J_z - J_x}{J_y}  \\
+\Gamma_6 &= \frac{J_{xz}}{J_y}  \\
+\Gamma_7 &= \frac{(J_x-J_z)J_x+J_{xz}^2}{\Gamma}  \\
+\Gamma_8 &= \frac{J_x}{\Gamma}  \\
+\end{align}
+ 
+\subsection{无人机运动轨迹数学描述}
+
 \begin{figure}[htb]   
 	\centering
 	\includegraphics[width=0.8\textwidth]{figs/chp02/chp02_05_uav_course_frame.pdf}
-	\caption{无人机惯性坐标系}
+	\caption{无人机运动轨迹描述}
 	\label{fig:chp02_05_uav_course_frame}
 \end{figure}
 
+定义无人机在惯性系的坐标为$(p_n\ p_e\ p_d)^T$，无人机速度$\mathbf{V}_g$在惯性系的分量为$(\dot{p}_n\ \dot{p}_e\ \dot{p}_d)^T$，该速度的大小用$V_g = ||\mathbf{V}_g|$来表达，如图\ref{fig:chp02_05_uav_course_frame}所示。根据空间几何关系可以得到
+\begin{equation}
+\begin{bmatrix} \dot{p}_n \\\dot{p}_e \\ \dot{p}_d \end{bmatrix}  = {V}_g \begin{bmatrix} \cos \psi \cos \gamma \\ \sin \psi \cos \gamma  \\- \sin \gamma \end{bmatrix}
+\end{equation}
+其中航迹角$\gamma$定义为地速$\mathbf{V}_g$与惯性系北向$\mathbf{i}^i$与动向$\mathbf{j}^i$所构成的地平面的夹角，航迹偏航角$\chi$定义为地速$\mathbf{V}_g$在地面投影与正北方向的夹角。
+
+由于无人机受到的升力为$F_{lift}$，在无人机进行协同转向（Coordinated Turn）时，根据力学关系可以得到横向和纵向公式
+\begin{align}
+&F_{lift} \sin \phi \cos (\chi - \psi) = \mathsf{m} \frac{v^2}{R}  \\
+&F_{lift } \cos \phi = \mathsf{m} g \cos \gamma
+\end{align}
+将上述两式相除，并对$\chi$微分，可以得到
+\begin{equation}
+\dot{\chi} = \frac{g}{V_g} \tan \phi \cos (\chi - \psi)
+\end{equation}
+在没有风速影响下（$V_g = V_a\ , \psi = \chi$），可以将上式进一步化简为
+\begin{equation}
+\dot{\psi} =\frac{g}{V_a} \tan \phi
+\end{equation}
+因为无人机的控制一般分为内环和外环，内环的控制速率较快，即飞行控制器可以很快使得无人机的姿态角收敛到指令期望位置，即$\gamma = \gamma^c\ , \phi = \phi^c$。因此，无人机的运动情况可以通过如下公式进一步描述
+\begin{equation}
+\begin{bmatrix} \dot{p}_n \\\dot{p}_e \\ \dot{p}_d \end{bmatrix}  = {V}_a \begin{bmatrix} \cos \psi \cos \gamma^c \\ \sin \psi \cos \gamma^c  \\- \sin \gamma^c \end{bmatrix} \\
+\dot{\psi} =\frac{g}{V_a} \tan \phi^c
+\end{equation}
+由于无人机执行机构的物理约束，无人机的控制指令收到进一步约束
+\begin{align}
+|\phi^c| \le \bar{\phi} \\
+|\gamma^c| \le \bar{\gamma}
+\end{align}
+其中
 
 
 \section{舰船系统坐标系定义}
 
+舰船坐标系主要由舰船惯性坐标系、舰船龙骨坐标系和着舰点坐标系三部分组成。
+\subsection{舰船惯性坐标系}
+舰船惯性坐标系（$\mathcal{F}^{Sh,i}$，Ship Inertial Frame），该坐标系的原点定义在舰船的中心位置，一般位于龙骨所在轴线，位于甲板下方。该坐标系的三个轴的方向分别与系统坐标系$\mathcal{F}^i$平行。该坐标系的表达如图\ref{fig:chp02_08_ship_interial_frame}所示。
+
 \begin{figure}[htb]   
 	\centering
 	\includegraphics[width=0.8\textwidth]{figs/chp02/chp02_08_ship_interial_frame.pdf}
-	\caption{无人机惯性坐标系}
+	\caption{舰船惯性坐标系}
 	\label{fig:chp02_08_ship_interial_frame}
 \end{figure}
 
+\subsection{舰船龙骨坐标系}
+舰船龙骨坐标系（$\mathcal{F}^{Sh,k}$ ，Keel Frame），该坐标系的原点与舰船惯性坐标系相同，$\mathbf{i}^{Sh,k}$轴沿龙骨方向指向舰船前进方向，$\mathbf{j}^{Sh,k}$轴垂直于$\mathbf{i}^{Sh,k}$方向。因为该坐标系与船体固连，所以海浪的作用下，该坐标系随船体运动。与无人机机体坐标系类似，将舰船惯性坐标系按照3-2-1的顺序依次旋转至舰船龙骨坐标系，定义三次转动的角度为$\phi_{Sh}$、$\theta_{Sh}$和$\psi_{Sh}$，用于描述舰船的俯仰角、横滚角和偏航角。不同海况情况下，舰船龙骨坐标系还会存在周期性的扰动，由此定义$\Delta \phi_{Sh}$、$\Delta \theta_{Sh}$和$\Delta \psi_{Sh}$来描述舰船龙骨坐标系在俯仰、横滚和偏航三个轴线的扰动角度，定义$\Delta x_{surge}$、$\Delta y_{sway}$和$\Delta z_{heavy}$来描述三个坐标轴的位移偏差，即横摇、纵摇和沉浮。该坐标系的表达如图\ref{fig:chp02_09_ship_motion_frame}所示。
 
 \begin{figure}[htb]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp02/chp02_09_ship_motion_frame.pdf}
-	\caption{无人机惯性坐标系}
+	\caption{舰船系统坐标系的表达}
 	\label{fig:chp02_09_ship_motion_frame}
 \end{figure}
 
 
+\subsection{着舰点坐标系}
+着舰点坐标系（$\mathcal{F}^{Sh,td}$，Touchdown Frame），该坐标系原点定义在第二条拦阻索的中间位置，$\mathbf{i}^{Sh,td}$轴沿降落跑道指向舰船运行前方，$\mathbf{j}^{Sh,td}$轴沿第二条拦阻索方向延长垂直于$\mathbf{i}^{Sh,td}$轴。
+
+着舰点坐标系与舰船龙骨坐标系之间的转换关系定义为
+\begin{equation}
+\begin{bmatrix} x_{Sh,td} \\ v_{Sh,td} \\w_{Sh,td} \end{bmatrix} = \begin{bmatrix} x_{Sh,k} \\ v_{Sh,k} \\w_{Sh,k} \end{bmatrix} +\mathcal{R}_{Sh,k}^{Sh,td} \begin{bmatrix} \Delta x_{Sh,k}^{Sh,td} \\ \Delta y_{Sh,k}^{Sh,td} \\ \Delta z_{Sh,k}^{Sh,td} 
+\end{bmatrix}
+\end{equation}
+其中$\Delta x_{Sh,k}^{Sh,td}$，$\Delta y_{Sh,k}^{Sh,td}$和$\Delta z_{Sh,k}^{Sh,td}$是着舰坐标系原点在舰船龙骨坐标系的坐标，$\mathcal{R}_{Sh,k}^{Sh,td}$是从舰船坐标系旋转到着舰点坐标系的旋转矩阵，该旋转矩阵的表达形式与无人机机体惯性坐标系转换到无人机机体坐标系的旋转矩阵相同，$(x_{Sh,k}\ v_{Sh,k}\ w_{Sh,k})$是舰船惯性坐标系上一点，该点在舰船着舰点坐标系上的坐标为$(x_{Sh,td}\ v_{Sh,td}\ w_{Sh,td})$。
+
+
 \section{舰载引导系统坐标系定义}
- 
+
+
+
+
+
+
+
+
+
