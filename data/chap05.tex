@@ -1,242 +1,89 @@
-\chapter{基于多传感器的无人机引导系统设计}
+\chapter{基于深度学习方法的无人机目标跟踪方法研究}
 \label{chap:main}
-本章将进入论文排版的正文, 按元素分主要包括：
-{\kai 字体段落，图片表格，公式定理，参考文献}这几部分。
-这个样例文件将包括模板中使用到的所有格式、模板中自定义命令到或者特有的东西，
-都将被一一介绍，希望大家在排版自己的学位论文前能细致的看一遍，记住样例的格式和
-方法，方便上手。
-\cite{ELIDRISSI94}
+
 
 \section{引言}
+针对目标检测问题，很多学者提出了不同的解决方法，但目标实时监测问题中的所涉及的目标尺度变化、被遮挡和实时性等问题仍然没有得到有效解决。本章针对无人机自主降落过程中的目标跟踪问题进行进一步分析，并提出了满足实时性需求的目标跟踪算法。
 
-\section{基于激光反射器的引导系统设计}
+\section{基于ImageNet神经网络设计方法}
+传统的跟踪方法的主要工作是在线跟踪，算法在运行过程中，基本不涉及离线计算。这些跟踪算子（Tracker）主要通过数学公式来完成对跟踪目标特征的描述，这种描述能力的好坏决定着这个算法性能的优劣。同时，由于传统方法的跟踪算子无法重复利用大量现有数据，其算法性能无法随着数据量的增加而得到持续性改善。这种方法适用于典型目标的跟踪，例如行人跟踪和人脸跟踪等[6, 30]。
+随着计算机运算能力的增强以及大量人工标记的数据库规模增大，基于深度神经网络方法的跟踪算法得到了进一步发展。
+一种方法是在线训练在线更新算法。这类算法在训练过程中，利用海量数据信息，对网络进行大规模训练训练。在跟踪过程中，网络初始参数基于预训练网络，并根据在线数据对参数进行进一步调整。[70 71 72]。这类方法的跟踪速率大概在0.8 fps 到4 fps之间，不能满足一般的实时性系统需求。
 
-\section{基于超宽带雷达的引导系统设计}
+\begin{figure}[htb]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp03/chp03_01_CNN_One_Shot_Process.pdf}
+	\caption{CNN方法处理One-shot Tracking问题基本框架}
+	\label{fig:161002.chp03_01_CNN_One_Shot_Process}
+\end{figure}
 
-\section{基于EKF的转台信息滤波问题}
-位姿估计问题（Pose Estimation）是估计特定物体相对于参考坐标系的位置和姿态。在传统方法中，GPS、惯性测量单元（IMU）、视觉、激光雷达等作为主要传感器来对目标进行估计和判断。位子估计问题既可以只依赖视觉传感器，也可以综合应用各类型传感器采集到的数据通过滤波得到。在以视觉信息为主的位姿估计方法中，主要有一下两类方法：（1）单目视觉。单视觉方法主要依赖对平面的检测、合作标志的检测、海天线或地平面的检测。（2）多目视觉。多目视觉方法主要指针对特征点在不同成像平面的位置，通过多个相机的排布，从而解算出目标的位置和姿态信息。
+另一种方法是离线训练在线不更新算法。这类算法所利用的数据量更大和训练时间更长，训练之后稳定下来的网络参数在后续的测试过程中不发生变化。
+Generic Object Tracking Using Regression Networks（GOTURN）网络是一种离线网络。这种网络主要通过离线训练得到节点权重，在后续的跟踪过程中不需要进行在线训练，实时性好，在使用GPU加速的情况下，跟踪帧频可以到达100Hz。
+这是一种End-to-end的训练。在训练的输入数据中，只需要知道原始图像和目标区域，并不需要目标的类别等更高级别语义信息。在输出数据方面，该方法直接给出目标的具体位置。
 
-基于视觉的位姿估计问题主要应用于人机交互（Human Computer Interaction）、视觉里程计（VO）和器人导航和实时定位与建图（SLAM）。其中，视觉里程计主要通过对系列连续图像进行处理，结合飞行器自身携带的各类传感器，最终得到可靠的三维信息（3D motion）。针对长基线系统（如图\ref{fig:38_LangBaseLineSystem}所示），利用EKF方法，将转台信息和图像信息相融合，可以得到较好的目标位置状态。定义$X$是状态模型
-\begin{equation}
-X=[Pos^s, V^s, C^{Att}, w^{Att}]^T
-\end{equation}
-其中
-$$
-Pos^s=\left[\begin{array}{c}
-x_l\\
-y_l\\
-z_l\\
-\end{array}\right],
-V^s=\left[\begin{array}{c}
-v_x\\
-v_y\\
-v_z\\
-\end{array}\right]
-$$
-$$
-C^{Att}=\left[\begin{array}{c}
-lpan\\
-ltilt\\
-rpan\\
-rtilt\\
-\end{array}\right],
-w^{Att}=\left[\begin{array}{c}
-wlpan\\
-wltilt\\
-wrpan\\
-wrtilt\\
-\end{array}\right].
-$$
-上述所有变量均在世界坐标系下，其中$lpan$ 和 $ltilt$ 表示左侧相机的俯仰角度和水平角度; $rpan$ 和 $rtilt$ 对应右侧相机的两个角度; $wlpan, wltilt, wrpan, wrtilt$ 表示上述四个角度的角速度。
-在第$k$次迭代过程中，状态转换方程如下
-\begin{equation}
-\bar{x}_{k|k_1}=F_k\bar{x}_{k-1|k-1}
-\end{equation}
-其中$F_k$是状态转换矩阵。根据EKF的基本假设，在第$k$时刻的状态只从第$k-1$时刻得到。因此可以得到目标的预测位置和相机的姿态解算公式，
-\begin{equation}
-\overline{Pos}^s_{k|k-1}=\Delta t V^s_{k-1|k-1} + {Pos}^s_{k-1|k-1}
-\end{equation}
-\begin{equation}
-\overline{C}^{Att}_{k|k-1}=\Delta t w^{Att}_{k-1|k-1} + \overline{C}^{Att}s_{k-1|k-1}
-\end{equation}
-其中$\Delta t$表示相邻两次时间间隔。状态转换方程可以写为，
-\begin{equation}
-\bar{x}_{k|k-1}=\left[\begin{matrix}
-I_{3\times 3} & \Delta t_{3\times 3} & \textbf{0}_{3\times 4} & \textbf{0}_{3\times 4}\\
-\textbf{0}_{3\times 3} & I_{3\times 3} & \textbf{0}_{3\times 4} & \textbf{0}_{3\times 4}\\
-\textbf{0}_{4\times 3} & \textbf{0}_{4\times 3} & I_{4\times 4} & \Delta t_{4\times 4}\\
-\textbf{0}_{4\times 3} & \textbf{0}_{4\times 3} & \textbf{0}_{4\times 4} & I_{4\times 4}\\
-\end{matrix}\right]\bar{x}_{k-1|k-1}
-\end{equation}
-其中$\Delta t_{n \times n}$表示$n \times n$阶矩阵，其对角线位置为$\Delta t$，其余位置为0。在第$k$时刻，系统的协方差矩阵为，
-\begin{equation}
-P_{k|k-1}=F_kP_{k-1|k-1}F^T_k+G_kQ_kG^T_k
-\end{equation}
-其中$Q_k$是动态系统的高斯噪声，$G_k$是第$k$时刻$Q_k$的Jacobian矩阵。状态协方差矩阵由四个部分组成，分别对应：目标-目标、目标-相机、相机-相机和相机-目标，其公式为
-\begin{equation}
-P_k=\left[
-\begin{matrix}
-P_{T|T} & P_{T|C} \\
-P_{C|T} & P_{C|C} \\
-\end{matrix}\right].
-\end{equation}
-
-EKF的观测模型基于传统的相机成像模型和映射模型，测量向量$z$为，
-\begin{equation}
-z=[Pos^I_L, Pos^I_R, C^{PTU}]^T
-\end{equation} 
-其中$Pos^I_L$和$Pos^I_R$分别表示目标在左右相机的位置，$(u^L_k, v^L_k)$和$(u^R_k, v^R_k)$表示目标在相平面的位置。考虑到相机模型为典型的针孔模型，目标位置$\overline{Pos}^s_{k|k-1}$通过转换从世界坐标系到图像坐标系。这里，假设相机光心位置和PTU转台位置在运动过程中保持不变，即忽略安装偏移误差。为了计算目标在相平面的位置，将相机位置、内参数等引入方程，
-\begin{equation}
-\left[\begin{matrix}
-\overline{Pos}^I \\
-1\\
-\end{matrix}\right]
-=h(\overline{Pos}^s_{k|k-1}, \overline{C}^{Att}_{k|k-1})
-=\lambda N^{in}\overline{M}^{out}_{k|k-1}\overline{Pos}^s_{k|k-1}
-\end{equation}
-其中$\lambda$是归一化参数。$N^{in}$和$\overline{M}^{out}_{k|k-1}$是转换矩阵。其他参数可以通过如下方程表达，
-\begin{equation}
-\overline{M}^{out}_{k|k-1}
-= \left[
-\begin{matrix}
-\bar{R}^c_{k|k-1} & T \\
-\textbf{0}^T_3 & 1 \\
-\end{matrix}
-\right]
-\end{equation}
-和
-\begin{equation}
-N^{in}=
-\left[
-\begin{matrix}
-1/d_x & 0 & u_o \\
-0 & 1/d_y & v_0 \\
-0 & 0 & 1 \\
-\end{matrix}
-\right]
-\left[
-\begin{matrix}
-f & 0 & 0 & 0 \\
-0 & f & 0 & 0 \\
-0 & 0 & 0 & 1 \\
-\end{matrix}
-\right]
-\end{equation}
-其中$\bar{R}^c_{k|k-1}$是旋转矩阵$\overline{C}^{Att}_{k|k-1}$和$T$表达相机坐标系和世界坐标系之间的位置关系。至此，可以得到观测模型，
-\begin{equation}
-\bar{z_k}=
-\left[
-\begin{matrix}
-\overline{Pos}^I_L \\
-\overline{Pos}^I_R \\
-\overline{C}^{PTU} \\
-\end{matrix}
-\right]
-=
-\left[
-\begin{matrix}
-Block (\lambda_L N^{in}_L \overline{M}^{out}_{L(k|k-1)}\overline{Pos}^s_{k|k-1} )\\
-Block (\lambda_R N^{in}_R\overline{M}^{out}_{R(k|k-1)}\overline{Pos}^s_{k|k-1}  )\\
-I_{4 \times 4}\overline{C}^{Att}_{k|k-1} \\
-\end{matrix}
-\right]
-\end{equation}
-定义$Block(\cdot)$作为仅提取矩阵前两项的函数。
+\subsection{GOTURN网络的实现}
 
 
-$x_k$是$z_k$的更新结果。根据观测模型$h$，其Jacobian矩阵$H_k$可以表达为
-\begin{equation}
-H_k=\frac{\partial h ( \overline{Pos}^S_{k|k-1}, \overline{C}^{Att}_{k|k-1} )}{\partial x_k} 
-\end{equation}
-得到卡尔曼增益$K_t$，
-\begin{equation}
-S_k=H_k P_{k|k-1} H^T_k + R
-\end{equation}
-\begin{equation}
-K_k=P_{k|k-1}H^T_k(S_k)^{-1}
-\end{equation}
-其中$R$是传感器的高斯白噪声。最后，得到更新方程，
-\begin{equation}
-\bar{x}_{k|k} = \bar{x}_{k|k-1}+K_k(z_k-h(\bar{x}_{k|k-1}))
-\end{equation}
-\begin{equation}
-P_{k|k}=(1-K_k H_k)P_{k|k-1}
-\end{equation}
-目标识别方法的输出做为EKF的输入，随后将EKF输出结果返回给无人机。目前，融合算法只是用了转台和可见光相机信息，后续还要引入飞机姿态信息和降落平台姿态信息，以便得到更准确的位置和姿态信息。
 
-\section{舰船运动估计模型}
+\subsection{搜索区域迭代方法}
+因为神经网络方法的通用性，网络结构输出的搜索区域一般是置信度最高的区域，
+
+如上图所示，红色矩形框：系统识别到的目标。
+绿色矩形框：真实参考值。
+目的：希望通过对红色矩形的微调，即Bounding Box Regression，更接近绿色矩形。
+矩形框的表达一般用四维变量$(x, y, w, h)$表示，即矩形框中心的像素位置以及矩形框的宽度和高度。
+
+\begin{figure}[htb]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp03/chp03_02_bbox_regression.pdf}
+	\caption{目标识别区域和真实值之间的差异}
+	\label{fig:chp03_02_bbox_regression}
+\end{figure}
+
+
+迭代方法
+- 寻找一种映射 $f$，使得$f(x_P, y_P, w_P, h_p) = (x_{\hat{G}}, y_{\hat{G}}, w_{\hat{G}}, h_{\hat{G}})$，其中$(x_{\hat{G}}, y_{\hat{G}}, w_{\hat{G}}, h_{\hat{G}}) \approx (x_G, y_G, w_G, h_G)$
+
+- 定义目标区域（Proposal Region) $P=(x_P, y_P, w_P, h_p)$, 真实值区域(Ground-truth Region) $G = (x_G, y_G, w_G, h_G)$，预测区域 $\hat{G}=(x_{\hat{G}}, y_{\hat{G}}, w_{\hat{G}}, h_{\hat{G}})$
+
+- 先平移$(\Delta_x, \Delta_y)$
+$$x_{\hat{G}} = w_{P}d_x(P)+x_P$$
+$$y_{\hat{G}} = h_{P}d_y(P)+y_P$$
+
+- 再尺度变化$(S_w, S_h)$
+$$w_{\hat{G}}=w_{P}exp(d_w(P))$$
+$$h_{\hat{G}}=h_{P}exp(d_h(P)$$
+
+- Regression过程
+
+- 输入：$P=(x_P, y_P, w_P, h_p)$这个区域的CNN图像特征，而不是简单的四个点，训练阶段还包括真实值 $T=(x_T, y_T, w_T, h_T)$
+
+- 输出：四个尺度变换$d(P)=(d_x(P), d_y(P), d_w(P), d_h(P))$
+
+$$d_x(P)=(x_{\hat{G}}-x_P)/w_P$$
+$$d_y(P)=(y_{\hat{G}}-y_P)/h_P$$
+$$d_w(P)=log(w_{\hat{G}}/w_P)$$
+$$d_h(P)=log(h_{\hat{G}}/h_P)$$
+
+- 四个基本信息的线性组合方程 $\Phi(P)$
+
+- 在$P$情况下的预测值 $d(P)=\omega^T\Phi(P)$
+
+- 损失函数（可以有很多种）
+$$Loss=\sum^N_i(T^{(i)}-\omega^T\Phi(P^{(i)}))^2$$
+$$L_{loc}(P,T) = \sum_{i}^N\text{smooth}_{L_1}(T^{(i)}-P^{(i)})$$
+$$\text{smooth}_{L_1}(x) = \left \{ \begin{aligned} &0.5x^2 & |x| \le 1\\ &|x|-0.5 & \text{otherwise}\end{aligned} \right.$$
+​
+
+- 目标函数
+$$\omega^*=\mathop{\arg\min}_{w}\sum^N_i(T^{(i)}-\omega^T\Phi(P^{(i)}))^2+\lambda||\omega||^2$$
+
+
+
+\section{基于Siamese神经网络设计方法}
+
+\section{针对图像尺度变换的设计}
+在近距离目标跟踪过程中，目标主要发生尺度方面的变化。卷积运算具有平移不变的特性，即
+
+
  
-\begin{algorithm2e}
-	\SetAlgoLined
-	\SetKwInOut{Input}{Input}
-	\SetKwInOut{Output}{Output}
-	\Input{Initialized sequence $\hat{\psi}(k),\ \ k=1,2,..., N$}
- 	
-	\KwResult{$x(k)$}
-	%initialization\;
-	\While{$\Sigma |x_{error}| \le \alpha$ and $|x^{*(i)} - x^{*(i-1)} | \le \beta$}
-	{
-		Update UAV states \;
-		$p(k+1) \leftarrow$ Update($p(k)$)\;
-		$\dot{p}(k+1) \leftarrow$ Update($\dot{p}(k)$)\;
-		${\phi}(k+1) \leftarrow$ Update(${\phi}(k)$)\;
-		Solve SCP using CVXGEN Solver\;
-		\For{$j\leftarrow 1$ \KwTo $N-1$}{
-			Calculate $x_{error}$ \;
-		}
-		Update $\hat{\psi}(k)^{i+1} = \hat{\psi}(k)^{i} $\;
-		Update Trust Region, $\rho(k)^{i+1} = \gamma_{path}(k)^{i} \rho(k)^{i}$ \;
-		$i = i + 1$
-	}
-	\caption{侧风扰动下的最优轨迹求解}
-\end{algorithm2e}
-
-\begin{algorithm2e}[H]
-	\SetAlgoLined
-	\KwData{this text}
-	\KwResult{how to write algorithm with \LaTeX2e }
-	initialization\;
-	\While{not at end of this document}{
-		read current\;
-		\eIf{understand}{
-			go to next section\;
-			current section becomes this one\;
-		}{
-			go back to the beginning of current section\;
-		}
-
-	}
-	\caption{How to write algorithms}
-\end{algorithm2e}
-
-\begin{algorithm2e}
-	\SetKwData{Left}{left}\SetKwData{This}{this}\SetKwData{Up}{up}
-	\SetKwFunction{Union}{Union}\SetKwFunction{FindCompress}{FindCompress}
-	\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
-	\Input{A bitmap $Im$ of size $w\times l$}
-	\Output{A partition of the bitmap}
-	\BlankLine
-	\emph{special treatment of the first line}\;
-	\For{$i\leftarrow 2$ \KwTo $l$}{
-		\emph{special treatment of the first element of line $i$}\;
-		\For{$j\leftarrow 2$ \KwTo $w$}{\label{forins}
-			\Left$\leftarrow$ \FindCompress{$Im[i,j-1]$}\;
-			\Up$\leftarrow$ \FindCompress{$Im[i-1,]$}\;
-			\This$\leftarrow$ \FindCompress{$Im[i,j]$}\;
-			\If(\tcp*[h]{O(\Left,\This)==1}){\Left compatible with \This}{\label{lt}
-				\lIf{\Left $<$ \This}{\Union{\Left,\This}}
-				\lElse{\Union{\This,\Left}}
-			}
-			\If(\tcp*[f]{O(\Up,\This)==1}){\Up compatible with \This}{\label{ut}
-				\lIf{\Up $<$ \This}{\Union{\Up,\This}}
-				\tcp{\This is put under \Up to keep tree as flat as possible}\label{cmt}
-				\lElse{\Union{\This,\Up}}\tcp*[h]{\This linked to \Up}\label{lelse}
-			}
-		}
-		\lForEach{element $e$ of the line $i$}{\FindCompress{p}}
-	}
-	\caption{disjoint decomposition}\label{algo_disjdecomp}
- 	\caption{使用SCP方法求解侧风扰动下的最优轨迹}
- \end{algorithm2e}
- 
-
