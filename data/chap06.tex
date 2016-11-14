@@ -1,0 +1,88 @@
+\chapter{无人机飞行控制系统设计}
+\label{chap:main}
+本章将进入论文排版的正文, 按元素分主要包括：
+{\kai 字体段落，图片表格，公式定理，参考文献}这几部分。
+这个样例文件将包括模板中使用到的所有格式、模板中自定义命令到或者特有的东西，
+都将被一一介绍，希望大家在排版自己的学位论文前能细致的看一遍，记住样例的格式和
+方法，方便上手。
+\cite{ELIDRISSI94}
+
+\section{引言}
+针对目标监测问题，很多学者提出了不同的解决方法，但目标实时监测问题中的所涉及的目标尺度变化、被遮挡和实时性等问题仍然没有得到有效解决。
+
+ 
+\begin{algorithm2e}
+	\SetAlgoLined
+	\SetKwInOut{Input}{Input}
+	\SetKwInOut{Output}{Output}
+	\Input{Initialized sequence $\hat{\psi}(k),\ \ k=1,2,..., N$}
+ 	
+	\KwResult{$x(k)$}
+	%initialization\;
+	\While{$\Sigma |x_{error}| \le \alpha$ and $|x^{*(i)} - x^{*(i-1)} | \le \beta$}
+	{
+		Update UAV states \;
+		$p(k+1) \leftarrow$ Update($p(k)$)\;
+		$\dot{p}(k+1) \leftarrow$ Update($\dot{p}(k)$)\;
+		${\phi}(k+1) \leftarrow$ Update(${\phi}(k)$)\;
+		Solve SCP using CVXGEN Solver\;
+		\For{$j\leftarrow 1$ \KwTo $N-1$}{
+			Calculate $x_{error}$ \;
+		}
+		Update $\hat{\psi}(k)^{i+1} = \hat{\psi}(k)^{i} $\;
+		Update Trust Region, $\rho(k)^{i+1} = \gamma_{path}(k)^{i} \rho(k)^{i}$ \;
+		$i = i + 1$
+	}
+	\caption{侧风扰动下的最优轨迹求解}
+\end{algorithm2e}
+
+\begin{algorithm2e}[H]
+	\SetAlgoLined
+	\KwData{this text}
+	\KwResult{how to write algorithm with \LaTeX2e }
+	initialization\;
+	\While{not at end of this document}{
+		read current\;
+		\eIf{understand}{
+			go to next section\;
+			current section becomes this one\;
+		}{
+			go back to the beginning of current section\;
+		}
+
+	}
+	\caption{How to write algorithms}
+\end{algorithm2e}
+
+\begin{algorithm2e}
+	\SetKwData{Left}{left}\SetKwData{This}{this}\SetKwData{Up}{up}
+	\SetKwFunction{Union}{Union}\SetKwFunction{FindCompress}{FindCompress}
+	\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+	\Input{A bitmap $Im$ of size $w\times l$}
+	\Output{A partition of the bitmap}
+	\BlankLine
+	\emph{special treatment of the first line}\;
+	\For{$i\leftarrow 2$ \KwTo $l$}{
+		\emph{special treatment of the first element of line $i$}\;
+		\For{$j\leftarrow 2$ \KwTo $w$}{\label{forins}
+			\Left$\leftarrow$ \FindCompress{$Im[i,j-1]$}\;
+			\Up$\leftarrow$ \FindCompress{$Im[i-1,]$}\;
+			\This$\leftarrow$ \FindCompress{$Im[i,j]$}\;
+			\If(\tcp*[h]{O(\Left,\This)==1}){\Left compatible with \This}{\label{lt}
+				\lIf{\Left $<$ \This}{\Union{\Left,\This}}
+				\lElse{\Union{\This,\Left}}
+			}
+			\If(\tcp*[f]{O(\Up,\This)==1}){\Up compatible with \This}{\label{ut}
+				\lIf{\Up $<$ \This}{\Union{\Up,\This}}
+				\tcp{\This is put under \Up to keep tree as flat as possible}\label{cmt}
+				\lElse{\Union{\This,\Up}}\tcp*[h]{\This linked to \Up}\label{lelse}
+			}
+		}
+		\lForEach{element $e$ of the line $i$}{\FindCompress{p}}
+	}
+	\caption{disjoint decomposition}\label{algo_disjdecomp}
+ 	\caption{使用SCP方法求解侧风扰动下的最优轨迹}
+ \end{algorithm2e}
+ 
+
+\section{}

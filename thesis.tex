@@ -44,7 +44,11 @@
 \documentclass[doctor,otf]{nudtpaper}
 \usepackage{mynudt}
 \usepackage{graphicx}
-\classification{TP957}
+\usepackage[linesnumbered,ruled,algo2e]{algorithm2e} % for algorithms block by Weiwei
+\usepackage{lmodern}% http://ctan.org/pkg/lm
+\usepackage{longtable,lscape}
+
+\classification{TP391.41}
 \serialno{0123456}
 \confidentiality{公开}
 \UDC{}
@@ -85,9 +89,14 @@
 	
 	%书写正文，可以根据需要增添章节; 正文还包括致谢，参考文献与成果
 	\mainmatter
-	%\input{data/chap01}
-	\input{data/chap02}
-	%\input{data/chap03}
+	\input{data/chap01}
+%	\input{data/chap02}
+%	\input{data/chap03}
+%	\input{data/chap04}
+%	\input{data/chap05}
+%	\input{data/chap06}
+%	\input{data/chap07}
+%	\input{data/chap08}
 	%\input{data/ack}
 	
 	\cleardoublepage
@@ -100,6 +109,6 @@
 	% 最后，需要的话还要生成附录，全文随之结束。
 	%\appendix   暂时不编译
 	\backmatter
-	%\input{data/appendix01} 暂时不编译
+	\input{data/appendix01}
 	
 \end{document}
