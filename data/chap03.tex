@@ -1,3 +1,408 @@
-\chapter{结束语}
-\label{chap:main}
+\chapter{地基无人机立体视觉引导系统}
+
+\section{短基线无人机视觉引导系统}
+\subsection{相机成像模型}
+
+\subsection{立体视觉成像原理}
+
+
+
+% 开题报告
+在 2012 年，首先设计了基于远红外相机的短基线引导装置，如图3.10(a)所示。该方法能够在 100 米左右的高度捕获 MD4-200 无人机，并完成其引导降落过程。但是，该方案由于受到基线的限制，探测距离无法进一步增强。此外，由于远红外相机的成像特性，在没有云层的情况下，所使用的 Meanshift 方法可以有效检测无人机；在有云层时，跟踪算法常常受到干扰，系统鲁棒性不强。在 2013年，通过理论推算，设计了基线长度约 10 米的引导系统，如图3.17(b)所示。尽管该系统的探测距离得到显著提升，但其标定工作变得异常繁琐，不利于系统的展开和维护。在 2014 年，设计了基于多传感器的引导控制单元，如图3.18所示，该引导控制单元综合了上述两种方法的优势，在试验中取得了较好的结果，如表3.3所示。
+
+\section{长基线无人机视觉引导系统}
+由于立体视觉引导系统的目标检测距离受到基线影响的限制，因此考虑将相机安装在独立的二自由度转台，并将这两个独立单元分布放置在跑道两侧。
+
+
+
+\subsection{长基线立体视觉成像原理}
+
+
+
+\begin{figure}[!tb]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp03_stereo/chp03_vision_01_theory_diagram.pdf}	
+	\caption{长基线立体视觉系统示意图}
+	\label{fig:chp03_vision_01_theory_diagram}
+\end{figure}
+
+根据第二章坐标系的统一定义，光学引导坐标系$(\mathcal{O}_c)$的原点与左侧视觉引导单元坐标系（$\mathcal{O}_l$）的原点重合，该原点实质是二自由度转台的两个转轴的焦点。为了简便模型，假设安装在二自由度转台上的相机光心也位于该点。由此，当转台发生转动后，各个视觉单元相机的光心不发生水平位移，只存在相对于初始位置的转动。该系统的理论模型示意图如\ref{fig:chp03_vision_01_theory_diagram}所示。因为两个引导系统相互独立，所以根据需要检测目标的距离和实际环境，可以排布两个引导系统。此时，系统的极限长度为$|\mathcal{O}_l\mathcal{O}_r| = D$，根据后续试验的需要，极限程度一般为$D = 10\ m$。在对无人机目标进行距离解算时，假设无人机的为一个质点，该点在系统中用$M$来表达。在实际中，这个点的通过视觉检测与跟踪算法得到，具体方法详见后续章节。
+
+与上一节介绍的短基线视觉引导系统不同，长基线系统的两个相机由于与两个转台独立固连，因此其相对于光学引导坐标系的姿态并不实时保持相同。因此在立体解算的过程中，需要考虑左右两侧光心延长线的不同。二自由度转台的运动自由度主要是俯仰运动和方位运动两个方向，这两个方向可以通过二自由度转台的串口输出得到，分别用${\phi_l}$, ${\phi_r}$, ${\psi_l}$和${\psi_r}$ 来表达。为计算方便，转台的转动方向按右手系旋转方向为正，即如图所示状态情况下左侧转台的角度情况为
+\begin{align}
+\psi_l < 0 \\
+\phi_l > 0
+\end{align}
+右侧转台的角度情况为
+\begin{align}
+\psi_r > 0 \\
+\phi_r > 0
+\end{align}
+同时，可以定义转台在初始状态时，上述四个角度均为零，即$\phi_l= 0$, $\phi_r=0$, ${\psi_l=0}$ 和 ${\psi_r=0}$。
+
+
+\begin{figure}[!tb]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp03_stereo/chp03_vision_02_image_plane.pdf}	
+	\caption{左侧视觉单元成像示意图}
+	\label{fig:chp03_vision_02_image_plane}
+\end{figure}
+
+理想情况下，无人机成像应当位于像平面（Image Plane）的中心，此时，目标点$M$在相机的主光轴上。实际情况下，由于转台控制的滞后性以及图像处理的误差，无人机目标无法准确的出现在像平面中心，因此需要通过其在像平面的偏差对解算进行补偿。以左侧视觉单元为例，当左侧转台位于初始位置且无人机目标$M$位于正常降落位置时，该目标在左侧相机像平面的示意图如图\ref{fig:chp03_vision_02_image_plane}所示。这里需要补充定义像平面二维坐标系，该坐标系的原点用$o(u_0, v_0)$来表示，该点距离光学引导坐标系的距离为焦距$f$。无人机目标在该平面的坐标用$(u,v)$来表达。通过集合关系可以得到补偿后的转台俯仰角和方位角，其数学表达为
+\begin{equation} 
+\left \{
+\begin{split}
+& \psi_{cl} = \arctan \frac{(u-u_0)du}{f} \\
+& \phi_{cl} = \arctan \frac{(v-v_0)\cos\psi_{cl}dv}{f} 
+\end{split}
+\right.
+\end{equation}
+其中$\psi_{cl}$和$\phi_{cl}$分别表示左侧转台的俯仰与方位补偿角，$du$和$dv$是像平面每个像素点的尺寸，该数值可以通过对相机的独立标定获得，一般而言，$du \approx dv$。在使用上式计算补偿角时，上式中的$f$和$du$、$dv$的计算时，量纲必须保持相同。同理，可以定义$\psi_{cr}$和$\phi_{cr}$为右侧转台的俯仰与方位补偿角。该补偿角度也可以理解为，在目标$M$不动的情况下，转台通过转动响应的补偿角度，即使得目标$M$成像在相机的中心。因此，为了使得转台能够有效跟踪目标$M$，使得补偿角度等于零可以作为转台系统的期望量。
+
+在无人机成像偏离光心时，根据补偿俯仰角和方位补偿角的求解，以及两个转台的读数$\phi_{pl}$和$\phi_{pr}$，可以得到
+\begin{equation} 
+\left \{
+\begin{split}
+\phi_l &= \phi_{cl} + \phi_{pl} \\ 
+\psi_l &= \psi_{cr} + \psi_{pr}
+\end{split}
+\right.
+\end{equation}
+对于右侧转台而言，同理可得修正后的$\phi_r$和$\psi_r$。 
+
+定义无人机在导航坐标系的坐标为 $M(x_M, y_M, z_M)\in \mathbb{R}^3 $，根据图\ref{fig:chp03_vision_01_theory_diagram}的定义，$N$是目标点$M$在光学引导坐标系$\mathbf{i}^{O,c}$和$\mathbf{j}^{O,c}$构成的平面的投影，$NA$的连线垂直于$\mathbf{i}^{O,c}$轴，定义直线长度$NA = h$，由此可得
+\begin{equation}
+\left \{
+\begin{aligned}
+&x_M = h \tan \psi_l  \\
+&y_M = h \\
+&z_M = \frac{h\tan \phi_l}{\cos \psi_l}
+\end{aligned} \right.
+\label{eq:M_Positon_Equation}
+\end{equation}
+带入$h=D/(\tan \psi_l + \tan (-\psi_r)$到上式可得
+\begin{equation}
+\left \{
+\begin{aligned}
+\label{eq:M_Position_Equation2}
+&x_M =  \frac{D\tan \psi_l}{\tan \psi_l - \tan \psi_r}            \\
+&y_M =  \frac{D}{\tan \psi_l - \tan \psi_r} \\
+&z_M  = \frac{D\tan \phi_l}{\cos \psi_l(\tan \psi_l - \tan \psi_r)}
+\end{aligned} \right. 
+\end{equation}
+
+通过上式可以得到，目标$M$的三维位置$\mathbf{i}^{O,c}$方向和$\mathbf{j}^{O,c}$方向只与引导系统的基线距离$D$和$\psi_l$以及$\psi_r$相关，$\mathbf{k}^{O,c}$方向除上述三个量之外，还与$\phi_l$相关。
+
+\subsection{长基线立体视觉理想成像模型误差分析}
+针对上一节中求解得到的公式$\ref{eq:M_Position_Equation2}$，可以进一步对三个分量微分，从而进一步分析误差对系统的影响。对$x_M$分别对$\psi_l$和$\psi_r$微分可以得到
+\begin{equation}
+\left\{ \,
+\begin{aligned}
+\frac{ \partial x_M}{ \partial \psi_l} = \frac{D \tan \psi_r}{ \cos^2 \psi_l (\tan \psi_l - \tan \psi_r)^2} \\
+\frac{ \partial x_M}{\partial \psi_r} = \frac{D \tan \psi_l}{\cos^2 \psi_r (\tan \psi_l - \tan \psi_r)^2} 
+\end{aligned}
+\right.
+\end{equation}
+
+$y_M$分别对$\psi_l$和$\psi_r$微分可以得到
+\begin{equation}
+\left\{ \,
+\begin{aligned}
+\frac{\partial y_M}{\partial \psi_l} = \frac{ D}{\cos^2 \psi_l (\tan \psi_l - \tan \psi_r)^2} \\
+\frac{\partial y_M}{\partial \psi_r} = \frac{D}{\cos^2 \psi_r (\tan \psi_l - \tan \psi_r)^2} 
+\end{aligned}
+\right.	
+\end{equation}
+
+$z_M$分别对$\phi_l$、$\psi_l$和$\psi_r$微分可以得到
+\begin{equation}
+\left\{ \,
+\begin{aligned}
+&\frac{ \partial z_M}{ \partial \phi_l} = \frac{D}{ \cos \psi_l \cos^2 \phi_l (\tan \psi_l - \tan \psi_r)} \\
+&\frac{\partial z_M}{\partial \psi_l} = \frac{ D \tan \phi_l(\cos \psi_l + \sin \psi_l \tan \psi_r)}{ \cos^2 \psi_r (\tan \psi_l - \tan \psi_r)^2} \\
+&\frac{ \partial z_M}{ \partial \psi_r} = \frac{ D \tan \phi_l}{ \cos \psi_l \cos^2 \psi_r (\tan \psi_l - \tan \psi_r)^2}
+\end{aligned}
+\right.
+\end{equation} 
+
+上述公式无法精确描述系统的误差情况，因此通过求解每个$(\phi_l, \phi_r)$组合时的梯度值来建立向量场。通过向量场可以看到在不同方位角情况下，误差对坐标解算的影响。因此得到梯度数学表达公式
+\begin{equation}
+\nabla_{x_M}(\psi_l, \psi_r):=\left( \frac{\partial x_M}{\partial \psi_l}(\psi_l, \psi_r), \frac{\partial x_M}{\partial \psi_r}(\psi_l, \psi_r)  \right)
+\end{equation}
+
+\begin{equation}
+\nabla_{y_M}(\psi_l, \psi_r):=\left( \frac{\partial y_M}{\partial \psi_l}(\psi_l, \psi_r), \frac{\partial y_M}{\partial \psi_r}(\psi_l, \psi_r)  \right)
+\end{equation}
+
+\begin{equation}
+\nabla_{z_M}(\psi_l, \psi_r):=\left( \frac{\partial z_M}{\partial \psi_l}(\psi_l, \psi_r), \frac{\partial z_M}{\partial \psi_r}(\psi_l, \psi_r)  \right)
+\end{equation}
+
+根据上述公式，设定仿真实验的基线长度为$10\ m$，下滑角度，即转台的俯仰角度为$\phi_l=3\degree$。由此可以得到三个分量受不同方位角扰动情况的向量场，分布如图\ref{fig:chp03_vision_03_glide_3_x_with_theta_l_r}、图\ref{fig:chp03_vision_04_glide_3_y_with_theta_l_r}和图\ref{fig:chp03_vision_05_glide_3_z_with_theta_l_r}所示。
+
+\begin{figure}[!tb]
+	\centering
+	\includegraphics[width=0.5\textwidth]{figs/chp03_stereo/chp03_vision_03_glide_3_x_with_theta_l_r.pdf}	
+	\caption{引导坐标系$\mathbf{i}^{O,c}$方向梯度向量场}
+	\label{fig:chp03_vision_03_glide_3_x_with_theta_l_r}
+\end{figure}
+
+\begin{figure}[!tb]
+	\centering
+	\includegraphics[width=0.5\textwidth]{figs/chp03_stereo/chp03_vision_04_glide_3_y_with_theta_l_r.pdf}	
+	\caption{引导坐标系$\mathbf{j}^{O,c}$方向梯度向量场}
+	\label{fig:chp03_vision_04_glide_3_y_with_theta_l_r}
+\end{figure}
+
+\begin{figure}[!tb]
+	\centering
+	\includegraphics[width=0.5\textwidth]{figs/chp03_stereo/chp03_vision_05_glide_3_z_with_theta_l_r.pdf}	
+	\caption{引导坐标系$\mathbf{k}^{O,c}$方向梯度向量场}
+	\label{fig:chp03_vision_05_glide_3_z_with_theta_l_r}
+\end{figure}
+
+在三组图中，箭头的大小是所在点梯度的向量，其大小是归一化之后的向量长度。图中等高线用于描述相同梯度数值的区域，通过颜色的深浅来描述梯度方向和大小。通过分析上图可以得到以下结论：
+\begin{compactenum}
+\item
+在两个转台绝对值接近时，系统的误差明显增大，这种情况对应的物理状态是两个转台光轴基本平行的时刻。
+\item
+梯度向量场的第一象限和第三象限对称，即无人机目标$M$位于$\mathbf{i}^{O,l}$和$\mathbf{j}^{O,l}$构成平面的第二象限或位于$\mathbf{i}^{O,r}$和$\mathbf{j}^{O,r}$构成平面的第一象限时，误差的扰动作用相同。
+\item
+方位角误差对$\mathbf{i}^{O,c}$和$\mathbf{j}^{O,c}$方向的影响相比对$\mathbf{j}^{O,c}$方向的影响要小。
+\end{compactenum}
  
+
+通过引导系统几何关系可以知道，由于方位角的位置，两个转台上相机的成像无重合区域，因此第四象限的方位角组合没有物理意义。一般而言，在绝大多数降落过程的最后阶段，无人机位于两个转台的中间位置，即左侧转台方位角逆时针旋转一定角度，右侧转台方位角顺时针旋转一定角度，这两个角度满足约束
+$ -90\degree < \psi_l < 0\degree$和$ 0\degree < \psi_r < 90\degree$。因此第二象限的误差是关注的重点，放大该区域的图像后，如图\ref{fig:chp03_vision_06_glide_3_x_with_theta_l_r_2_quadrant}、图\ref{fig:chp03_vision_07_glide_3_y_with_theta_l_r_2_quadrant}和图\ref{fig:chp03_vision_08_glide_3_z_with_theta_l_r_2_quadrant}所示。
+
+\begin{figure}[htb]
+	\centering
+	\subfloat[]{\includegraphics[width=.45\textwidth]{figs/chp03_stereo/chp03_vision_06_glide_3_x_with_theta_l_r_2_quadrant.pdf}} \qquad
+	\subfloat[]{\includegraphics[width=.45\textwidth]{figs/chp03_stereo/chp03_vision_09_glide_3_gradient_x_2_quadrant.pdf}} 	
+	\caption{引导坐标系$\mathbf{i}^{O,c}$方向梯度向量场第二象限}
+	\label{fig:chp03_vision_06_glide_3_x_with_theta_l_r_2_quadrant}
+\end{figure}
+
+\begin{figure}[htb]
+	\centering
+	\subfloat[]{\includegraphics[width=.45\textwidth]{figs/chp03_stereo/chp03_vision_07_glide_3_y_with_theta_l_r_2_quadrant.pdf}} \qquad
+	\subfloat[]{\includegraphics[width=.45\textwidth]{figs/chp03_stereo/chp03_vision_10_glide_3_gradient_y_2_quadrant.pdf}} 	
+	\caption{引导坐标系$\mathbf{j}^{O,c}$方向梯度向量场第二象限}
+	\label{fig:chp03_vision_07_glide_3_y_with_theta_l_r_2_quadrant}
+\end{figure}
+
+\begin{figure}[htb]
+	\centering
+	\subfloat[]{\includegraphics[width=.45\textwidth]{figs/chp03_stereo/chp03_vision_08_glide_3_z_with_theta_l_r_2_quadrant.pdf}} \qquad
+	\subfloat[]{\includegraphics[width=.45\textwidth]{figs/chp03_stereo/chp03_vision_11_glide_3_gradient_z_2_quadrant.pdf}} 	
+	\caption{引导坐标系$\mathbf{k}^{O,c}$方向梯度向量场第二象限}
+	\label{fig:chp03_vision_08_glide_3_z_with_theta_l_r_2_quadrant}
+\end{figure}
+
+每组图片的左侧图像是第二项向量场的局部放大，右侧是向量场梯度大小的示意图。通过分析每组图片右侧的图像可以看到，系统的误差在三个坐标轴收到的影响各不相同。其基本结论为：
+
+\begin{compactenum}
+	\item
+	目标位置出现在远端（方位角绝对值较小）时的三个方向的误差相对较大，目标出现在近端（方位角绝对值较大）时的三个方向的误差相对较小。
+	\item
+	目标位置偏向一侧转台时，三个方向的误差有所增加。
+	\item
+	无人机在设计降落曲线时，期望降落位置应当位于测量单元基线中垂线的延长线上。
+\end{compactenum}
+
+
+
+\subsection{长基线立体视觉实际成像模型误差分析}
+上一节对于目标点$M$位置的解算的一个基本假设是两个光轴可以在空间中始终存在一个焦点。但实际系统运行过程中，存在转台误差、目标识别误差、摄像头标定等影响，两个光轴的延长线可能无法满足上述假设。因此需要进一步设计方法来得到近似目标点。
+
+对于两个光轴的延长线而言，这两条直线实质上是两条异面直线，而期望目标点出现在异面直线最近距离的连线上。
+
+首先，定义左侧和右侧视觉单元的原点，即光心的位置，在引导坐标系的坐标分别为 $\mathcal{O}_l(x_{ol}, y_{ol}, z_{ol})=(0, 0, 0)$ 和 $\mathcal{O}_r(x_{or}, y_{or}, z_{or})=(D, 0, 0)$ 。其次定义两个光轴，即$\mathcal{O}_lM$和$\mathcal{O}_rM$两条线段所在直线的参数方程为
+\begin{equation}  
+\left \{
+\begin{split}
+&\frac{x-x_{ol}}{a_l} = \frac{y-y_{ol}}{b_l} = \frac{z-z_{ol}}{c_l} = t_l,\\
+&\frac{x-x_{or}}{a_r} = \frac{y-y_{or}}{b_r} = \frac{z-z_{or}}{c_r} = t_r,
+\end{split}
+\right.
+\end{equation}
+其中两条直线的具体表达为
+\begin{equation}  
+\left\{ 
+\begin{array}{lll} 
+a_l = \cos \phi_l \sin \psi_l\\
+b_l = \cos \phi_l \cos \psi_l\\
+c_l = \sin \phi_l
+\end{array} 
+\right.
+\end{equation}
+和
+\begin{equation} 
+\left\{ 
+\begin{array}{lll} 
+a_r = \cos \phi_r \sin \psi_r\\
+b_r = \cos \phi_r \cos \psi_r\\
+c_r = \sin \phi_r
+\end{array} 
+\right.
+\end{equation}
+其中$t_l$和$t_r$是两条直线的参数。
+
+在定义参数方程之后，对于引导系统坐标系中的任意一点$(x,y,z)$，可以通过参数方程标记。定义左侧光轴上一点$(x_l,y_l,z_l)$，则得到如下方程表达
+\begin{equation}  
+\left\{ 
+\begin{array}{lll} 
+x_l = a_l t_l + x_{ol} \\
+y_l = b_l t_l + y_{ol} \\
+z_l = c_l t_l + z_{ol}
+\end{array} 
+\right.
+\end{equation}
+同理可以得到右侧光轴上一点$(x_r,y_r,z_r)$的数学表达
+\begin{equation}  
+\left\{ 
+\begin{array}{lll} 
+x_r = a_r l_r + x_{or} \\
+y_r = b_r t_r + y_{or} \\
+z_r = c_r t_r + z_{or}
+\end{array} 
+\right.
+\end{equation}
+期望目标点的位置是位于异面直线最短线段上的一点，因此定义该最短直线与两个坐标系相交的点为$(x_{lp}, y_{lp}, z_{lp})$ 和 $(x_{rp}, y_{rp}, z_{rp})$，这两点之间的距离$J$定义为二范数，其数学表达为
+\begin{equation}
+J = \|(x_{lp}, y_{lp}, z_{lp}) - (x_{rp}, y_{rp}, z_{rp}) \|_2^2
+\end{equation}
+因此现在求解目标近似点问题转换为求解最短线段的位置，为了得到距离函数的最小值，即距离最短时改线段的位置。将距离函数展开后可以得到
+\begin{equation}  	
+\begin{gathered}
+J = {\left( {{a_l}{t_l} - {a_r}{t_r} + {x_{ol}} - {x_{or}}} \right)^2} + {\left( {{b_l}{t_l} - {b_r}{t_r} + {y_{ol}} - {y_{or}}} \right)^2} + {\left( {{c_l}{t_l} - {c_r}{t_r} + {z_{ol}} - {z_{or}}} \right)^2} \hfill \\
+\frac{{\partial J}}{{\partial {t_l}}} = 2{a_l}\left( {{a_l}{t_l} - {a_r}{t_r} + {x_{ol}} - {x_{or}}} \right) + 2{b_l}\left( {{b_l}{t_l} - {b_r}{t_r} + {y_{ol}} - {y_{or}}} \right) + 2{c_l}\left( {{c_l}{t_l} - {c_r}{t_r} + {z_{ol}} - {z_{or}}} \right) \hfill \\
+\frac{{\partial J}}{{\partial {t_r}}} =  - 2{a_r}\left( {{a_l}{t_l} - {a_r}{t_r} + {x_{ol}} - {x_{or}}} \right) - 2{b_r}\left( {{b_l}{t_l} - {b_r}{t_r} + {y_{ol}} - {y_{or}}} \right) - 2{c_r}\left( {{c_l}{t_l} - {c_r}{t_r} + {z_{ol}} - {z_{or}}} \right) \hfill \\ 
+\end{gathered}
+\end{equation}
+通过对距离函数求微分$\frac{{\partial J}}{{\partial {t_l}}} = 0,\frac{{\partial J}}{{\partial {t_r}}} = 0$，可以得到
+\begin{align}  	
+\begin{bmatrix}
+a_l^2 + b_l^2 + c_l^2       & -(a_la_r + b_lb_r + c_lc_r) \\
+-(a_la_r + b_lb_r + c_lc_r) & a_l^2 + b_l^2 + c_l^2 \\    
+\end{bmatrix}	
+\begin{bmatrix}
+t_l \\ 
+t_r 
+\end{bmatrix} \nonumber \\
+=(x_{ol}-x_{or})
+\begin{bmatrix}
+-a_l \\
+a_r 
+\end{bmatrix}
++(y_{ol}-y_{or})
+\begin{bmatrix}
+-b_l \\
+b_r 
+\end{bmatrix} \nonumber 
++(z_{ol}-z_{or})
+\begin{bmatrix}
+-c_l \\
+c_r
+\end{bmatrix}.
+\end{align}
+定义上式左侧的矩阵为
+\begin{equation} 
+{\mathbf{H}} = \left[ {\begin{array}{*{20}{c}}
+	{a_l^2 + b_l^2 + c_l^2}&{ - \left( {{a_l}{a_r} + {b_l}{b_r} + {c_l}{c_r}} \right)} \\ 
+	{ - \left( {{a_l}{a_r} + {b_l}{b_r} + {c_l}{c_r}} \right)}&{a_r^2 + b_r^2 + c_r^2} 
+	\end{array}} \right]
+\end{equation}
+该矩阵的行列式记为 $\det \mathbf{H} $。当$\det \mathbf{H} = 0$时， $M\mathcal{O}_l$ 和 $M\mathcal{O}_r$ 线段所在直线相互平行；当$\det \mathbf{H} \neq 0$时，两条直线存在唯一的垂线，可以进一步求解
+\begin{align} 
+\left[ {\begin{array}{*{20}{c}}
+	{{t_l}} \\ 
+	{{t_r}} 
+	\end{array}} \right] &= {{\mathbf{H}}^{ - 1}}\left\{ {\left( {{x_{ol}} - {x_{or}}} \right)\left[ {\begin{array}{*{20}{c}}
+		{ - {a_l}} \\ 
+		{{a_r}} 
+		\end{array}} \right] + \left( {{y_{ol}} - {y_{or}}} \right)\left[ {\begin{array}{*{20}{c}}
+		{ - {b_l}} \\ 
+		{{b_r}} 
+		\end{array}} \right] + \left( {{z_{ol}} - {z_{or}}} \right)\left[ {\begin{array}{*{20}{c}}
+		{ - {c_l}} \\ 
+		{{c_r}} 
+		\end{array}} \right]} \right\}\\ &=  - {{\mathbf{H}}^{ - 1}}D\left[ {\begin{array}{*{20}{c}}
+	{ - {a_l}} \\ 
+	{{a_r}} 
+	\end{array}} \right]
+\end{align}
+由此求解方程
+\begin{equation} 
+\begin{gathered}
+\left[ {\begin{array}{*{20}{c}}
+	{{t_l}} \\ 
+	{{t_r}} 
+	\end{array}} \right] =  - {{\mathbf{H}}^{ - 1}}D\left[ {\begin{array}{*{20}{c}}
+	{ - {a_l}} \\ 
+	{{a_r}} 
+	\end{array}} \right] \\ 
+=  - D\left[ {\begin{array}{*{20}{c}}
+	{\frac{{a_r^2 + b_r^2 + c_r^2}}{{{{\left( {{a_l}{b_r} - {b_l}{a_r}} \right)}^2} + {{\left( {{b_l}{c_r} - {c_l}{b_r}} \right)}^2} + {{\left( {{a_l}{c_r} - {c_l}{a_r}} \right)}^2}}}}&{\frac{{{a_l}{a_r} + {b_l}{b_r} + {c_l}{c_r}}}{{{{\left( {{a_l}{b_r} - {b_l}{a_r}} \right)}^2} + {{\left( {{b_l}{c_r} - {c_l}{b_r}} \right)}^2} + {{\left( {{a_l}{c_r} - {c_l}{a_r}} \right)}^2}}}} \\ 
+	{\frac{{{a_l}{a_r} + {b_l}{b_r} + {c_l}{c_r}}}{{{{\left( {{a_l}{b_r} - {b_l}{a_r}} \right)}^2} + {{\left( {{b_l}{c_r} - {c_l}{b_r}} \right)}^2} + {{\left( {{a_l}{c_r} - {c_l}{a_r}} \right)}^2}}}}&{\frac{{a_l^2 + b_l^2 + c_l^2}}{{{{\left( {{a_l}{b_r} - {b_l}{a_r}} \right)}^2} + {{\left( {{b_l}{c_r} - {c_l}{b_r}} \right)}^2} + {{\left( {{a_l}{c_r} - {c_l}{a_r}} \right)}^2}}}} 
+	\end{array}} \right]\left[ {\begin{array}{*{20}{c}}
+	{ - {a_l}} \\ 
+	{{a_r}} 
+	\end{array}} \right] \\ 
+=  - D\left[ {\begin{array}{*{20}{c}}
+	{ - {a_l}\frac{{a_r^2 + b_r^2 + c_r^2}}{{{{\left( {{a_l}{b_r} - {b_l}{a_r}} \right)}^2} + {{\left( {{b_l}{c_r} - {c_l}{b_r}} \right)}^2} + {{\left( {{a_l}{c_r} - {c_l}{a_r}} \right)}^2}}} + {a_r}\frac{{{a_l}{a_r} + {b_l}{b_r} + {c_l}{c_r}}}{{{{\left( {{a_l}{b_r} - {b_l}{a_r}} \right)}^2} + {{\left( {{b_l}{c_r} - {c_l}{b_r}} \right)}^2} + {{\left( {{a_l}{c_r} - {c_l}{a_r}} \right)}^2}}}} \\ 
+	{ - {a_l}\frac{{{a_l}{a_r} + {b_l}{b_r} + {c_l}{c_r}}}{{{{\left( {{a_l}{b_r} - {b_l}{a_r}} \right)}^2} + {{\left( {{b_l}{c_r} - {c_l}{b_r}} \right)}^2} + {{\left( {{a_l}{c_r} - {c_l}{a_r}} \right)}^2}}} + {a_r}\frac{{a_l^2 + b_l^2 + c_l^2}}{{{{\left( {{a_l}{b_r} - {b_l}{a_r}} \right)}^2} + {{\left( {{b_l}{c_r} - {c_l}{b_r}} \right)}^2} + {{\left( {{a_l}{c_r} - {c_l}{a_r}} \right)}^2}}}} 
+	\end{array}} \right] \\ 
+\end{gathered}
+\end{equation}
+最终得到直线方程的参数表达
+\begin{equation}
+\left\{
+\begin{aligned}
+t_l=D \frac{\displaystyle a_l (a_l^2 + b_l^2 + c_l^2) - a_r (a_la_r + b_lb_r + c_lc_r)}{\displaystyle (a_lb_r-b_la_r)^2 + (b_lc_r-c_lb_r)^2 + (a_lc_r-c_la_r)^2} \\
+t_r=D \frac{\displaystyle a_l(a_la_r + b_lb_r + c_lc_r)  - a_r (a_l^2 + b_l^2 + c_l^2)}{\displaystyle (a_lb_r-b_la_r)^2 + (b_lc_r-c_lb_r)^2 + (a_lc_r-c_la_r)^2}
+\end{aligned}
+\right.
+\end{equation}
+此时两条异面直线与公垂线的角点分别为
+\begin{equation}
+\left\{ \begin{gathered}
+{x_{lp}} = {a_l}{t_l} + {x_{ol}} =  - D{a_l}\frac{{ - {a_l}\left( {a_r^2 + b_r^2 + c_r^2} \right) + {a_r}\left( {{a_l}{a_r} + {b_l}{b_r} + {c_l}{c_r}} \right)}}{{{{\left( {{a_l}{b_r} - {b_l}{a_r}} \right)}^2} + {{\left( {{b_l}{c_r} - {c_l}{b_r}} \right)}^2} + {{\left( {{a_l}{c_r} - {c_l}{a_r}} \right)}^2}}} \hfill \\
+{y_{lp}} = {b_l}{t_l} + {y_{ol}} =  - D{b_l}\frac{{ - {a_l}\left( {a_r^2 + b_r^2 + c_r^2} \right) + {a_r}\left( {{a_l}{a_r} + {b_l}{b_r} + {c_l}{c_r}} \right)}}{{{{\left( {{a_l}{b_r} - {b_l}{a_r}} \right)}^2} + {{\left( {{b_l}{c_r} - {c_l}{b_r}} \right)}^2} + {{\left( {{a_l}{c_r} - {c_l}{a_r}} \right)}^2}}} \hfill \\
+{z_{lp}} = {c_l}{t_l} + {z_{ol}} =  - D{c_l}\frac{{ - {a_l}\left( {a_r^2 + b_r^2 + c_r^2} \right) + {a_r}\left( {{a_l}{a_r} + {b_l}{b_r} + {c_l}{c_r}} \right)}}{{{{\left( {{a_l}{b_r} - {b_l}{a_r}} \right)}^2} + {{\left( {{b_l}{c_r} - {c_l}{b_r}} \right)}^2} + {{\left( {{a_l}{c_r} - {c_l}{a_r}} \right)}^2}}} \hfill \\ 
+\end{gathered}  \right.
+\end{equation}
+
+\begin{equation}
+\left\{ \begin{gathered}
+{x_{rp}} = {a_r}{t_r} + {x_{or}} =  - D\left[ {{a_r}\frac{{ - {a_l}\left( {{a_l}{a_r} + {b_l}{b_r} + {c_l}{c_r}} \right) + {a_r}\left( {a_l^2 + b_l^2 + c_l^2} \right)}}{{{{\left( {{a_l}{b_r} - {b_l}{a_r}} \right)}^2} + {{\left( {{b_l}{c_r} - {c_l}{b_r}} \right)}^2} + {{\left( {{a_l}{c_r} - {c_l}{a_r}} \right)}^2}}} - 1} \right] \hfill \\
+{y_{rp}} = {b_r}{t_r} + {y_{or}} =  - D{b_r}\frac{{ - {a_l}\left( {{a_l}{a_r} + {b_l}{b_r} + {c_l}{c_r}} \right) + {a_r}\left( {a_l^2 + b_l^2 + c_l^2} \right)}}{{{{\left( {{a_l}{b_r} - {b_l}{a_r}} \right)}^2} + {{\left( {{b_l}{c_r} - {c_l}{b_r}} \right)}^2} + {{\left( {{a_l}{c_r} - {c_l}{a_r}} \right)}^2}}} \hfill \\
+{z_{rp}} = {c_r}{t_r} + {z_{or}} =  - D{c_r}\frac{{ - {a_l}\left( {{a_l}{a_r} + {b_l}{b_r} + {c_l}{c_r}} \right) + {a_r}\left( {a_l^2 + b_l^2 + c_l^2} \right)}}{{{{\left( {{a_l}{b_r} - {b_l}{a_r}} \right)}^2} + {{\left( {{b_l}{c_r} - {c_l}{b_r}} \right)}^2} + {{\left( {{a_l}{c_r} - {c_l}{a_r}} \right)}^2}}} \hfill \\ 
+\end{gathered}  \right.
+\end{equation}
+
+通过上述公垂线交点坐标，可以表达期望目标位置$(x_M, y_M, z_M)$的表达为
+\begin{equation}
+\left[ {\begin{array}{*{20}{c}}
+	{{x_m}} \\ 
+	{{y_m}} \\ 
+	{{z_m}} 
+	\end{array}} \right] = w\left[ {\begin{array}{*{20}{c}}
+	{{x_{lp}}} \\ 
+	{{y_{lp}}} \\ 
+	{{z_{lp}}} 
+	\end{array}} \right] + \left( {1 - w} \right)\left[ {\begin{array}{*{20}{c}}
+	{{x_{rp}}} \\ 
+	{{y_{rp}}} \\ 
+	{{z_{rp}}} 
+	\end{array}} \right],w \in [0,1]
+\end{equation}
+其中$w$可以视为权重系数，当$w=0.5$时，期望目标点是中垂线的中点。
+
+同理，需要对上述求解方法进行仿真分析。与上一小节相同，选择基线长度$D=10\ m$。实验所使用的转台使用的最小定位精读为$0.006\degree$，图像解算误差为2个像素点，相机的焦距为$f=100mm$，像元尺寸为$38\mu m$。根据转台转动精读和图像解算误差的定义，在仿真过程中引入$1%$的误差扰动，由此可以得到无人机在不同位置时，各个方向误差的大小。
+
+
+
+\section{立体视觉系统的标定的标定方法}
+
+

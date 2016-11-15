@@ -6,7 +6,25 @@
 
 \section{目标跟踪问题的概述}
 
- 
+\begin{algorithm2e}[H]
+	\SetAlgoLined
+%	\KwData{this text}
+%	\KwResult{how to write algorithm with \LaTeX2e }
+	\BlankLine
+	\SetKwInOut{Input}{Input}
+	\SetKwFunction{Track}{Track}
+	\SetKwFunction{Update}{Update}
+	\SetKwFunction{Initialization}{Initialization}
+	\Input{Image sequence $I_1, ..., I_T$ with bounding box $b_1$}
+	\Initialization($I_1$, $b_1$)\;
+	\For{$i=2$ \KwTo $T$}{
+		$b_i\ \leftarrow$ \Track{$I_i$}\;
+		$b_i\ \leftarrow$ \Update($b_t$, $b_{t-1}$, ..., $b_1$) \;
+	}
+	\caption{One-shot 目标跟踪算法}
+\end{algorithm2e}
+
+
 \section{形态学滤波方法进行图像预处理}
 
 形态学滤波（Morphological Filtering）方法是一组非线性图像运算算子。该系列算子主要包括腐蚀（Erode）、膨胀（Dilate）、开运算（Opening）和闭运算（Closing）四种基本运算。在此四种运算的基础之上，一般还可以拓展出边缘提取、凸包运算、连通区域标记等复杂运算。一般来说，由于上述算子主要通过像素之间位置，形态学处理的对象为二值图像。
@@ -168,7 +186,557 @@ PN学习包含四个部分：（1）一个待学习的分类器；（2）训练�
 
 上述例子表明：P-experts寻找视频序列中的时域上的结构性特征，并且假设目标是沿着轨迹线移动的，即，相邻帧之间的移动很小，且存在一定的相关性。P-experts记录目标在上一帧中的位置，并根据帧与帧之间的跟踪算法（这里采用的是LK光流法）来预测目标在当前帧中的位置。如果检测模块将跟踪算法预测到的目标在当前帧中的位置标记为负标签，那么P-experts就产生一个正的训练样本；N-experts寻找视频序列中的空间域上的结构性特征，并且假设目标在一个视频帧中只可能出现在一个位置。N-experts对检测模块在当前帧中的所有输出结果以及跟踪模块的输出结果进行分析，并找到具有最大可能性的那个区域。当前帧中所有目标可能出现的区域当中，如果某个区域同最大可能性区域之间没有重叠，就将其认定为负样本。另外，具有最大可能性的那个区域，被用于重新初始化跟踪模块。
 
+\section{基于滤波方法的目标跟踪方法研究}
+ 
+1. 基本要点
+
+1.1 Hann Window
+
+The Hann function is typically used as a window function in digital signal processing to select a subset of a series of samples in order to perform a Fourier transform or other calculations.
+
+1.2 Correlation
+
+- Ref: http://www.cnblogs.com/hanhuili/p/4266990.html
 
 
+- Correlation Filters作为衡量信号相似度的方法被用于跟踪，主要用于rigid模板
+- Cross-correlation $f \star g$的定义为
+
+\begin{align}
+\begin{array}{l} (f \star g)(\tau )\mathop  = \limits^{def} \int_{ - \infty }^\infty  {f*(t)g(t + \tau )dt} \\ (f \star g)(n)\mathop  = \limits^{def} \sum\limits_{ - \infty }^\infty  {f*[m]g(m + n)}  \end{array}
+\end{align}
+
+- 衡量两个函数在某个时刻τ的相似程度，如下图所示。
+
+%![img](http://images.cnitblog.com/blog/714517/201502/040044238596444.png)
+
+1.3 MOSSE
+
+% Ref:http://www.cs.colostate.edu/~draper/papers/bolme_cvpr10.pdf
+
+
+- 模板与滤波模板的互相关运算
+\begin{align}
+g=h\text{ }\otimes  f \qquad (2)
+\end{align}
+
+- $g$ 表示输出的响应图
+- $h$ 表示滤波模板
+- $f$ 表示输入图像
+
+- 定义互相关函数的快速傅里叶变换，即计算费时的卷积运算转换为普通的点乘运算。
+\begin{align}
+\mathcal{F}(g) = \mathcal{F}(h\otimes f)={{\mathcal{F}(h)}^{*}}\odot \mathcal{F}(f )
+\end{align}
+
+- $\mathcal{F}$ 表示傅里叶变换
+- $\odot$ 表示每个元素的点乘
+- $h^*$ 表示函数 $h$ 的共轭
+- 时间计算开销为$O(n\log n)$，其中$n$是图像中像素的个数
+
+- 对H函数的求解。为表达方便，上式用新的符号标记为
+\begin{align}
+G=F\odot H^*
+\end{align}
+因为是对于每个元素的点乘，由此可以得到对$H^*$的解析解
+\begin{align}
+H^* = \frac{G}{F}
+\end{align}
+
+- 考虑到对跟踪目标区域周边$m$个区块进行搜索，因此设计目标函数为
+\begin{align}
+\underset{{{H}^{*}}}{\mathop{\min }}\,\sum\limits_{i=1}^{m}{|{{H}^{*}}\odot{{F}_{i}}-{{G}_{i}}{{|}^{2}}} \qquad (5)
+\end{align}
+即对每一个输入的图像$F_i$和实际输出$G_i$是在频域的运算结果，目标是寻找合适的滤波器$H$，使得该滤波器与输入图像进行互相关运算后的输出结果与实际输出结果之间的误差最小。在频率域中，每一个运算都作用在图像的每一个元素上，由此可得
+\begin{align}
+\underset{H_{w,v}^{*}}{\mathop{\min }}\,\sum\limits_{i=1}^{m}{|H_{w,v}^{*}{{F}_{w,v,i}}-{{G}_{w,v,i}}{{|}^{2}}}\qquad (6)
+\end{align}
+对目标函数求导，寻找解析解
+\begin{align}
+\begin{array}{l} \frac{\partial }{{\partial H_{w,v}^*}}\sum\limits_{i = 1}^m {(H_{w,v}^*{F_{w,v,i}} - {G_{w,v,i}}) \cdot } {(H_{w,v}^*{F_{w,v,i}} - {G_{w,v,i}})^{\rm{*}}}{\rm{ = }}0\\  \Rightarrow \frac{\partial }{{\partial H_{w,v}^*}}\sum\limits_{i = 1}^m {H_{w,v}^*{F_{w,v,i}} \cdot {H_{w,v}}F_{w,v,i}^{\rm{*}} - H_{w,v}^*{F_{w,v,i}}G_{w,v,i}^{\rm{*}} - {H_{w,v}}F_{w,v,i}^{\rm{*}}G_{w,v,i}^{}{\rm{ + }}{G_{w,v,i}}G_{w,v,i}^{\rm{*}}} {\rm{ = }}0\\  \Rightarrow \sum\limits_{i = 1}^m {{F_{w,v,i}} \cdot {H_{w,v}}F_{w,v,i}^{\rm{*}} - {F_{w,v,i}}G_{w,v,i}^{\rm{*}}} {\rm{ = }}0\\  \Rightarrow {H_{w,v}}{\rm{ = }}\frac{{\sum\limits_{i = 1}^m {{F_{w,v,i}}G_{w,v,i}^{\rm{*}}} }}{{\sum\limits_{i = 1}^m {{F_{w,v,i}}F_{w,v,i}^{\rm{*}}} }} \qquad (7) \end{array}
+\end{align}
+对每一个元素求解，可以得到最优$H^*$函数的解析表达形式：
+\begin{align}
+H^*\text{=}\frac{\sum\limits_{i=1}^{m}{{{F}_{i}}\odot G_{i}^{\text{*}}}}{\sum\limits_{i=1}^{m}{{{F}_{i}}\odot F_{i}^{\text{*}}}}\qquad (8)
+\end{align}
+
+- 设计线性更新方式，可以得到模板$H$的更新公式：
+\begin{align}
+{{H}_{t}}=(1-\eta ){{H}_{t-1}}+\eta H(t)\qquad (9)
+\end{align}
+
+- 在运算过程中，将模板$H$与 输入的图像$f$做相关运算，在得到的响应图中，将数值最大的点作为当前图像模板的所在位置。
+
+- 一般而言，分子和分母分别进行更新
+\begin{align}
+H_t=\frac{A_t}{B_t}\\
+A_t=\mu F_t\odot G_t^*+(1-\mu)A_{t-1}\\
+B_t=\mu F_t\odot F_t^*+(1-\mu)B_{t-1}
+\end{align}
+
+
+
+
+
+
+1.4 Kernelized Correlation Filters
+
+- Ref:An Experimental Survey on Correlation Filter-based Tracking
+- 训练:  Input (F) *Gaussian ---> Kernel H
+- 更新:  Input(Z) * Kernel H --IFFT--> response map y
+
+1.4.1 Ridge Regression Problem
+
+- 定义输入输出函数关系$f(\mathbf{x}_i)=y_i$，即对于每一个输入$\mathbf{x}_i$都可以得到一个标签输出$y_i$，训练过程可以用最小化下列公式表达：
+\begin{align}
+\min_\mathbf{w}=\sum_{i}L(f(\mathbf{w},\mathbf{x}_i),y_i)+\lambda||\mathbf{w}||^2
+\end{align}
+
+- 其中，$\mathbf{w}$是对输入进行变换的参数，$\lambda$是正则化参数，避免目标方程过拟合，$L(\cdot)$是损失函数，可以根据需要进行设计。
+
+- 在SVM中，损失函数定义为 Hinge 损失，即$L(f(\mathbf{w},\mathbf{x}_i),y_i)=\max (0,1-y_i f(\mathbf{w},\mathbf{x}_i))^2$
+
+- 在Ridge回归中，损失函数的定义为二次损失，即
+
+$L(f(\mathbf{w},\mathbf{x}_i),y_i)=(y_i-f(\mathbf{w},\mathbf{x}_i))^2$
+
+- 如果函数$f(\cdot)$是对输入数据的线性变化，则可以得到解析解
+\begin{align}
+\mathbf{w}=(X^TX+\lambda I)^{-1}X^T\mathbf{y}
+\end{align}
+如果计算是在频域空间，则$X^T$需要变换为$X^H$，即$X^H=(X^*)^T$
+
+- 如果函数$f(\cdot)$是非线性变换，即将输入数据$\mathbf{x}$转换到特征空间$\varphi(\mathbf{x})$，则参数$\mathbf{w}$定义为$\mathbf{w}=\sum_i\alpha_i \varphi(\mathbf{x}_i)$，由此可以得到
+\begin{align}
+f(\mathbf{x}_i)=\sum_{j=1}^n\alpha_i \kappa(\mathbf{x}_i,\mathbf{x}_j)
+\end{align}
+其中，$ \kappa(\mathbf{x}_i,\mathbf{x}_j)=<\varphi(\mathbf{x}_i), \varphi(\mathbf{x}_j)>$是核函数，定义$K$是核函数矩阵，即$K_{ij}=\kappa(\mathbf{x}_i,\mathbf{x}_j)$
+
+此时目标函数的解为
+\begin{align}
+\mathbf{\alpha}=(K+\lambda I)^{-1}\mathbf{y}
+\end{align}
+
+- ​
+
+​
+
+1.4.2 引入循环矩阵求解目标函数
+
+%- Ref: High-Speed Tracking with Kernelized Correlation Filters
+%- http://blog.csdn.net/carrierlxksuper/article/details/46461245
+% Code: 84.edge_box
+
+
+- 引入循环矩阵的目的是产生一系列训练样本，从而可以简化计算量。
+
+- 为避免计算矩阵求逆，引入循环矩阵求解。定义一组基采样（Base Sample）为$\mathbf{x}=(x_0, x_1, ..., x_{n-1})$，则循环矩阵的定义为
+\begin{align}
+X=C(\mathbf{x})=\begin{pmatrix}x_{0}&x_{1}&...&x_{n-1}\\x_{n-1}&x_{0}&...&x_{n-2}\\...&...&...&...\\x_{1}&x_{2}&...&x_{0}\end{pmatrix}
+\end{align}
+循环矩阵可以展开成如下形式
+\begin{align}
+X=F \mathtt{diag} (\mathcal{F(\mathbf{x})})F^H
+\end{align}
+其中$F$是傅里叶变换矩阵，即$\mathcal{F}(\mathbf{x})=\sqrt{n}F\mathbf{x}$。此时可以得到参数$\mathbf{w}$在时域的表达式为
+\begin{align}
+\mathbf{w}=F\mathtt{diag}(\frac{\mathcal{F}(\mathbf{x})}{\mathcal{F}(\mathbf{x})^*\odot\mathcal{F}(\mathbf{x})+\lambda})F^H\mathbf{y}
+\end{align}
+在频域的表达式为
+\begin{align}
+\mathcal{F}(\mathbf{w})=\frac{\mathcal{F}(\mathbf{x})\odot\mathcal{F}(\mathbf{y})}{\mathcal{F}(\mathbf{x})^*\odot\mathcal{F}(\mathbf{x})+\lambda}
+\end{align}
+
+- 进一步推导
+\begin{align}
+\mathbf{\alpha}=(K+\lambda I)^{-1}\mathbf{y}
+\end{align}
+
+- $\mathbf{k}^{\mathbf{xx}}$是核矩阵的第一行，即$K=C(\mathbf{k}^{\mathbf{xx}})$
+
+- 引入核函数定义后，则Ridge回归对$\alpha$的求解公式变为
+\begin{align}
+\mathbf{\alpha}=(C(\mathbf{k}^{\mathbf{xx}})+\lambda I)^{-1}\mathbf{y}
+\end{align}
+
+\begin{align}
+\mathbf{\alpha}=(F\mathtt{diag}(\mathcal{F}(\mathbf{k}^{\mathbf{xx}}))F^H+\lambda I)^{-1}\mathbf{y}
+\end{align}
+
+则在时域的解为
+
+\begin{align}
+\mathbf{\alpha}=\mathcal{F}^{-1}(\frac{\mathcal{F}(\mathbf{y})}{\mathcal{F}(\mathbf{k}^{\mathbf{xx}})+\lambda})
+\end{align}
+
+​
+
+- 用一个核函数$\mathbf{k}$用于度量$\mathbf{x}$与$\mathbf{x'}$直接的关系，用符号$\mathbf{k}^{\mathbf{x}\mathbf{x'}}$表达
+
+- 一个传统的多项式核函数$\mathbf{k}^{\mathbf{x}\mathbf{x'}}=(\mathbf{x}^T\mathbf{x'}+a)^b$可以表达为
+
+\begin{align}
+\mathbf{k}^{\mathbf{x}\mathbf{x'}}=(\mathcal{F}^{-1}(\mathcal{F}(\mathbf{x})^*\odot\mathcal{F}(\mathbf{x'}))+a)^b
+\end{align}
+
+- 一个传统的高斯核函数$\mathbf{k}^{\mathbf{x}\mathbf{x'}}=\exp{-\frac{1}{\sigma^2}(||\mathbf{x}-\mathbf{x'}||^2)}$可以表达为
+\begin{align}
+\mathbf{k}^{\mathbf{x}\mathbf{x'}}=\exp(-\frac{1}{\sigma^2}(||\mathbf{x}||^2+||\mathbf{x'}||^2-2\mathcal{F}^{-1}(\mathcal{F}(\mathbf{x})^*\odot\mathcal{F}(\mathbf{x'})))
+\end{align}
+
+- 在检测过程中，可以根据一个基本采用样本$\mathbf{x}$ 和新的采样$\mathbf{z}$得到的置信区域
+
+根据回归方程的基本定义
+\begin{align}
+f(\mathbf{z})=\mathbf{w}^T\mathbf{z}=\sum_{j=1}^n\alpha_i \kappa(\mathbf{z},\mathbf{x}_j)
+\end{align}
+
+\begin{align}
+f(\mathbf{z})=C(\mathbf{k}^{\mathbf{x}\mathbf{z}})^T\mathbf{\alpha}\\
+f(\mathbf{z})=\mathcal{F}^{-1}(\mathcal{F}(\mathbf{k}^{\mathbf{x}\mathbf{z}})\odot\mathcal{F}(\mathbf{\alpha}))
+\end{align}
+
+其中$y$中数值最大的点的坐标为目标位置。
+
+- 更新策略
+\begin{align}
+\mathcal{F}(\mathbf{\alpha})_t=\mu\frac{\mathcal{F}(\mathbf{z})}{\mathcal{F}(\mathbf{k})+\lambda}+(1-\mu)\mathcal{F}(\mathbf{\alpha})_{t-1}
+\end{align}
+
+\begin{align}
+\mathcal{F}(\mathbf{k}_t)=\mu\mathcal{F}({\mathbf{k}^{\mathbf{x}\mathbf{z}}})+(1-\mu)\mathcal{F}(\mathbf{k}_{t-1})
+\end{align}
+
+​
+
+​
+
+1.5 引入概率来描述周边场景信息
+
+- Ref: Fast Tracking via Spatio-Temporal Context Learning
+
+
+- 一般而言，目标核心区域出现的信息是设计跟踪器的关键。但如果图像出现旋转和尺度变化，目标周边区域的图像信息同样可以作为有效信息进行处理。$\mathbf{x}^{*}\in \mathbb{R}^2$表示目标区域中心点所在位置，${{\Omega }_{c}}({{\mathbf{x}}^{*}})$ 表示在目标中心位置周边的图像区域，$\mathbf{z}$表示该区域中的一个像素点，$I(\mathbf{z})$表示该像素点对应的灰度值，$c(\mathbf{z})=(I(\mathbf{z}), \mathbf{z}))$表示在$\mathbf{z}$点的特征，${{X}^{c}}=\{\operatorname{c}(\mathbf{z})=(I(\mathbf{z}),\mathbf{z})|\mathbf{z}\in {{\Omega }_{c}}({{\mathbf{x}}^{*}})\}$ 表示在目标点周边场景（Context）所有像素点的集合。
+
+- 定义$o$ 表示目标出现在当前区域，由此可以用目标出现的可能性可以用似然函数来描述
+\begin{align}
+c(\mathbf{x})=P(\mathbf{x}|o)
+\end{align}
+根据边缘联合概率的定义，可以将上式展开
+\begin{align}
+c(\mathbf{x})=\sum_{c(\mathbf{z})\in X^c}P(\mathbf{x}, c(\mathbf{z})|o))
+\end{align}
+根据条件概率公式，可以进一步得到
+
+​
+\begin{align}
+c(\mathbf{x})=\sum_{c(\mathbf{z})\in X^c}P(\mathbf{x}|c(\mathbf{z}),o)P(c(\mathbf{z})|o)
+\end{align}
+​
+
+- 设计一个与高斯函数形状类似的置信区间映射（Confident Map），即
+\begin{align}
+c(\mathbf{x})=b\exp(-|\frac{\mathbf{x}-\mathbf{x}^{*}}{\alpha}|)
+\end{align}
+由此可以得到在目标点周边任意像素的概率分布情况。
+
+- 根据定义上下文先验可以根据灰度和权重函数相乘，来描述目标周边的表观信息
+\begin{align}
+P(c(\mathbf{z})|o))=I(\mathbf{z})\omega_\sigma(\mathbf{z}-\mathbf{x}^*)
+\end{align}
+权重函数的定义为一个高斯函数$\omega_{\sigma}(\mathbf{z})=a\exp(-\frac{|\mathbf{z}|}{\sigma^2})$
+
+- 定义似然函数，用于描述目标周围区域信息与目标位置直接的模型
+\begin{align}
+P(\mathbf{x}|\operatorname{c}(\mathbf{z}),o)={{h}^{sc}}(\mathbf{x}-\mathbf{z})
+\end{align}
+其中${{h}^{sc}}(\mathbf{x}-\mathbf{z})$是目标位置与其周边场景中某一个点的相对距离和方向的度量，且不是一个对称函数。
+
+- 根据置信区间映射的定义和全概率展开公式，可以得到
+\begin{align}
+b\exp(-|\frac{\mathbf{x}-\mathbf{x}^{*}}{\alpha}|)=\sum_{c(\mathbf{z})\in X^c}P(\mathbf{x}|c(\mathbf{z}),o)P(c(\mathbf{z})|o)\\
+=\sum_{\mathbf{z}\in\Omega_c(\mathbf{x}^*)}{{h}^{sc}}(\mathbf{x}-\mathbf{z})I(\mathbf{z})\omega_\sigma(\mathbf{z}-\mathbf{x}^*)\\
+=h^{sc}(\mathbf{x})\otimes (I(\mathbf{x})\omega_\sigma(\mathbf{x}-\mathbf{x}^*))
+\end{align}
+
+- 根据卷积定理求解似然函数，得到当前目标点的周边场景模型
+\begin{align}
+\mathcal{F}(b\exp(-|\frac{\mathbf{x}-\mathbf{x}^{*}}{\alpha}|))=\mathcal{F}(h^{sc}(\mathbf{x}))\odot\mathcal{F}(I(\mathbf{x})\omega_\sigma(\mathbf{x}-\mathbf{x}^*))
+\end{align}
+
+\begin{align}
+h^{sc}(\mathbf{x})=\mathcal{F}^{-1}(\frac{\mathcal{F}(b\exp(-|\frac{\mathbf{x}-\mathbf{x}^{*}}{\alpha}|))}{\mathcal{F}(I(\mathbf{x})\omega_\sigma(\mathbf{x}-\mathbf{x}^*))})
+\end{align}
+
+- 利用该模型，可以得到在时序空间场景模型，定义其更新策略为线性模型
+\begin{align}
+H^{stc}_{t+1}=(1-\mu)H^{stc}_{t}+\mu h^{sc}_t
+\end{align}
+
+- 基于时序场景的模型，可以得到下一个时刻置信区间的更新
+\begin{align}
+c_{t+1}(\mathbf{x})=\mathcal{F}(h^{sc}_{t+1}(\mathbf{x}))\odot\mathcal{F}(I_{t+1}(\mathbf{x})\omega_{\sigma_{t}} (\mathbf{x}-\mathbf{x}^*_t))
+\end{align}
+​
+
+- 此时建立目标函数，期寻找合适的$\mathbf{x}^*$使得置信区间的值最大
+\begin{align}
+\mathbf{x}^{*}_{t+1}=\arg\max_{\mathbf{x}\in \Omega_c(\mathbf{x}^*_t)}c_{t+1}(\mathbf{x})
+\end{align}
+
+- 根据连续两帧估计目标尺度变化的大小
+\begin{align}
+s_t^{'}=\sqrt{\frac{c_t(\mathbf{x}_t^*)}{c_{t-1}(\mathbf{x}_{t-1}^*)}}
+\end{align}
+
+- 根据过去一段时间，目标尺度的变化大小的平均值
+\begin{align}
+\bar{s}_t=\frac{1}{n}\sum_{i=1}^{n}s_{t-i}^{'}
+\end{align}
+
+- 下一个时刻目标尺度变化大小的计算
+\begin{align}
+s_{t+1}=(1-\lambda)s_t+\lambda\bar{s}_t
+\end{align}
+
+- 同时，更新权重函数参数$\sigma$
+\begin{align}
+\sigma{t+1}=s_t\sigma_t
+\end{align}
+
+
+
+
+1.5 局部跟踪
+
+- Ref: [Real-time part-based visual tracking via adaptive correlation filters](http://blog.csdn.net/tjdatamining/article/details/45577295)
+
+Ref: http://blog.csdn.net/tjdatamining/article/details/45577045
+
+
+- 在图像$\mathbf{x}$位置，新观测图像$\mathbf{z}$置信分数的计算
+\begin{align}
+\hat{f}(\mathbf{z})=\mathcal{F}^{-1}(\mathcal{F}(\mathbf{k}^{\mathbf{x}\mathbf{z}})\odot\mathcal{F}(\mathbf{\alpha}))
+\end{align}
+​
+
+- 联合置信度
+\begin{align}
+C^t=\sum_{i=1}^Nw_i^t\hat{f}^t_{p(i)}
+\end{align}
+其中，$\hat{f}^t_{p(i)}$表示在候选目标第$i$个区域的置信度，$p(i)$是局部响应的相关位置。
+
+- PSR的定义
+
+- 贝叶斯框架
+
+- 观测到的置信图序列$O^t=[o^1, o^2, ..., o^n]$
+
+- 描述物体仿射变换的参数$s^t$ 
+
+- 最优的仿射参数$\hat{s}^t$可以通过极大后验进行计算
+\begin{align}
+\hat{s}^t=\arg\max_{s^t_j}p(s^t_j|O^t)
+\end{align}
+
+- 极大后验的计算可以转换为迭代求解
+\begin{align}
+p(s^t|O^t)\propto p(o^t|s^t)\int p(s^t|s^{t-1})p(s^{t-1}|O^{t-1})ds^{t-1}
+\end{align}
+其中$ p(o^t|s^t)$是当前时刻的观测的似然函数。此时，最大化该似然函数，就是最大化上式中的后验概率。这里设计该观测函数为
+\begin{align}
+p(o^t|s^t)=\frac{1}{|M^t|}\sum C^t(s^t)\odot M^t
+\end{align}
+其中$M^t$是一个空间约束模板（Spatial Layout Constraint Mask），该模板主要通过$N$各余弦函数窗口组成，使得靠近边缘的像素接近零。
+
+- 一般来说，物体在连续两帧主要做布朗运动（Brownian Motion），则连续两个状态的模型可以用高斯分布来表达
+\begin{align}
+p(s^t|s^{t-1})=\mathcal{N}(s^t|s^{1:t-1},\Psi)
+\end{align}
+​
+
+1.6 对尺度变换的处理
+
+- MOSSE和KCF方法只针对固定大小的目标，即搜索窗口的大小是固定的。
+- SAMF和DSST采用尺度池方法（Scaling Pool），在对输入的图像按一定尺寸进行切割，之后对每一个不同大小的图像进行后续运算。
+
+1.7 DDST方法
+
+%Ref: http://blog.csdn.net/roamer_nuptgczx/article/details/50134633
+
+%Ref: http://blog.csdn.net/autocyz/article/details/48651013
+
+%Ref HOG: https://xiangjiang.live/2016/02/09/histograms-of-oriented-gradients/
+
+1.7.1 基本思想
+
+- 核心是利用多个维度的特征来解决尺度变化问题
+- 一维滤波器来估计目标的尺度变换
+- （1 灰度 + 27 Hog）* 2D Hann Window
+- 二维滤波器来估计目标的旋转变换
+- Resize 固定尺寸33个
+- 分别提取31D HOG 特征
+- 级联成金字塔 33层 * 1D Hann Window
+- 三位滤波器来估计目标尺度空间的位置变化
+
+1.7.2 经典多维度特征互相关滤波方法
+
+- 对于一副图像，我们使用$d$维特征来进行描述，定义在目标区域的一块图像的大小为$f$
+- 对于不同维度的特征用$f^l\ l \in {1, 2, ..., d}$来表达
+
+\begin{align}
+\underset{{{H}^{*}}}{\mathop{\min }}\,\sum\limits_{l=1}^{d}{|{{H}^{*}}\odot{{F}^{l}}-{{G}^{l}}{{|}^{2}}}+\lambda \sum_{l=1}^{d}|H^{l}|^2
+\end{align}
+
+​	可以得到解析解
+\begin{align}
+H^l\text{=}\frac{\sum\limits_{i=1}^{m}{{{F}^{l}}\odot {G^{i}}^{{*}}}}{\sum\limits_{i=1}^{d}{{{F}^{i}}\odot {F^{i}}^{\text{*}}}+\lambda}=\frac{A^{l}_{t}}{B^{l}_{t}+\lambda}
+\end{align}
+
+- 更新策略
+
+\begin{align}
+A_t^l=(1-\mu)A_{t-1}^{l}+\mu G_{t}^{*}\odot F_{t}^{l}\\
+B_t^l=(1-\mu)B_{t-1}^{l}+\mu \sum_{l=1}^{d}{F_{t}^{l}}^{*}\odot F_{t}^{l}\\
+\end{align}
+
+- 对目标检测的计算，即响应区域的计算
+
+\begin{align}
+\mathbf{y}_t=\mathcal{F}^{-1}(\frac{\sum_{i=1}^{d}{A^{l}_{t-1}}^*\odot Z^{l}_{t}}{B_{t-1}+\lambda})
+\end{align}
+
+1.7.3 基本流程
+
+- 先利用二维Filter确定新位置
+
+- 再用一维Filter精确估计目标的尺度变化
+
+- 尺度选择原则
+
+$a^nP_{t-1}\times a^nR_{t-1}\ n \in \{-\frac{S-1}{2},...,\frac{S-1}{2}\} $
+
+- a = 1.02
+- S = 33，即尺度滤波器的总尺度级数。
+
+- 根据不同尺度缩放的比例，在原图中进行截取
+
+- 将截取的图像缩放会同等比例 $scale_model_sz$ ，计算HOG特征
+
+- 将HOG特征转换为1D向量
+
+1.7.4 多尺度的处理
+
+- 在目标区域提取$M\times N \times S$的立方体，其中$M$和$N$代表高和宽，$S$代表尺度等级。
+- 构造一个三维高斯函数
+
+
+- 计算互相关输出
+\begin{align}
+\mathbf{y}=\frac{\mathcal{F}^{-1}(\sum_{i=1}^{d}{A^{l}}^*\odot Z^{l})}{B+\lambda}
+\end{align}
+
+
+
+
+1.7.5 提速算法
+
+- Sub-grid迭代求解互相关值
+\begin{align}
+\mathbf{y}_t=\mathcal{F}^{-1}(\frac{\sum_{i=1}^{d}{A^{l}_{t-1}}^*\odot Z^{l}_{t}}{B_{t-1}+\lambda})
+\end{align}
+
+- 在$Y_t$的高频位置采用Zero-Padding方法，使其尺寸等于Interpolation Grid
+
+- 使得采样维度下降的方法
+
+- 跟踪目标模板$u_t$的更新
+\begin{align}
+u_t = (1-\mu)u_{t-1}+\mu f_t
+\end{align}
+
+- $A_t^l$可以化简为
+\begin{align}
+A_t^l=G^* \mathcal{F}(u_t^l)
+\end{align}
+
+- 建立一个映射矩阵$P_t$，其维度大小是$\hat{d} \times d$，其中$\hat{d}$是压缩特征的维数。该矩阵的计算方式通过使构造误差最小得到，即最下化一下公式
+\begin{align}
+\epsilon=\sum_\mathbf{n}||u_t(\mathbf{n})-P_t^TP_tu_t(\mathbf{n})||^2
+\end{align}
+其中$\mathbf{n}$是在模板$u_t$中的一个元素。当映射矩阵满足$P_tP_t^T=I$时得到最优解，具体求解方式是对Auto-Correlation矩阵进行特征值分解
+\begin{align}
+C_t=\sum_{\mathbf{n}}u_t(\mathbf{n})u_t(\mathbf{n})^T
+\end{align}
+其中映射矩阵$P_t$的每一行是$C_t$矩阵的特征向量。
+
+- 由此两个滤波器的计算可以作用在压缩之后的采样图像上
+
+\begin{align}
+\hat{F}_t=\mathcal{F}(P_tf_t)\\
+\hat{U}_t=\mathcal{F}(P_tu_t)
+\end{align}
+
+- 使用压缩后的采样后，平移滤波器的数学表达为
+\begin{equation}
+\mathbf{y}_t={\mathcal{F}^{-1}}(\frac{\sum_{i=1}^{\hat{d}}{\hat{A}^{*l}_{t-1}} \odot \hat{Z}^{l}_{t}}{\hat{B}_{t-1}+\lambda})
+\end{equation}
+
+%\begin{align}
+%\mathbf{y}_t=\mathcal{F}^{-1}(\frac{\sum_{i=1}^{\hat{d}}{\hat{A}^{l}_{t-1}}^*\odot \hat{Z}^{l}_{t}}{\hat{B}_{t-1}+\lambda})
+%\end{align}
+
+- 对尺度滤波器的压缩处理（见原文）
+
+ 1.7.6 思考
+
+尺度变换只针对于整体缩放，是否有考虑横向和纵向不同尺寸的缩放？
+
+1.8 对Filter和Loss Function的改进
+
+- 原始目标函数
+\begin{align}
+\min_\mathbf{w}=\sum_{i}l(f(\mathbf{x}_i)-y_i)+\lambda||\mathbf{w}||^2_2
+\end{align}
+其中$f(\mathbf{x}_i)=\mathbf{w}^T\varphi(\mathbf{x}_i)$
+
+- Loss Function可以改造为
+\begin{align}
+l \in \{l_1, l_1l_2, l_{2,1}\}
+\end{align}
+
+- Loss-1 允许误差巨大变化，能够忽略目标表观的显著变化
+- Loss-1,2 对全局改变不敏感，能更在处理被遮挡和目标表观缓慢变化情况。
+- Loss-2,1 能够处理局部表观变化的情况
+
+- 原始目标函数是NP-hard问题，目标函数可以等价变换为
+\begin{align}
+\min_{\mathbf{w}\ \mathbf{e}}=\sum_{i}l(e_i)+\lambda||\mathbf{w}||^2_2\\
+s.t.\ e_i=y_i - f(\mathbf{x}_i)
+\end{align}
+
+- $e_i$描述回归值与真实值之间的误差
+- $y_i$是二维高斯函数
+- 变换后的目标函数是凸函数
+
+- 经过变换的函数仍然是一个NP-hard问题，因此只能通过迭代方法求解
+\begin{align}
+\min_{\mathbf{w}\ \mathbf{e}}=\sum_{i}(f(\mathbf{x}_i) + e_i - y_i)^2+\lambda||\mathbf{w}||^2_2 + \tau \sum_i l(e_i)\\
+\end{align}
+上述公式可以转化为两部分分别进行求解
+\begin{align}
+\min_{\mathbf{w}}||\mathbf{f}(\mathbf{X})+\mathbf{e}-\mathbf{y})||^2_2+\lambda||\mathbf{w}||^2_2\\
+\min_{\mathbf{e}}||\mathbf{f}(\mathbf{X})+\mathbf{e}-\mathbf{y})||^2_2+\tau l(\mathbf{e})\\
+\end{align}
+其中，$\mathbf{X}$是采样矩阵，每一行代表一个采样。
+
+- 对第一个的求解和传统方法一样
+
+- 对第二个的求解需要根据不同损失函数进行设计
+ 2. 特征选择
+
+- HOG特征基于每一个原包的梯度统计特性，局部鲁棒性强，但对目标发生形变是描述效果差。
+- Color直方图基于全局统计，在一定程度上具有全局不变性。
+- ​
 
  

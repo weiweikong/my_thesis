@@ -4,7 +4,7 @@
  
 Kendoul\cite{kendoul2012survey}将无人机系统根据其尺寸、载荷等型号将无人机分为五类。根据本文研究内容的需要，本文将上述类别扩展到固定翼领域。
 
-1) 类别一（Class I）：该类别主要指工业和军事领域中的全尺寸无人机系统。这类系统具有较大的载荷、留空时间和工作半径。其典型型号如美国军方的MQ-4C无人机和波音公司的Unmanned Little Bird （ULB）无人直升机。
+类别一（Class I）：该类别主要指工业和军事领域中的全尺寸无人机系统。这类系统具有较大的载荷、留空时间和工作半径。其典型型号如美国军方的MQ-4C无人机（如图\ref{fig:appendix_03}所示)和波音公司的Unmanned Little Bird （ULB）无人直升机。
 %Category I: This category regard to full-scale unmanned
 %aircraft. The main feature of this category is their signiﬁcant
 %payload, endurance, and range, but also important the possi-
@@ -12,8 +12,14 @@ Kendoul\cite{kendoul2012survey}将无人机系统根据其尺寸、载荷等型�
 %providing an excellent test bed for complex and risky ﬂight
 %tests. The Boeing Unmanned Little Bird (ULB) helicopter and
 % MQ-4C Triton are good examples of this category.
+\begin{figure}[htb]   
+	\centering
+	\includegraphics[width=0.5\textwidth]{figs/appendix_03.pdf}
+	\caption{MQ-4C}
+	\label{fig:appendix_03}
+\end{figure}
 
-2) 类别二（CLass II）：
+类别二（CLass II）：该类别主要指中等大小尺寸的无人机平台，其有效载荷一般为$10\ kg$以上，起飞重量不小于$30\ kg$，无人机具有完备的自主导航和任务能力。Yamaha RMAX直升机（如图\ref{fig:appendix_02}所示）、德国宇航局的Solar HALE和ELHPSA型固定翼均属于此类别。
 %Category II: Medium-scale UAS that are available as
 %autonomous or semi-autonomous platforms and have signiﬁ-
 %cant payload (more than 10 kg), with a total weight of more
@@ -22,8 +28,14 @@ Kendoul\cite{kendoul2012survey}将无人机系统根据其尺寸、载荷等型�
 %of navigation and mission sensors could be conﬁgured on these
 %platforms, which are generally well engineered with some level
 %of dependability.
+\begin{figure}[htb]   
+	\centering
+	\includegraphics[width=0.5\textwidth]{figs/appendix_02.pdf}
+	\caption{Yamaha RMAX直升机平台}
+	\label{fig:appendix_02}
+\end{figure}
 
-3) 类别三（Class III）：
+类别三（Class III）：该类别的无人机主要指有效载荷在$2\ kg$至$10\ kg$之间的无人机平台，Bergen公司的Vario Benzin Trainer直升机和BAE System的Kingfisher固定翼（如图\ref{fig:appendix_03}所示）均属于此类别。
 %Category III: Small-scale UAV are those who have a
 %payload of several kilograms (2 to 10 kg) and a total weight
 %of less than 30 kg. Helicopters such as the Vario Benzin Trainer
@@ -33,7 +45,14 @@ Kendoul\cite{kendoul2012survey}将无人机系统根据其尺寸、载荷等型�
 %but they can still carry most of the navigation and mission
 %sensors.
 
-4) 类别四（Class IV）：
+\begin{figure}[htb]   
+	\centering
+	\includegraphics[width=0.5\textwidth]{figs/appendix_01.pdf}
+	\caption{Kingfisher固定翼平台}
+	\label{fig:appendix_01}
+\end{figure}
+
+类别四（Class IV）：该类别无人机最为常见，例如大疆的F450系列，德国公司的产品Hummingbird（如图\ref{fig:appendix_04_AscTec_Hummingbird}所示）等。该类型无人机的有效载荷不超过$2\ kg$，主要用于科研单位进行算法的初步测试。由于其有有效载荷重量的约束，这些平台的自主能力受到一定的限制。
 %Category IV: Mini-scale UAV that are man-portable
 %and can ﬂy outdoors as well as in conﬁned and indoor
 %environments. Frog (UAV), DJI NAZA F450 (China), and
@@ -42,8 +61,15 @@ Kendoul\cite{kendoul2012survey}将无人机系统根据其尺寸、载荷等型�
 %and total weight can range from hundreds of grams to a few
 %kilograms. However, due to the limited payload, only small
 %conventional sensors and lightweight sensors are available.
+\begin{figure}[htb]   
+	\centering
+	\includegraphics[width=0.5\textwidth]{figs/appendix_04_AscTec_Hummingbird.pdf}
+	\caption{AscTec公司的Hummingbird四旋翼平台}
+	\label{fig:appendix_04_AscTec_Hummingbird}
+\end{figure}
 
-5) 类别五（Class V）：
+
+类别五（Class V）：这是类别中的最小一类，这类无人机质量一般小于$1\ kg$，例如Seiko Epson的小型无人机系列和PD-100“黑锋”无人机(如图\ref{fig:appendix_05_maxresdefault}所示)。
 %Category V: The last category is about micro air vehicles
 %(MAVs) with less than 100 g payload, such as the Epson micro
 %ﬂying robot, X.R.B helicopter, which are mainly produced for
@@ -51,6 +77,13 @@ Kendoul\cite{kendoul2012survey}将无人机系统根据其尺寸、载荷等型�
 %and avionics are difﬁcult to carry on these machines.
 %B. Motivation for the Scope of This Survey
 %Compare with other phases during different automated
+\begin{figure}[htb]   
+	\centering
+	\includegraphics[width=0.5\textwidth]{figs/appendix_05_maxresdefault.pdf}
+	\caption{PD-100 无人机平台}
+	\label{fig:appendix_05_maxresdefault}
+\end{figure}
+
 
 \begin{landscape}
 	\renewcommand{\thefootnote}{\fnsymbol{footnote}}
