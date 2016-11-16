@@ -27,7 +27,7 @@
 
 \section{形态学滤波方法进行图像预处理}
 
-形态学滤波（Morphological Filtering）方法是一组非线性图像运算算子。该系列算子主要包括腐蚀（Erode）、膨胀（Dilate）、开运算（Opening）和闭运算（Closing）四种基本运算。在此四种运算的基础之上，一般还可以拓展出边缘提取、凸包运算、连通区域标记等复杂运算。一般来说，由于上述算子主要通过像素之间位置，形态学处理的对象为二值图像。
+形态学滤波（Morphological Filtering）方法是一组非线性图像运算算子。该系列算子主要包括腐蚀（Erode）、膨胀（Dilate）、开运算（Opening）和闭运算（Closing）四种基本运算。在此四种运算的基础之上，一般还可以拓展出边缘提取、凸包运算、连通区域标记等复杂运算。通常而言，由于上述算子主要通过像素之间位置，形态学处理的对象为二值图像。
 
 在有人机的感知规避领域，机载雷达是应用最为广泛的周边环境的感知器。除此之外，安装在机身各个位置的摄像头也是感知飞行器周边环境的重要传感器。一般而言，这些摄像头主要用于在空中识别周边的其他飞行器。由于民航飞行器的空间间隔一般较大，飞行器的成像尺寸一般较小，传统的预处理方法容易将这类小型目标当做噪声忽略。2011年，卡内基梅隆大学的三位学者使用形态学滤波方法对微小无人机检测的图像进行预处理\cite{dey2011cascaded}，这篇文章图像预处理和图像检测的研究背景与本文的背景类似。
 \begin{figure}[htb]   
@@ -37,7 +37,7 @@
 	\label{fig:01_small_uav_light_black}
 \end{figure}
 
-针对本文涉及到的无人机目标识别问题，形态学滤波对图像预处理仍然是一个较为理想的方法。无人机距离摄像机较远的位置，由于机翼颜色和光照的影响，无人机的成像一般为一个亮点或一个暗点。对于试验中使用的白色无人机而言，在一次降落过程中，该无人机在距离摄像机$400\ m$左右的距离时，其成像效果如图\ref{fig:01_small_uav_light_black}所示。图中左上侧的矩形框是无人机目标放大后的结果。通过成像结果可以看到，左侧图像为无人机在转弯时，由于机翼为白色且面积较大，因此成像为一个白色为主的亮斑；右侧图像是无人机转弯完成后，无人机侧面虽然仍为白色，但由于反光面积相对较小，所以在相机中的成像为黑色为主的亮斑。
+针对本文涉及到的无人机目标识别问题，形态学滤波对图像预处理仍然是一种较为理想的方法。无人机距离摄像机较远的位置，由于机翼颜色和光照的影响，无人机的成像一般为一个亮点或一个暗点。对于试验中使用的白色无人机而言，在一次降落过程中，该无人机在距离摄像机$400\ m$左右的距离时，其成像效果如图\ref{fig:01_small_uav_light_black}所示。图中左上侧的矩形框是无人机目标放大后的结果。通过成像结果可以看到，左侧图像为无人机在转弯时，由于机翼为白色且面积较大，因此成像为一个白色为主的亮斑；右侧图像是无人机转弯完成后，无人机侧面虽然仍为白色，但由于反光面积相对较小，所以在相机中的成像为黑色为主的亮斑。
 
 
 对于试验中使用的中等型号的无人机而言，其在距离摄像机$800\ m$左右的距离时，其成像效果如图\ref{fig:02_big_uav_light_black}所示。通过比较两种型号无人机的成像特性，本文设计将开运算与闭运算处理结果相减作为预处理的结果，主要针对小型无人机出现的白色和黑色亮斑变化情况进行处理。
@@ -75,6 +75,9 @@
 
 
 \section{基于主动态轮廓线的轮廓线的目标跟踪方法研究}
+
+
+
 
 
 
@@ -681,44 +684,33 @@ C_t=\sum_{\mathbf{n}}u_t(\mathbf{n})u_t(\mathbf{n})^T
 \begin{equation}
 \mathbf{y}_t={\mathcal{F}^{-1}}(\frac{\sum_{i=1}^{\hat{d}}{\hat{A}^{*l}_{t-1}} \odot \hat{Z}^{l}_{t}}{\hat{B}_{t-1}+\lambda})
 \end{equation}
-
 %\begin{align}
 %\mathbf{y}_t=\mathcal{F}^{-1}(\frac{\sum_{i=1}^{\hat{d}}{\hat{A}^{l}_{t-1}}^*\odot \hat{Z}^{l}_{t}}{\hat{B}_{t-1}+\lambda})
 %\end{align}
-
 - 对尺度滤波器的压缩处理（见原文）
-
  1.7.6 思考
-
 尺度变换只针对于整体缩放，是否有考虑横向和纵向不同尺寸的缩放？
-
 1.8 对Filter和Loss Function的改进
-
 - 原始目标函数
 \begin{align}
 \min_\mathbf{w}=\sum_{i}l(f(\mathbf{x}_i)-y_i)+\lambda||\mathbf{w}||^2_2
 \end{align}
 其中$f(\mathbf{x}_i)=\mathbf{w}^T\varphi(\mathbf{x}_i)$
-
 - Loss Function可以改造为
 \begin{align}
 l \in \{l_1, l_1l_2, l_{2,1}\}
 \end{align}
-
 - Loss-1 允许误差巨大变化，能够忽略目标表观的显著变化
 - Loss-1,2 对全局改变不敏感，能更在处理被遮挡和目标表观缓慢变化情况。
 - Loss-2,1 能够处理局部表观变化的情况
-
 - 原始目标函数是NP-hard问题，目标函数可以等价变换为
 \begin{align}
 \min_{\mathbf{w}\ \mathbf{e}}=\sum_{i}l(e_i)+\lambda||\mathbf{w}||^2_2\\
 s.t.\ e_i=y_i - f(\mathbf{x}_i)
 \end{align}
-
 - $e_i$描述回归值与真实值之间的误差
 - $y_i$是二维高斯函数
 - 变换后的目标函数是凸函数
-
 - 经过变换的函数仍然是一个NP-hard问题，因此只能通过迭代方法求解
 \begin{align}
 \min_{\mathbf{w}\ \mathbf{e}}=\sum_{i}(f(\mathbf{x}_i) + e_i - y_i)^2+\lambda||\mathbf{w}||^2_2 + \tau \sum_i l(e_i)\\
@@ -729,14 +721,27 @@ s.t.\ e_i=y_i - f(\mathbf{x}_i)
 \min_{\mathbf{e}}||\mathbf{f}(\mathbf{X})+\mathbf{e}-\mathbf{y})||^2_2+\tau l(\mathbf{e})\\
 \end{align}
 其中，$\mathbf{X}$是采样矩阵，每一行代表一个采样。
-
 - 对第一个的求解和传统方法一样
-
 - 对第二个的求解需要根据不同损失函数进行设计
  2. 特征选择
-
 - HOG特征基于每一个原包的梯度统计特性，局部鲁棒性强，但对目标发生形变是描述效果差。
 - Color直方图基于全局统计，在一定程度上具有全局不变性。
-- ​
 
- 
+\section{引入转台运动后的目标位置估计}
+\subsection{目标在像平面位置的平滑}
+
+
+
+\begin{figure}[htb]   
+	\centering
+	\includegraphics[width=0.8\textwidth]{figs/chp04/chp04_01_delta_time_stamp.pdf}
+	\caption{一组降落实验中的图像时间间隔采样情况}
+	\label{fig:chp04_01_delta_time_stamp}
+\end{figure}
+
+\begin{figure}[htb]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp04/chp04_02_pan_tilt_status.pdf}
+	\caption{时间采样间隔的对转台读数的影响情况}
+	\label{fig:chp04_02_pan_tilt_status}
+\end{figure}

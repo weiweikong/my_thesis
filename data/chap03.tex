@@ -18,7 +18,6 @@
 \subsection{长基线立体视觉成像原理}
 
 
-
 \begin{figure}[!tb]
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp03_stereo/chp03_vision_01_theory_diagram.pdf}	
@@ -272,6 +271,8 @@ z_r = c_r t_r + z_{or}
 \begin{equation}
 J = \|(x_{lp}, y_{lp}, z_{lp}) - (x_{rp}, y_{rp}, z_{rp}) \|_2^2
 \end{equation}
+
+
 因此现在求解目标近似点问题转换为求解最短线段的位置，为了得到距离函数的最小值，即距离最短时改线段的位置。将距离函数展开后可以得到
 \begin{equation}  	
 \begin{gathered}
@@ -399,10 +400,266 @@ t_r=D \frac{\displaystyle a_l(a_la_r + b_lb_r + c_lc_r)  - a_r (a_l^2 + b_l^2 + 
 \end{equation}
 其中$w$可以视为权重系数，当$w=0.5$时，期望目标点是中垂线的中点。
 
-同理，需要对上述求解方法进行仿真分析。与上一小节相同，选择基线长度$D=10\ m$。实验所使用的转台使用的最小定位精读为$0.006\degree$，图像解算误差为2个像素点，相机的焦距为$f=100mm$，像元尺寸为$38\mu m$。根据转台转动精读和图像解算误差的定义，在仿真过程中引入$1%$的误差扰动，由此可以得到无人机在不同位置时，各个方向误差的大小。
+同理，需要对上述求解方法进行仿真分析。与上一小节相同，选择基线长度$D=10\ m$。实验所使用的转台使用的最小定位精读为$0.006\degree$，图像解算误差为2个像素点，相机的焦距为$f=100\ mm$，像元尺寸为$38\mu m$。根据转台转动精读和图像解算误差的定义，在仿真过程中引入$1\%$和$5\%$的扰动量，由此可以得到无人机在不同位置时，各个方向误差的大下。不同扰动情况下的误差图如\ref{fig:chp03_vision_13_long_range}所示。
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=\textwidth]{figs/chp03_stereo/chp03_vision_13_long_range.pdf}	
+\caption{探测距离为$4000\ m$时各个方向的误差}
+\label{fig:chp03_vision_13_long_range}
+\end{figure}
+通过分析上图的颜色变化可以发现，系统的误差由远及近的下降速率为非线性，其中系统误差在远距离时明显高于近距离。同时，系统扰动对$\mathbf{j}^{O,c}$方向的精读影响较大。但由于该方向是无人机距离期望降落点的距离，因此在远端出现较大误差时，舰载引导系统提供的导航信息主要用于控制无人机的横向控制回路，使得尽可能靠近跑道中心线。
+
+为了更好分析近距离系统扰动对位置解算的干扰情况，图\ref{fig:chp03_vision_12_short_range}所示为最后降落前$280\ m$左右的误差分布。可以看到，在$\mathbf{i}^{O,l}$方向，扰动对目标的影响相对较小；在$\mathbf{j}^{O,l}$方向和在$\mathbf{k}^{O,l}$方向，误差明显下降，但在跑道中心线两侧的误差仍然较大。因此，需要引入其他传感器，针对$\mathbf{j}^{O,l}$方向目标进行更为精确的测量。
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp03_stereo/chp03_vision_12_short_range.pdf}	
+	\caption{探测距离为$280\ m$时各个方向的误差}
+	\label{fig:chp03_vision_12_short_range}
+\end{figure}
 
 
+在不同扰动误差情况下，中心位置误差的大小如表\ref{label:chp03_stereo_1}和\ref{label:chp03_stereo_2}所示。表中误差表明，在最后$500\ m$的降落过程中，在扰动较小的情况下，系统能够提供横向偏差和高度的有效导航信息；在远距离（$4\ km$）解算时，系统的整体误差较大。因此，对于中小型无人机而言，需要将下降航线的捕获点设计在$1000\ m$左右的位置，以便引导系统能够提供较好的初始引导信息。
+\begin{table}[htb]
+	\centering
+	\caption{探测距离为$4000\ m$时，扰动为$1\%$时误差列表}
+	\label{label:chp03_stereo_1}
+	\begin{tabular}{crrrrrrrrr}
+		\hline
+		误差(m)/距离(m)     & 4000    & 3000   & 2000     & 1000  & 500   & 200   & 100   & 50     \\ \hline
+		Xerror  & -1.44   & -1.16  & -0.63  & -0.65   & -0.25 & -0.10 & -0.05 & -0.05\\ 
+		Yerror  & 1141.92 & 692.31 & 333.44 & 195.65  & 23.82 & 3.92  & 1.00  & 0.25   \\
+		Zerror  & 133.42  & 82.62  & 39.24  & 22.70   & 2.43  & 0.28  & 0.03  & -0.02  \\ \hline
+		
+	\end{tabular}
+\end{table}
+
+\begin{table}[htb]
+	\centering
+	\caption{探测距离为$4000\ m$时，扰动为$5\%$时误差列表}
+	\label{label:chp03_stereo_2}
+	\begin{tabular}{crrrrrrrrr}
+		\hline
+		误差(m)/距离(m)     & 4000    & 3000    & 2000      & 1000  & 500    & 200   & 100   & 50    \\ \hline
+		Xerror  & -3.33   & -3.00   & -2.53   & -2.14   & -1.02  & -0.46 & -0.23 & -0.13 \\ 
+		Yerror & 2663.28 & 1800.31 & 1000.11 & 642.87  & 100.23 & 18.19 & 4.17  & 1.23  \\
+		Zerror & 320.66  & 214.93  & 117.73  & 74.57   & 10.24  & 1.32  & 0.09  & -0.07 \\ \hline
+		
+	\end{tabular}
+\end{table}
+
+此外，在增大基线距离之后，系统的误差能够有效减少。图\ref{fig:chp03_vision_14_long_range_error_d15_f100}和\ref{fig:chp03_vision_15_long_range_error_d20_f100}所示为镜头焦距$f=100\ mm$，扰动为$1\%$情况下，基线距离为$15\ m$和$20\ m$时的误差情况。因此在舰载系统在排布的时候，可以考虑尽可能增加基线距离，从而减少测量误差。
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp03_stereo/chp03_vision_14_long_range_error_d15_f100.pdf}	
+	\caption{基线距离为$15\ m$时，探测距离为$4000\ m$时各个方向的误差}
+	\label{fig:chp03_vision_14_long_range_error_d15_f100}
+\end{figure}
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp03_stereo/chp03_vision_15_long_range_error_d20_f100.pdf}	
+	\caption{基线距离为$20\ m$时，探测距离为$4000\ m$时各个方向的误差}
+	\label{fig:chp03_vision_15_long_range_error_d20_f100}
+\end{figure}
+
+\section{立体视觉系统转台控制策略}
+为使得转台能够实现对目标的有效跟踪，需要建立合适的反馈回路。由于转台的控制量是俯仰角和方位角的增量，因此需要根据当前目标在图像中的成像位置与图像中心位置的偏差解算出合适的控制量。
+
+根据图\ref{fig:chp03_vision_02_image_plane}所示，可以得到$\phi_{cl}$和$\psi_{cl}$的解算公式为
+\begin{equation}
+\label{eq:ptu_control_phi}
+tan(\phi_{cl})=\frac{v-v_0}{l}
+\end{equation}
+\begin{equation}
+\label{eq:ptu_control_psi}
+tan(\psi_{cl})=\frac{u-u_0}{f}
+\end{equation}
+其中$(u_0, v_0)$是相机标定后像平面的主点位置，$(u, v)$是当前目标在图像识别后的像平面坐标，$l$是目标点在$f_x$和$f_y$平面的投影距离主点的直线距离。根据集合关系，可以求解出
+\begin{align}
+l = \frac{w_v}{2}cot \frac{\alpha_{FOV_{tilt}}}{2} \\
+f = \frac{w_u}{2}cot\frac{\alpha_{FOV_{pan}}}{2}
+\end{align}
+带入\ref{eq:ptu_control_phi}和\ref{eq:ptu_control_psi}可以得到
+\begin{align} \label{eq:FOV_TILT}
+\phi &=f(v, v_0, w_v, \alpha_{FOV_{tilt}}) \\
+&=atan(v-v_0, \frac{w_v}{2}cot \frac{\alpha_{FOV_{tilt}}}{2})
+\end{align}
+\begin{align} \label{eq:FOV_PAN}
+\psi &=f(u, u_0, w_u, \alpha_{FOV_{pan}}) \\
+&=atan(u-u_0, \frac{w_u}{2}cot\frac{\alpha_{FOV_{pan}}}{2})
+\end{align}
+其中$w_u$和$w_v$是像平面的大小，$\alpha_{FOV_{pan}}$和$\alpha_{FOV_{tilt}}$是相机的横纵两个方向的视场角。由此，定义目标在像平面的初始坐标为$(u_1, v_1)$，期望坐标为$(u_2, v_2)$，可以进一步得到转台的控制量
+\begin{equation}
+\Delta\phi=f(v_1,v_0,w_v, \alpha_{FOV_{tilt}})-f(v_2,v_0, w_v, \alpha_{FOV_{tilt}})
+\end{equation}
+\begin{equation}
+\Delta\psi=f(u_1,u_0,w_u, \alpha_{FOV_{pan}})-f(u_2,u_0, w_u, \alpha_{FOV_{pan}})
+\end{equation}
+当目标距离较远时，转台的转动一般较小，因此设计简单的比例控制器对目标进行控制，转台的控制指令$u_{\phi,l}$和$u_{\psi,l}$可以定义为
+\begin{align}
+u_{\phi,l} = k_{\phi,l}\Delta\phi\\
+u_{\psi,l} = k_{\psi,l}\Delta\psi
+\end{align}
+其中$k_{\phi,l}$和$k_{\psi,l}$是比例控制器的参数。同理，右侧的转台控制指令设计形式与上式相同。
+%%TODO：设计单神经元控制器
 
 \section{立体视觉系统的标定的标定方法}
+\subsection{DGPS标定方法基本原理}
+根据第二章定义的着舰系统坐标系之间的关系，在理想情况下，$\mathcal{F}_{path,l}$坐标系的原点位于跑道中线的延长线上，其坐标轴$\mathbf{i}^{path,l}$、$\mathbf{j}^{path,l}$和$\mathbf{k}^{path,l}$分别与引导坐标系的$\mathbf{j}^{O,c}$， $\mathbf{i}^{O,c}$和$\mathbf{k}^{O,c}$平行。但实际情况下，上述平行关系很难保证，两个坐标系的关系通常存在转动关系，因此$\mathcal{F}_{path,l}$与$\mathcal{O}_c$直接的位置关系不能通过简单的平移进行计算得到。两个坐标系之间的转换关系，主要通过DGPS外部标定方法完成\cite{liao2009automatic}。该方法通过将DGPS传感器放置在远端多个位置，（如图\ref{fig:chp03_vision_17_multi_dgps}所示），通过调节左右两侧转台的位置，使得光心对准DGPS的接收天线（如图\ref{fig:chp03_vision_16_dgps_calibration}所示），得到相应的转角关系。这里假设白色的DGPS天线的几何中线点作为标定点的真实位置。
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp03_stereo/chp03_vision_17_multi_dgps.pdf}	
+	\caption{多个DGPS靶标标定示意图}
+	\label{fig:chp03_vision_17_multi_dgps}
+\end{figure}
 
 
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.4\textwidth]{figs/chp03_stereo/chp03_vision_16_dgps_calibration.pdf}	
+	\caption{标定过程中，从左侧视觉系统中观察到的DGPS靶标}
+	\label{fig:chp03_vision_16_dgps_calibration}
+\end{figure}
+
+
+相比于视觉系统的棋盘格标定方法，DGPS标定方法的优势是能够满足远距离标定需求。一般DGPS的设置点距离转台在$100\ m$以上，可以覆盖引导系统的末状态工作区域。而传统棋盘格由于制作尺寸受限，其标定范围一般在$5~10\ m$，该范围并不是转台经常工作的区域，其标定效果一般较差。
+
+定义在下滑轨迹坐标系中任意一点的坐标为$(X_p, Y_p, Z_p)$，该点在引导坐标系的坐标系为$(X_c, Y_c, Z_c)$，因此需要求解这两个坐标系之间的转换矩阵
+\begin{equation}
+\left[ {\begin{array}{*{20}{c}}
+	{{X_p}} \\ 
+	{{Y_p}} \\ 
+	{{Z_p}} 
+	\end{array}} \right] = \mathcal{R}_c^p\left[ {\begin{array}{*{20}{c}}
+	{{Z_{c}}} \\ 
+	{{Y_{c}}} \\ 
+	{{Z_{c}}} 
+	\end{array}} \right] + T_c^p
+\end{equation}
+其中$\mathcal{R}_c^p$是$3\times3$旋转矩阵，$T_c^p$是$3\times1$平移矩阵。由于转换关系符合欧拉角定义，按照$\psi-\theta-\phi$的转换顺序，可以得到
+\begin{equation}
+\mathcal{R}_c^p = \begin{bmatrix}
+\cos \theta \cos \psi                             & \cos\theta \sin\psi                               & -\sin\theta         \\
+-\cos\phi \sin\psi + \sin\phi \sin\theta \cos\psi & \cos\phi \cos\psi + \sin\phi \sin\theta\sin\psi   & \sin\phi \cos\theta \\
+\sin\phi \sin\psi + \cos\phi \sin\theta \cos\psi  & -\sin\phi \cos\psi + \cos\phi \sin\theta \sin\psi & \cos\phi \cos\theta
+\end{bmatrix}
+\end{equation}
+上述转换矩阵中的欧拉角无法通过解析的方法求得，只能通过多次采集标定点数据最优迭代获得。因此，定义旋转矩阵和平移矩阵的分量为
+\begin{equation}
+\mathcal{R}_c^p = \begin{bmatrix}
+r_{11} & r_{12} & r_{13}\\
+r_{21} & r_{22} & r_{23}\\
+r_{31} & r_{32} & r_{33}\\
+\end{bmatrix}
+\end{equation}
+
+\begin{equation}
+T_c^p=\left[ {\begin{array}{*{20}{c}}
+	t_x \\ 
+	t_y \\ 
+	t_z 
+	\end{array}} \right]
+\end{equation}
+当通过手动控制转台使得光心对准DGPS天线时，上述6个变量$(\phi\ \theta\ \psi\ t_x\ t_y\ t_z)$与转台角度俯仰角$\phi_l$和方位角$\psi_l$之间的关系为
+\begin{equation}
+\left\{ \begin{gathered}
+\tan \phi_l = \frac{Y_p}{Z_p} \\
+\tan \phi_l = \frac{X_p}{\sqrt{X_p^2+Z_p^2} }\\
+\end{gathered}  \right.
+\end{equation}
+
+\begin{equation}
+\left\{ \begin{gathered}
+\tan \phi_l= \frac{r_{21}X_p + r_{22}Y_p + r_{23}Z_p + t_y}{r_{31}X_p + r_{32}Y_p + r_{33}Z_p + t_z} \\
+\tan \psi_l= \frac{r_{11}X_p + r_{12}Y_p + r_{13}Z_p + t_y}{\sqrt{(r_{31}X_p + r_{32}Y_p + r_{33}Z_p + t_y)^2+(r_{21}X_p + r_{22}Y_p + r_{23}Z_p + t_y)^2} }\\
+\end{gathered}  \right.
+\end{equation}
+
+二维转台DGPS方法标定的基本步骤如下：
+\begin{compactenum}
+	\item
+	转台系统初始化，并归零。
+	\item
+	放置DGPS点在不同位置（不少于3组，一般为10组），并该点的DGPS数据和转台两个转动角度。
+	\item
+	将采集到的数据通过非线性最小二乘的方法求解得到上述6个标定参数。
+\end{compactenum}
+注意在标定过程中，尽可能保持DGPS横向（$\mathbf{i}^{O,c}$轴向）移动的连续性，使得转台始终向一侧转动。由于转动机械机构的误差，转台出现连续向左和向右的运动，容易将误差放大。
+
+\subsection{DGPS标定方法实验验证}
+配置左右视觉单元的基线距离为$10\ m$，实验总共采集20组DGPS靶标数据，其中使用前10组数据进行参数的求解，使用后10组数据来验证上述标定方法的准确性。这些点选取的一般位于距离标定单元$100\ m$左右的距离，尽可能覆盖转台$45\degree$范围的夹角，标定区域的示意图如\ref{fig:chp03_vision_18_dgps_calibration_diagram}所示。其中一组标定数据集的系统标定参数如表\ref{label:dgps_calibration}所示。
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figs/chp03_stereo/chp03_vision_18_dgps_calibration_diagram.pdf}	
+	\caption{DGPS标定过程中选定的20个标定点}
+	\label{fig:chp03_vision_18_dgps_calibration_diagram}
+\end{figure}
+
+\begin{table}[htb]
+	\centering
+	\caption{DGPS标定方法得到的标定数据}
+	\label{label:dgps_calibration}
+	\begin{tabular}{ccccccc}
+		\hline
+		标定参数 & $\phi (\degree)$ & $\theta (\degree)$ & $\psi (\degree)$ & $t_x (m)$ & $t_y(m)$ & $t_z(m)$ \\ \hline
+		实际数值 & 1.58             & -0.01              & 1.57             & -0.41     & 23.31   & -2.21    \\ \hline
+	\end{tabular}
+\end{table}
+
+在得到上述标定参数后，通过后续10个测试数据来检验标定的精度。表\ref{label:DGPS_Pan_Tilit_Calibration_Error}是这是个测试DGPS点的真实值和解算值。其中，十组数据的方位角平均误差为$0.0141\degree$，俯仰角的平均误差为$-0.0319\degree$。每个标定点的误差曲线如图\ref{fig:chp03_vision_19_pan_tilt_ten_points_error}所示。
+
+% /home/amax/Workspace/77.GOTURN/GOTURN/landing_original_folder/Landing_Data_1
+\begin{table}[]
+	\centering
+	\caption{DGPS标定测试集误差}
+	\label{label:DGPS_Pan_Tilit_Calibration_Error}
+	\begin{tabular}{crrrr}
+		\hline
+		& \multicolumn{2}{c}{真实值$(\degree)$}                           & \multicolumn{2}{c}{标定值$(\degree)$}                           \\ \hline
+		DGPS点编号 & \multicolumn{1}{c}{方位角} & \multicolumn{1}{c}{俯仰角} & \multicolumn{1}{c}{方位角} & \multicolumn{1}{c}{俯仰角} \\ \hline
+		1       & 0.7843                  & -0.0836                 & 0.7730                  & -0.0691                 \\
+		2       & 5.9854                  & 0.5722                  & 6.0372                  & 0.6129                  \\
+		3       & 0.9065                  & 0.5722                  & 0.8573                  & 0.6404                  \\
+		4       & -4.5582                 & 0.4757                 & -4.5237                 & 0.5322                  \\
+		5       & -4.7832                 & 0.1350                  & -4.7748                 & 0.1343                  \\
+		6       & 1.7294                  & 1.0094                  & 1.6185                  & 1.0921                  \\
+		7       & 8.1520                  & 1.1122                  & 8.0970                  & 1.1053                  \\
+		8       & -5.1689                 & 1.1701                  & -5.2517                 & 1.2527                  \\
+		9       & 3.6645                  & 0.4307                  & 3.6734                  & 0.4075                  \\
+		10      & -3.6388                 & 0.4565                  & -3.5739                 & 0.4614                  \\ \hline
+	\end{tabular}
+\end{table}
+
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp03_stereo/chp03_vision_19_pan_tilt_ten_points_error.pdf}	
+	\caption{DGPS标定测试集方位角和俯仰角误差曲线}
+	\label{fig:chp03_vision_19_pan_tilt_ten_points_error}
+\end{figure}
+
+为了验证该标定方法的有效性，重复上述实验10次，得到的标定误差结果如表\ref{label:DGPS_10_Test_Results}所示。其中10组测试中两个角度的最大误差用粗体表示。通过实验可以看到，该方法的标定精读较高，能够满足坐标系转换需求。
+\begin{table}[htb]
+	\centering
+	\caption{10组DGPS标定方法测试俯仰角和方位角误差}
+	\label{label:DGPS_10_Test_Results}
+	\begin{tabular}{crr}
+		\hline
+		实验组数 & \multicolumn{1}{c}{方位角误差平均值} & \multicolumn{1}{c}{俯仰角俯仰角误差平均值} \\ \hline
+		1    & 0.0141                       & -0.0319                         \\
+		2    & \textbf{-0.0211}             & 0.0221                          \\
+		3    & 0.0085                       & -0.0322                \\
+		4    & -0.0133                      & -0.0149                         \\
+		5    & -0.0093                      & 0.0350                          \\
+		6    & 0.0043                       & -0.0132                         \\
+		7    & -0.0132                      & 0.0152                          \\
+		8    & -0.0201                      & -0.0320                         \\
+		9    & 0.0114                       & -0.0119                         \\
+		10   & -0.0147                      & \textbf{0.0565}                          \\ \hline
+	\end{tabular}
+\end{table}
