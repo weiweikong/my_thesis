@@ -728,9 +728,10 @@ s.t.\ e_i=y_i - f(\mathbf{x}_i)
 - Color直方图基于全局统计，在一定程度上具有全局不变性。
 
 \section{引入转台运动后的目标位置估计}
-\subsection{目标在像平面位置的平滑}
+\subsection{低通滤波器的设计}
+无人机的目标在像平面的投影通常是由多个像素点组成，上述目标识别算法主要通过求解所有像素点的几何平均位置来作为后续转台控制和无人机位置解算的输入。由于相机在成像过程中存在噪声扰动，所以图像识别之后的结果也会受到噪声的污染，因此本节设计一个低通滤波器对目标的位置和移动速度进行滤波。
 
-
+一般情况，均认为系统的图像采样时间间隔基本相同。但通过实际测试实验发现系统采样时间抖动较大，其中一组降落过程中的图像采样时间间隔情况如图\ref{fig:chp04_01_delta_time_stamp}所示。图中的蓝色实线表明系统在最后18\ s左右的降落过程中，系统的采样出现较大的波动，其峰值甚至达到190\ ms。所以，在进行像平面位置估计等计算时，需要实时计算每一帧的采样时间间隔，以此来提升解算精度。
 
 \begin{figure}[htb]   
 	\centering
@@ -739,9 +740,124 @@ s.t.\ e_i=y_i - f(\mathbf{x}_i)
 	\label{fig:chp04_01_delta_time_stamp}
 \end{figure}
 
+定义目标的在像平面的坐标为$\mathbf{p}_{uav} = (u, v)^T$，经过低通滤波器之后的像平面坐标为$\bar{\mathbf{p}}_{uav} = (\bar{u}, \bar{v})^T$，目标点的移动速度定义为$\dot{\mathbf{p}}_{uav} = (\dot{u},\dot{v})^T$。根据低通滤波器的定义，可以得到目标原始位置坐标和滤波之后坐标之间的关系
+\begin{align}
+\mathbf{p}(s) = \frac{1}{\tau s+1}\bar{\mathbf{p}}
+\end{align}
+对上式微分可以得到速度与滤波之后坐标之间的关系
+\begin{align}
+\dot{\mathbf{p}}(s) = \frac{s}{\tau s+1}\bar{\mathbf{p}}
+\end{align}
+由于采样是离散系统，因此将上式进行双线性变换（Bilinear Transform）\cite{franklin1998digital}，即将连续系统转换离散系统，通过下式进行变换
+\begin{align}
+s \mapsto \frac{2}{T_s}\frac{z-1}{z+1}
+\end{align}
+带入后可以得到
+\begin{align}
+\mathbf{p}[z] &= \frac{1}{\frac{2}{T_s}\frac{z-1}{z+1}}\bar{\mathbf{p}} \\
+&= \frac{\frac{T_s}{2\tau+T_s}(z+1)}{z-\frac{2\tau-T_s}{2\tau+T_s}}\bar{\mathbf{p}}
+\end{align}
+和
+\begin{align}
+\dot{\mathbf{p}}[z] &= \frac{\frac{2}{T_s}\frac{z-1}{z+1}}{\frac{2}{T_s}\frac{z-1}{z+1}+1}\bar{\mathbf{p}} \\
+&= \frac{\frac{2}{2\tau+T_s}(z-1)}{z-\frac{2\tau-T_s}{2\tau+T_s}}\bar{\mathbf{p}}
+\end{align}
+对上式两个公式进行逆z变换，可以得到求解期望位置的差分公式
+\begin{align}
+\mathbf{p}[n] = \frac{2\tau-T_s}{2\tau+T_s} \mathbf{p}[n-1]+ \frac{T_s}{2\tau+T_s}(\bar{\mathbf{p}}[n-1] + \bar{\mathbf{p}}[n-1] )
+\end{align}
+同理得到求解期望速度的差分公式为
+\begin{align}
+\dot{\mathbf{p}}[n] = \frac{2\tau-T_s}{2\tau+T_s}\dot{\mathbf{p}}[n-1]+ \frac{2}{2\tau+T_s}(\bar{\mathbf{p}}[n-1] - \bar{\mathbf{p}}[n-1] )
+\end{align}
+其中$\mathbf{p}[0] = \bar{\mathbf{p}}[0]$和$\dot{\mathbf{p}}[0] = 0$，$\tau$是滤波的阶段频率，$T_s$是每次采样时间间隔。
+
+
+\subsection{引入转台信息后的位置估计}
+由于受到采样间隔时间和转台系统误差的影响，转台在俯仰角和方位角的返回值同样存在较大偏差。左右两侧转台在一组降落过程中的末状态角度读取结果和偏差计算如图\ref{fig:chp04_02_pan_tilt_status}所示。其中，图中的蓝色虚线为通过串口读取到的转台实际角度，橙色实线为相邻两次采样之间转台的变化量。通过曲线的趋势可以看到，由于采样时间的波动，转台俯仰角和方位角的变化率整体平稳，在$12\ s$到$16\ s$之间，两个转台的俯仰角和横滚角都出现了较大的几次波动，这几次波动与图\ref{fig:chp04_01_delta_time_stamp}响应时刻的采样间隔变大相吻合。同时，突然出现的较大延时，还会对转台控制系统和目标在位置中的估计带来较大影响，因此不能仅仅依赖目标在图像中的位置来中下一帧的位置进行估计，而是需要通过读取转台的角度信息来对原有模型进行修正。
 \begin{figure}[htb]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp04/chp04_02_pan_tilt_status.pdf}
 	\caption{时间采样间隔的对转台读数的影响情况}
 	\label{fig:chp04_02_pan_tilt_status}
 \end{figure}
+
+在转台转动情况已知的情况下，如果目标相对于引导坐标系不动，则可以得到其在像平面的运动情况。定义$P_c$是目标点在相机坐标系的一点，$P_r$是目标点在引导坐标系的一点，两个坐标系之间的转换关系为
+\begin{equation}
+P_r = T_c P_c
+\end{equation}
+其中$T_c$是一个$4 \times 4$转换矩阵，将相机坐标系的一点转换为引导坐标系的一点。考虑到转台的转动情况定义当前时刻转换矩阵为$T_c(t)$，在相机坐标系的坐标为$P_c(t)$ 上一时刻的转换矩阵为$T_c(t-1)$，在相机坐标系的坐标为$P_c(t-1)$。在目标点相对于引导坐标系不变的情况下，该点的坐标系可以表示为
+\begin{equation}
+P_r = T_c(t) P_c(t) =T_c(t-1) P_c(t-1)
+\end{equation}
+
+通过变换可以得到
+\begin{equation}
+\label{eq:chp04_predict_position}
+P_c(t-1) = T_c(t-1)^{-1}T_c(t) P_c(t)
+\end{equation}
+
+由于转台的读数可以获得，因此转换矩阵之间的关系可以表示为
+
+\begin{equation}
+T_c(t) = R_Y(\psi)R_X(\phi)T_c(t-1)
+\end{equation}
+
+同理可得
+\begin{equation}
+T_c(t-1)^{-1} = T_c(t)^{-1}R_Y(\psi)R_X(\phi)
+\end{equation}
+
+带入\ref{eq:chp04_predict_position}式之后，可以得到
+\begin{equation}
+P_c(t-1) =T_c(t)^{-1}R_Y(\psi)R_X(\phi)T_c(t) P_c(t)
+\end{equation}
+
+因为实验所用转台的最小转动角度为$0.006 \degree$，可以将转换矩阵的相关量进行近似求解
+\begin{align}
+&\cos \phi \approx \cos \psi \approx 1 \\
+&\sin \phi \approx \phi \\
+&\cos \psi \approx \psi \\
+&\sin \phi \approx \sin \psi \approx 0 \\
+\end{align}
+
+如果初始状态，系统存在水平方向的偏差角度$\theta$，则此时的转换矩阵为
+\begin{equation}
+T_c(t) =\begin{pmatrix} 1 & 0 & 0 & 0 \\ 0 & \cos \theta & -\sin \theta & \rho_y \\0 & \sin \theta & \cos \theta & \rho_z \\ 0 & 0 & 0 &0 \end{pmatrix}
+\end{equation}
+
+\begin{equation}
+T_c(t)^{-1} =\begin{pmatrix} 1 & 0 & 0 & 0 \\ 0 & \cos \theta & \sin \theta & -\cos \theta \rho_y -\sin \theta \rho_z \\0 & -\sin \theta & \cos \theta & \sin\theta \rho_y-\cos \theta \rho_z \\ 0 & 0 & 0 & 1 \end{pmatrix}
+\end{equation}
+
+带入上述公式之后，可以得到
+\begin{align}
+&X_{t-1} = X_t + \psi \sin \theta Y_t + \psi \cos \theta Z_t + \psi \rho_z \\
+&Y_{t-1} = -\psi \sin \theta X_t +  Y_ t - \phi Z_t + \phi \sin \theta \rho_y - \phi \cos \theta \rho_z \\
+&Z_{t-1}  = -\psi \cos \theta X_t + \phi  Y_ t + Z_t + \phi \cos \theta \rho_y - \phi \sin \theta \rho_z
+\end{align}
+
+根据相机的针孔成像模型
+\begin{equation}
+x = f \frac{X}{Z}
+\end{equation}
+则像素的向后递推公式为
+\begin{align}
+x_{t-1} = f\frac{x_t+\psi \sin \theta y_t + f\psi \cos \theta}{- \psi \cos \theta x_t + \phi y_t + f} \\
+y_{t-1} = f\frac{-\psi \sin \theta x_t +y_t -f\phi}{- \psi \cos \theta x_t + \phi y_t + f} \\
+\end{align}
+当系统的初始偏差不存在时，向后地推公式可以表达为
+\begin{align}
+x_{t-1} = f\frac{x_t + f\psi }{- \psi  x_t  + \phi y_t + f} \\
+y_{t-1} = f\frac{y_t -f\phi}{- \psi  x_t + \phi y_t + f}
+\end{align}
+同理，如果已知上一帧位置和转台转动的情况，可以推算出当前帧的像素位置
+\begin{align}
+x_{t} = f\frac{x_{t-1} - f\psi }{x_{t-1}  \psi  - \phi y_{t-1} + f} \\
+y_{t} = f\frac{y_{t-1} -f\phi}{  x_{t-1} \psi - \phi y_{t-1} + f} \\
+\end{align}
+
+ 
+
+
+
