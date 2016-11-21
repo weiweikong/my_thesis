@@ -1,10 +1,11 @@
 \chapter{基于传统视觉算法的无人机目标跟踪方法研究}
 
-
-\section{引言}
 针对目标检测问题，很多学者提出了不同的解决方法，但目标实时监测问题中的所涉及的目标尺度变化、被遮挡和实时性等问题仍然没有得到有效解决。本章针对无人机自主降落过程中的目标跟踪问题进行进一步分析，并提出了满足实时性需求的目标跟踪算法。
 
 \section{目标跟踪问题的概述}
+One-shot Tracking问题的核心是目标位置的先验信息唯一，一般定义为图像序列第一帧$I_1$的位置信息$b_1$（Bounding Box），且该问题针对单一目标图像进行跟踪。这一概念于2006年由华人研究者李飞飞提出\cite{fei2006one}，并有CMT算法\cite{Nebehay2016}的作者Georg Nebehay将这一概念引入到目标跟踪领域。在算法的运行过程中，随着图像目标的连续运动，跟踪算法可以利用之前的图像纹理信息和位置信息作为新的先验信息对当前图像进行解算，其基本流程如算法\ref{al:one_shot_tracking}所示。
+
+传统的实时跟踪方法的主要工作是在线对模型进行计算和更新，算法在运行过程中，基本不涉及和使用离线运算结果。这些跟踪算子（Tracker）主要通过数学公式来完成对跟踪目标特征的描述，这种数学公式对模型描述能力的好坏决定着整体算法性能的优劣。同时，由于传统方法的跟踪算子无法重复利用大量现有数据，其算法性能无法随着数据量的增加而得到持续性改善。这种方法适用于典型目标的跟踪，例如行人跟踪和人脸跟踪等。
 
 \begin{algorithm2e}[H]
 	\SetAlgoLined
@@ -21,16 +22,17 @@
 		$b_i\ \leftarrow$ \Track{$I_i$}\;
 		$b_i\ \leftarrow$ \Update($b_t$, $b_{t-1}$, ..., $b_1$) \;
 	}
-	\caption{One-shot 目标跟踪算法}
+	\caption{One-shot Tracking 算法框架}
+	\label{al:one_shot_tracking}
 \end{algorithm2e}
-
+综上所述，本文涉及到的无人机降落过程中的跟踪问题划归为One-shot Tracking问题。在后续使用的目标跟踪数据集中，无人机第一帧所在的中心位置和矩形框通过手动标记共处，后续图像序列根据第一帧给出的信息进行进一步的迭代和解算。
 
 \section{形态学滤波方法进行图像预处理}
 
 形态学滤波（Morphological Filtering）方法是一组非线性图像运算算子。该系列算子主要包括腐蚀（Erode）、膨胀（Dilate）、开运算（Opening）和闭运算（Closing）四种基本运算。在此四种运算的基础之上，一般还可以拓展出边缘提取、凸包运算、连通区域标记等复杂运算。通常而言，由于上述算子主要通过像素之间位置，形态学处理的对象为二值图像。
 
 在有人机的感知规避领域，机载雷达是应用最为广泛的周边环境的感知器。除此之外，安装在机身各个位置的摄像头也是感知飞行器周边环境的重要传感器。一般而言，这些摄像头主要用于在空中识别周边的其他飞行器。由于民航飞行器的空间间隔一般较大，飞行器的成像尺寸一般较小，传统的预处理方法容易将这类小型目标当做噪声忽略。2011年，卡内基梅隆大学的三位学者使用形态学滤波方法对微小无人机检测的图像进行预处理\cite{dey2011cascaded}，这篇文章图像预处理和图像检测的研究背景与本文的背景类似。
-\begin{figure}[htb]   
+\begin{figure}[ht]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp03/01_small_uav_light_black.pdf}
 	\caption{小型无人机$400\ m$在可见光相机成像效果}
@@ -42,16 +44,16 @@
 
 对于试验中使用的中等型号的无人机而言，其在距离摄像机$800\ m$左右的距离时，其成像效果如图\ref{fig:02_big_uav_light_black}所示。通过比较两种型号无人机的成像特性，本文设计将开运算与闭运算处理结果相减作为预处理的结果，主要针对小型无人机出现的白色和黑色亮斑变化情况进行处理。
 
-\begin{figure}[htb]   
+\begin{figure}[ht]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp03/02_big_uav_light_black.pdf}
 	\caption{中型无人机$800\ m$在可见光相机成像效果}
 	\label{fig:02_big_uav_light_black}
 \end{figure}
 
-开运算的特点是先进行腐蚀运算，再进行膨胀运算，能够消除细小物体，突出物体边缘，即亮出的区域增大。闭运算的特点是先进行膨胀运算，再进行腐蚀运算，能够消除细小空洞，使得临近的物体相互连通，即暗处的区域增大。为了利用开运算和闭运算结果的优点，该滤波方法的基本框架如图\ref{fig:04_morphogolical_method}所示。在Ubuntu环境下使用Python实现上述预处理算法，开运算和闭运算分别对每一帧图像（$640 \times 480$）进行处理时间为$0.009\ s$至$0.013\ s$，整体时间消耗约为$0.016\ s$。
+开运算的特点是先进行腐蚀运算，再进行膨胀运算，能够消除细小物体，突出物体边缘，即亮出的区域增大。闭运算的特点是先进行膨胀运算，再进行腐蚀运算，能够消除细小空洞，使得临近的物体相互连通，即暗处的区域增大。为了利用开运算和闭运算结果的优点，该滤波方法的基本框架如图\ref{fig:04_morphogolical_method}所示。在Ubuntu环境下使用Python实现上述预处理算法，开运算和闭运算分别对每一帧图像（$640 \times 480$）进行处理时间为$0.009\ s$至$0.013\ s$，整体时间消耗约为$0.016\ s$。在后续目标跟踪过程中，矩形框区域的像素面积远小于完整图像面积，因此该算法能够满足系统的实时性需求。
 
-\begin{figure}[htb]   
+\begin{figure}[ht]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp03/04_morphogolical_method.pdf}
 	\caption{形态学滤波预处理框架}
@@ -60,7 +62,7 @@
 
 将该算法运用到图\ref{fig:01_small_uav_light_black}中所示的图像，预处理之后的结果如图\ref{fig:03_small_uav_with_morphological}所示。结果表明，闭运算的结果减去开运算的结果能够将暗处和亮出的区域均进行筛选和保留，进一步突出小型无人机在远端时的图像特征，为后续的目标跟踪问题打下良好基础。
 
-\begin{figure}[htb]   
+\begin{figure}[ht]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp03/03_small_uav_with_morphological.pdf}
 	\caption{小型无人机在两种状态下使用形态学滤波处理之后的结果}
@@ -68,47 +70,102 @@
 \end{figure}
 
 
-\section{基于角点检测的目标跟踪方法研究}
+%\section{基于角点检测的目标跟踪方法研究}
 
 
-
-
-
-\section{基于主动态轮廓线的轮廓线的目标跟踪方法研究}
-
-
-
-
-
-
-\section{基于Tracking-Learning-Detection的目标跟踪方法研究}
+\section{基于Tracking-Learning-Detection框架的目标跟踪研究}
 \subsection{Tracking-Learning-Detection基本框架}
-TLD(Tracking-Learning-Detection)是一种针对单一目标的长时间跟踪算法(long-term tracking)。对于一段长时间的视频，我们希望对其中某个目标进行跟踪（一个人，一辆车，或者仅仅是一块运动的区域），首先在某一帧画面规定一个矩形框，框住的区域就是我们关注的目标，那么该算法做的事就是在接下来的视频中不断跟踪这个目标，无论该物体是否暂时离开画面，或者被遮挡，或者发生形变，都不会影响继续的跟踪。该框架包含这样三个部分：
-\begin{itemize}
-	\item 1. 跟踪器（Tracker），通过连续帧图像来预估所追踪对象的运动，这里假设帧与帧之间目标的相对运动有限，并且追踪目标保持在图像中始终可见。追踪器可能会出现追踪失败的情形，并且在目标跳出相机视野后无法恢复追踪。
-	\item 2. 检测器（Detector），将各帧图像视为独立，并对每一帧图像都进行全扫面，以找出图像中所有与目标外貌相似的候选样本。该探测器会产生两类错误：错误的正样本（False Positives）和错误的负样本（False Negatives）。
-	\item 3. 学习（Learning），学习过程实时观测追踪器和探测器的执行，并预估探测器的错误，生成训练样例以使能在未来避免类似的错误。学习组件假设追踪器和探测器都有可能出现失败执行，但学习组件的引入可以使得探测器生成更多的追踪目标外观，以区别背景。
-\end{itemize}
+One-shot跟踪问题的核心就是如何随着图像序列的信息增加，合理有效的使用目标自身包含的表观信息（Apperance）和目标周边的环境信息。1979年Box提出一个对于模型鲁棒性的观点\cite{box1979robustness}：
+
+\begin{center}
+All models are wrong, but some are useful.
+\end{center} 
+
+
+
+上述对模型描述的观点来自统计学思想，该思想给出了解决One-shot Tracking问题中对序列图像信息处理的一种宏观思路：系统如何在接受新信息的同时，对旧信息进行合理的平衡，以此保持模型的鲁棒性，却不失对模型实时变化的描述。TLD(Tracking-Learning-Detection)\cite{kalal2012tracking}框架是一种针对One-shot Tracking问题的提出的一种长时间跟踪(Long-term Tracking)算法框架。该算法对连续的的图像序列中的唯一目标进行不间断跟踪，无论该物体是否暂时离开画面，或者被遮挡和发生形变，都不会影响跟踪效果。该算法框架包含以下三个部分：
+\begin{compactenum}
+	\item 跟踪器（Tracker），通过连续帧图像来预估所追踪对象的运动，这里假设帧与帧之间目标的相对运动有限，并且追踪目标保持在图像中始终可见。追踪器可能会出现追踪失败的情形，并且在目标跳出相机视野后无法恢复追踪。
+	\item 检测器（Detector），将各帧图像视为独立，并对每一帧图像都进行全扫面，以找出图像中所有与目标外貌相似的候选样本。该探测器会产生两类错误：错误的正样本（False Positives）和错误的负样本（False Negatives）。
+	\item 学习（Learning），学习过程实时观测追踪器和探测器的执行，并预估探测器的错误，生成训练样例以使能在未来避免类似的错误。学习组件假设追踪器和探测器都有可能出现失败执行，但学习组件的引入可以使得探测器生成更多的追踪目标外观，以区别背景。
+\end{compactenum}
+
+该算法的整体工作示意图，如图\ref{fig:02_big_uav_light_black}所示\cite{kalal2012tracking}。通过该示意图可以看到，跟踪、学习和检测三个主要环节在算法运行过程中各自独立运行且直接存在数据交互，这种对新信息和历史信息的处理方式，能够保证对目标跟踪的稳定性，同时也满足系统的实时性需求。
+
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=0.4\textwidth]{figs/chp04/chp04_20_TLD_framework.pdf}
+	\caption{Tracking-Learning-Detection跟踪框架}
+	\label{fig:chp04_20_TLD_framework}
+\end{figure}
+
+
 \subsection{跟踪器的设计}
-\subsubsection{前向后向传播算法}
+TLD的作者提出：一个好的跟踪算法应当具备正反向连续性（Forward-backward Consistency）\cite{kalal2010forward}，即图像序列是正时序进入系统还是反时序进入系统，系统对目标跟踪之后所产生的轨迹应当是相同的。根据该特性，作者定义了跟踪器的向前向后误差（Forward-backward Error， FB）：当前$t$时刻的初始位置为$\mathbf{p}(t)$，基于该位置得到$t+1$时刻的目标位置$\mathbf{p}(t+1)$，再根据得到的$\mathbf{p}(t+1)$位置反向计算$t$时刻的位置$\epsilon = \mathbf{p}'(t)$，定义$||\mathbf{p}(t)-\mathbf{p}'(t)||$作为向前向后误差的度量。
+
+该误差的直观表达如图\ref{fig:chp04_21_FB_Error}所示。该图像是将无人机降落过程中的连续两帧图像叠加起来显示在一幅图像中。其中红色无人机表示$t$时刻无人机成像位置，蓝色无人机表示$t+1$时刻无人机成像位置。在前向计算过程中，红色点1在对应得到蓝色点，该蓝色点在反向运算中正确得到红色点1，此时的前向后向传递误差为零。但图中红色点2在前向计算过程中得到的对应蓝色点并没有在反向运算中返回到正确位置，而是反向对应得到红色点3，此时的前向后向传递误差需要通过上述定义进行求解。为更快的计算连续两帧的对应点位置，主要采取Lucas-Kande Model\cite{lucas1981iterative}来完成图h像中兴趣点的跟踪，该方法也是经典光流算法中使用的模型，使用$\mathbb{LK}$定义为该模型算子的数学记号。则上述坐标点直接的关系定义为
+\begin{align}
+&\mathbf{p(t+1)} = \mathbb{LK}(\mathbf{p(t)}) \\
+&\mathbf{p(t)}' = \mathbb{LK}(\mathbb{LK}(\mathbf{p(t)}))
+\end{align}
+通过定义前向传递误差的阈值$\theta_{FB}$，对多个兴趣点的$\epsilon$进行筛选，留下误差相对较小的兴趣点。
+
+同时，对于相同的兴趣点，还需要对该点周边的图像区域进行描述和评估，这种描述一般定义为归一化互相关（Normalized Cross Correlation, NCC）值。定义两个不同兴趣点的周边图像区域为$P_1$和$P_2$，则NCC的数学表达为
+\begin{equation}
+NCC(P_1, P_2) = \frac{1}{n-1}\sum_{x=1}^{n}\frac{(P_1-\mu_1)(P_2-\mu_2)}{\sigma_1\sigma_2}
+\end{equation}
+其中$\mu_1$、$\mu_2$、$\sigma_1$和$\sigma_2$分别是图像区域$P_1$和$P_2$的所有像素的均值和方差。文献\cite{lewis1995fast}证明基于NCC的相似度计算方法对光照变化不敏感。
+
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=0.8\textwidth]{figs/chp04/chp04_21_FB_Error.pdf}
+	\caption{Forward-backward Error示意图}
+	\label{fig:chp04_21_FB_Error}
+\end{figure}
+
+在使用上述两种方法得到兴趣点的FB和NCC数值之后，一般采用中值滤波（Median Filter）的方法分别计算出两种度量量的中值$\text{med}_{FB}$和$\text{med}_{NCC}$之后，对兴趣点进一步筛选，进而得到对下一帧矩形框$b(t+1)$的参考点。跟踪算法的伪代码如算法\ref{alg:tld_tracking}所示。
+
+\begin{algorithm2e}[ht]
+	\SetAlgoLined
+	%	\KwData{this text}
+	%	\KwResult{how to write algorithm with \LaTeX2e }
+	\BlankLine
+	\SetKwInOut{Input}{Input}
+	\SetKwFunction{TLD}{TLD}
+	\SetKwFunction{MedianFlow}{MedianFlow}
+	\SetKwFunction{Transform}{Transform}
+	\Input{Image $I(t)$,Bounding Box $b(t)$}
+	$\{\mathbf{p}(t)_1, \mathbf{p}(t)_2,...,\mathbf{p}(t)_n\}$ $\leftarrow$ \Initialization($b_I$)\;	
+	\For{$\mathbf{p}(t)_i$}{
+		$\mathbf{p}(t+1)_i\leftarrow \mathbb{LK}(\mathbf{p}(t)_i)$\;
+		$\mathbf{p}(t)'_i\leftarrow \mathbb{LK}(\mathbf{p}(t+1)_i)$\;
+		$\epsilon_i \leftarrow ||\mathbf{p}(t)'_i-\mathbf{p}(t)_i||$ \;
+		$\eta_i \leftarrow NCC(P_1, P_2)$ \;
+	}
+	$\text{med}_{FB} \leftarrow$\MedianFlow($\{\epsilon_i\}$) \;
+	$\text{med}_{NCC} \leftarrow$\MedianFlow($\{\eta_i\}$) \;
+	$\{\bar{\mathbf{p}}_i\} \leftarrow  \{\mathbf{p}(t)_i,\mathbf{p}(t)'_i|\text{med}_{FB} \le \epsilon_i, \text{med}_{NCC} \ge \eta_i \}$\;
+	$b(t+1) \leftarrow$\Transform($b(t),\{\bar{\mathbf{p}}_i\}$)\;
+	\caption{TLD框架中的Tracking算法}
+	\label{alg:tld_tracking}
+\end{algorithm2e}
+
 
 \subsection{检测器的设计}
-将各帧图像视为独立，并对每一帧图像都进行全扫面，以找出图像中所有与目标外貌相似的候选样本，候选样本的生成来自学习模块。该探测器会产生两类错误：错误的正样本（false positives）和错误的负样本（false negatives）。
+在上述跟踪器的设计主要在兴趣点周边对图像进行跟踪，但考虑到目标跟踪有可能存在持续偏移或者目标被瞬间遮盖，因此需要设计检测器来减少目标跟踪丢失的情况。与跟踪器的设计思路不同，检测器并不使用连续两帧图像中的信息进行识别，而是将各帧图像视为相互独立的信息。检测器通过对每一帧图像进行全局搜索，以找出图像中所有与目标表观特征相似的候选样本。此外，检测器的另一个重要作用是通过对候选样本筛选，来更新学习器。这里需要注意，通过对图\ref{fig:02_big_uav_light_black}观察可以发现，与跟踪器和学习器不同，检测模块有两个信息输出流，其中一个是将检测好的目标传递给跟踪器，另一个是将检测过程中的正负样本信息传递给学习器。
 
-\subsubsection{检测区域的生成}
-检首先介绍一下基本的检测区域的生成和选择，即扫描窗网格。我们通过以下参数生成所有可能比例（scales）和转移（shifts）的初始边界框：比例step=1.2，水平step=10（百分比宽度），竖直step=10（百分比高度），最小边界框大小为20像素。针对一个图像（240*320）们可以生成约50K个边界框，准确数字需要基于初始边界框的宽高比。
+%一般而言，探测器会产生两类样本：错误的正样本（False Positives）和错误的负样本（False Negatives）。
+检测器的检测范围是当前帧的完整图像，但由于对当前帧目标的尺寸信息没有先验知识，因此需要设计密度足够大、尺寸种类足够多的扫描窗网格（Grid）来对全图进行扫描。一般通过可能出现的比例（Scales）和平移（Shifts）的初两个参数进行构建。例如，定义比例值$s=1.2$，水平和竖直方向的尺度变化$a=10$，最小边界框大小为20个像素。针对一个尺寸为$640\times480$的图像，大约需要生成约$5\times10^4$个扫描窗口。由于对于每一个扫描窗口的检测是相对独立的，因此在程序编写的过程中，可以将上述窗口的检测通过线程设计来提高检测速度。
 
-\subsubsection{正样本区域的放射变换}
-对每个正样本区域，进行$±1\%$范围的偏移，$±1\%$范围的尺度变化，$±10\%$范围的平面内旋转，并且在每个像素上增加方差为5的高斯噪声（确切的大小是在指定的范围内随机选择的），那么每个box都进行20次这种几何变换，那么10个box将产生200个仿射变换的bounding box，作为正样本。
-
-\subsubsection{级联分类器的设计}
-是由三个串行级联的三个部分组成，即级联分类器（Cascaded Classifier）。由于需要评估的边界框数量较多，每个单独的片段分类过程需要做到十分高效。如下图所示，我们将分类设计为三个阶段：图像变化（patch variance）、总体分类（ensemble classifier）、最近邻（nearest neighbor）。每个阶段都对片段进行一定的筛选排除。
-\begin{figure}[htb]   
+针对每一个检测窗口，主要设计一个级联分类器（Cascaded Classifier），该级联分类器由三个算法不同的分类器串行组成。这三种算法分别是表观特征筛选（Patch Variance）、组合分类器（Ensemble Classifier）和最近邻筛选（Nearest Neighbor）。在每一个分类阶段，上述扫描窗口被一一筛选，最终留下可信度较高的区域。
+\begin{figure}[ht]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/161002_Thesis_Tracking_Section_04.pdf}
 	\caption{集成分类器示意图}
 	\label{fig:161002_Thesis_Tracking_Section_04}
 \end{figure}
+
+%正样本区域的放射变换对每个正样本区域，进行$±1\%$范围的偏移，$±1\%$范围的尺度变化，$±10\%$范围的平面内旋转，并且在每个像素上增加方差为5的高斯噪声（确切的大小是在指定的范围内随机选择的），那么每个box都进行20次这种几何变换，那么10个box将产生200个仿射变换的bounding box，作为正样本。
 
 Patch Variance: 首先利用积分图求出当前要分类扫描窗的灰度值期望，再根据期望计算出方差，与原bounding-box的方差作对比，方差小于bounding-box方差的$50\%$的扫描窗都不会通过这个分类器。（这里的阈值是可以调整的）
 
@@ -131,7 +188,7 @@ $$\mathbf{\{Dat}{{\mathbf{a}}_{\mathbf{7}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{6
 Random Fern 方法：Random Fern 的思想就是用多个特征组合来表达对象。
 
 
-\begin{figure}[htb]   
+\begin{figure}[ht]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/161002_Thesis_Tracking_Section_05.pdf}
 	\caption{集成分类器示意图}
@@ -189,481 +246,437 @@ PN学习包含四个部分：（1）一个待学习的分类器；（2）训练�
 
 上述例子表明：P-experts寻找视频序列中的时域上的结构性特征，并且假设目标是沿着轨迹线移动的，即，相邻帧之间的移动很小，且存在一定的相关性。P-experts记录目标在上一帧中的位置，并根据帧与帧之间的跟踪算法（这里采用的是LK光流法）来预测目标在当前帧中的位置。如果检测模块将跟踪算法预测到的目标在当前帧中的位置标记为负标签，那么P-experts就产生一个正的训练样本；N-experts寻找视频序列中的空间域上的结构性特征，并且假设目标在一个视频帧中只可能出现在一个位置。N-experts对检测模块在当前帧中的所有输出结果以及跟踪模块的输出结果进行分析，并找到具有最大可能性的那个区域。当前帧中所有目标可能出现的区域当中，如果某个区域同最大可能性区域之间没有重叠，就将其认定为负样本。另外，具有最大可能性的那个区域，被用于重新初始化跟踪模块。
 
-\section{基于滤波方法的目标跟踪方法研究}
- 
-1. 基本要点
+综上所述，基于上述三种模块的设计，TLD方法的算法实现伪代码如算法\ref{alg:tld_all}所示。
+\begin{algorithm2e}[ht]
+	\SetAlgoLined
+	%	\KwData{this text}
+	%	\KwResult{how to write algorithm with \LaTeX2e }
+	\BlankLine
+	\SetKwInOut{Input}{Input} 
+	\SetKwFunction{LearningInitialization}{LearningInitialization}
+	\SetKwFunction{Track}{Track}
+	\SetKwFunction{Detect}{Detect}
+	\SetKwFunction{Fuse}{Fuse}
+	\SetKwFunction{Learn}{Learn}
+	\SetKwFunction{Validation}{Validation}	
+	\Input{Image $\{I_t\}$,Bounding Box $b_1$}
+	\LearningInitialization($I_1,b_1$)\;	
+	\For{$t=2$ \KwTo n}{
+		$r_t \leftarrow$ \Track($I_{t-1},I_{t},b_{t-1}$)\;
+		$d_t \leftarrow$ \Detect($I_{t}$)\;
+		$b_t \leftarrow$ \Fuse($r_{t},d_{t}$)\;
+		\If{ \Validation($b_t$)}{
+			\Learn($I_t,b_t,r_t$)
+		}
+	}	
+	\caption{TLD框架的算法实现}
+	\label{alg:tld_all}
+\end{algorithm2e}
 
-1.1 Hann Window
-
-The Hann function is typically used as a window function in digital signal processing to select a subset of a series of samples in order to perform a Fourier transform or other calculations.
-
-1.2 Correlation
-
-- Ref: http://www.cnblogs.com/hanhuili/p/4266990.html
 
 
-- Correlation Filters作为衡量信号相似度的方法被用于跟踪，主要用于rigid模板
-- Cross-correlation $f \star g$的定义为
+\section{基于主动态轮廓线的目标跟踪研究}
+\subsection{主动轮廓方法介绍}
+TLD方法在识别无人机目标的输出是一个矩形框，为了使用上一章的位置解算方法，需要分布在左右相机的像平面进一步计算出一个像素点。通常为了计算方便，该像素点的计算均为矩形框的几何中心。由于无人机成像的特殊性，矩形框的几何中心对应的像素点往往并不是机头的位置，因此通常给解算带来一定的误差。本节使用主动轮廓的方法，在TLD方法输出矩形框之后，进一步向内收敛，以获取更为准确的位置信息，如图\ref{fig:chp04_07_active_contour_demo}所示。其中，左侧图像的绿色矩形为手动标记的真实目标位置，红色矩形为TLD方法识别之后的矩形框；右侧图像中的红色曲线是基于左侧图像中红色矩形框使用主动轮廓向内收敛之后的结果。图中的信息可以看到，相比没有收敛的矩形框，主动轮廓更加贴近无人机目标。
 
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp04/chp04_07_active_contour_demo.pdf}
+	\caption{使用主动轮廓方法与原始矩形框的区别}
+	\label{fig:chp04_07_active_contour_demo}
+\end{figure}
+
+Kass于1987年首先提出Snake模型\cite{kass1988snakes}，通过主动轮廓线的方法对图像进行分割、理解和特征检测。Snake模型的基本思想是通过轮廓线上一些控制点的的弹性形变，使得轮廓线能够尽可能的与图像的局部特征相匹配。这种匹配通常用能量函数极小化的方式进行描述。该方法注重对图像的局部特征的使用，即局部的亮度、梯度、角点和文理信息均可以作为控制点运动方向和速度的参数。
+
+与之前对无人机模板进行整体匹配的方法不同，对图像局部特征的使用不依赖于图像的高层信息（语义信息），即通过对当前局部特征的使用，可以更好的找到模板的轮廓，而不去关心轮廓修正后图像的含义是否发生变化。但由于人类认知图像语义信息的重要基础就是轮廓信息，因此虽然Snake方法在具体计算中忽略了语义信息，但由于其对轮廓的更准确描述，反而更容易将高层信息凸显。
+
+Kass提出的原始Snake算法中对轮廓$\mathcal{C}$的描述是一组参数
 \begin{align}
-\begin{array}{l} (f \star g)(\tau )\mathop  = \limits^{def} \int_{ - \infty }^\infty  {f*(t)g(t + \tau )dt} \\ (f \star g)(n)\mathop  = \limits^{def} \sum\limits_{ - \infty }^\infty  {f*[m]g(m + n)}  \end{array}
+\mathcal{C}:\mathbb{R} \times [0,1] \rightarrow \mathbb{R}^2:(t,p) \rightarrow \mathcal{C}(t,p)
+\end{align}
+该曲线轮廓$\mathcal{C}$随时间变化，对其微分通常使用$L$符号来描述，即
+\begin{align}
+\mathcal{C}_t =L(\mathcal{C})
+\end{align}
+根据不同的数学描述，$L$的运算也并不相同，其中最直观的就是使用曲线的局部垂线来进行表达
+\begin{align}
+L(\mathcal{C}) = \mathcal{F} \cdot \mathcal{N}
+\end{align}
+其中$\mathcal{F}$表达标量空间，取决于曲线局部几何图形，并决定每一个点迭代过程中的速度标量，$\mathcal{N}$是这段曲线的垂线。一般而言，$\mathcal{F}$作为单位运动向量的表达时，即$\mathcal{F} \in \{-1, 1\}$，则曲线的微分可以化简为
+\begin{align}
+\mathcal{C}_t = \mathcal{N}\ \ or\  \ \mathcal{C}_t= -\mathcal{N}
+\end{align}
+在这种情况下，曲线以垂线方向以恒定速度运动。
+
+如果根据文献\cite{guichard2004contrast}的定义，则曲线的表达为
+\begin{align}
+\mathcal{C}_t = \mathcal{K}\cdot\mathcal{N}
+\end{align}
+其中$\mathcal{K}$定义为曲线的欧拉曲率（ Euclidean Curvature）。通过数学定义可以证明\cite{kimmel2012numerical}，图像纹理均匀的情况下，基于上述曲率变化定义，轮廓线最终会收敛到一个点。
+
+对于曲线迭代的求解，通常引入水平集（Level Set Method）求解方法。该方法将曲线定义为在当前时刻$t$，水平集中数值等于零的一点，即
+\begin{align}
+\mathcal{C}(t)=\{(x,y);u(t,(x,y))=0\}
+\end{align}
+其中$u$描述的运算为$u:\mathbb{R} \times \mathbb{R}^2 \rightarrow \mathbb{R} $。根据之前曲线迭代的定义（公式？），此时曲线随时间变化的求解可以用如下公式表达\cite{kimmel2012numerical}
+\begin{align}
+\frac{\partial u}{\partial t}=\mathcal{F}\cdot|\nabla u|
+\end{align}
+在$\mathcal{F}$的定义不同的情况下，可以得到如下公式
+\begin{align}
+&\frac{\partial u}{\partial t}= \pm|\nabla u|\ \ \ \text{if}\ \mathcal{F} = \pm1 \\
+&\frac{\partial u}{\partial t}= \text{div}(\frac{\nabla u}{|\nabla u|})\cdot |\nabla u|\ \ \ \text{if}\ \mathcal{F} = \mathcal{K}
+\end{align}
+上述公式称为偏微分公式（Paritial Differential Equation， PDE）。传统的主动轮廓方法通过对偏微分公式的求解，即可得到每一步的轮廓线位置。目前，求解偏微分的数值计算方法计算量大，耗时较长，无法满足目标跟踪的实时性的需要。
+
+\subsection{基于形态学滤波的主动轮廓方法}
+根据形态学滤波方法进行图像预处理中的定义，为了在背景中增强无人机图像特性，通常对图像进行开运算与闭运算，并将二者的结果相减视为对采集图像的预处理。而开运算和闭运算的基本操作即腐蚀和膨胀。有文献证明，腐蚀和膨胀运算等价于曲线迭代公式的求解。
+
+首先定义开运算和闭运算的具体数学表达，定义膨胀运算$D_h$为
+\begin{align}
+D_hu(\mathbf{x}) = \sup_{\mathbf{y}\in hB(\mathbf{0},1)}\ u(\mathbf{x}+\mathbf{y})
+\end{align}
+同理，定义腐蚀运算$E_h$为
+\begin{align}
+E_hu(\mathbf{x}) = \inf_{\mathbf{y}\in hB(\mathbf{0},1)}\ u(\mathbf{x}+\mathbf{y})
+\end{align}
+其中$B(\mathbf{0},1)$描述了在中心为$\mathbf{0}$点，半径为$1$的一个单位圆，$hB$描述对该单位圆进行尺度为$h$的变化。上式表达的上确界和下确界表达定义为
+\begin{align}
+&(T_hu)(\mathbf{x}) = \sup_{B\in\mathcal{B}}\  \inf_{\mathbf{y}\in\mathbf{x}+hB} u(\mathbf{y}) \\
+&(T_hu)(\mathbf{x}) = \inf_{B\in\mathcal{B}}\  \sup_{\mathbf{y}\in\mathbf{x}+hB} u(\mathbf{y})
+\end{align}
+为后续推导方便这里定义$SI_h$和$IS_h$为$\sup-\inf$和$\inf-\sup$符号的缩写。为了更好的描述曲线的运动，定义曲线流算子$SI_h \circ IS_h$，该算子的物理含义是将曲线曲率较高的部分进行膨胀或腐蚀运算，使得曲线整体在迭代过程中更为光滑。
+
+文献\cite{alvarez1993axioms}中证明腐蚀和膨胀运算与PDE求解直接的关系。
+\begin{align}
+&\lim_{h \rightarrow 0} \frac{D_hu-u}{h} = |\nabla u| \\
+&\lim_{h \rightarrow 0} \frac{E_hu-u}{h} = -|\nabla u|
+\end{align}
+即对于$u$的微分运算可以用腐蚀和膨胀运算来近似
+\begin{align}
+&\frac{\partial u}{\partial t} = |\nabla u| \\
+&\frac{\partial u}{\partial t} = -|\nabla u|
+\end{align}
+对于经典的几何主动轮廓线方法（Geodesic Active Contours，GAC），首先需要定义曲线的能量，
+\begin{align}
+E(\mathcal{C}) &=\int_0^{length (\mathcal{C})}g(I)(\mathcal{C}(s))ds \\
+&=\int_0^1g(I)(\mathcal{C}(p)) \cdot |\mathcal{C}_p|dp
+\end{align}
+其中$I$表示当前的图像，$ds = |\mathcal{C}|_pdp$表示欧拉曲线的参数表达，$g(I)$表示对图像进行的运算，即$g(I) : \mathbb{R}^d \rightarrow \mathbb{R}^+$，通常使用如下公式
+\begin{align}
+g(I) = \frac{1}{\sqrt{1+\alpha|\nabla G_\sigma *I|}}
+\end{align}
+其中$G_\sigma$一般定义为一个高斯核。
+
+在轮廓位置时，该公式得到数值比较低。此时对于能力求最小的数学表达为
+\begin{align}
+\mathcal{C}^*=\arg \min_\mathcal{C} E(\mathcal{C})
+\end{align}
+该公式是使用$g(I)$作为尺度的黎曼空间表达，曲线在求解最优的过程中逐渐变得光滑并经过$g(I)$中数值较低的像素点。
+
+$E(\mathcal{C})$这种能量定义的物理含义并不复杂，实质上是对曲线长度的度量，在实际程序实现过程中，就是对轮廓线像素点的数量统计。这种能量定义的方法与经典的Chan-Vese方法\cite{Chan2001}不同，这里定义的能量不包含曲线内部和外部的图像信息。本文不采用Chan-Vese的能量定义方法主要基于两点考虑：一是由于传统目标识别方法给出的是矩形框，一般该矩形框距离目标较近，甚至部分矩形框的外部存在目标图像，因此无法准确分布内部和外部能量；二是Chan-Wese中的内部和外部能量计算仍然耗费一定的计算时间。
+
+根据上述能量的数学定义，可以得到曲线随时间变化的迭代公式
+\begin{align}
+\mathcal{C}_t=(g(I)\cdot \mathcal{K}-\nabla g(I)\cdot\mathcal{N})\mathcal{N}
+\end{align}
+该方程的初始参数为$\mathcal{C}=\mathcal{C}_0$。在图像边缘成直角或近似直角时，轮廓的迭代往往停止，但此时的停止往往并不没有得到轮廓整体能量最小的情况。因此，通常引入气球力（Ballon Force）这一概念，使得曲线收缩或膨胀有一个持续的力。引入气球力之后，曲线的迭代公式为
+\begin{align}
+\mathcal{C}_t=(g(I)\cdot \mathcal{K}-\nabla g(I)\cdot\mathcal{N}+g(I) \nu)\mathcal{N}
+\end{align}
+其中$\nu$定义为气球力的参数。由此，上述迭代公式在使用水平集求解方法时，可以表达为
+\begin{align}
+\frac{\partial u}{\partial t} = g(I)|\nabla u|\nu +g(I) |\nabla u|\text{div}(\frac{\nabla u}{|\nabla u|}) + \nabla g(I) \nabla u
 \end{align}
 
-- 衡量两个函数在某个时刻τ的相似程度，如下图所示。
+上式中右侧的三个量的具体定义和物理含义为：
+\begin{compactenum}
+\item 气球力（Ball Force），该力主要是使得轮廓收缩有一个最小速度。\item 图像吸引力（Image Attraction Force），该力主要是当轮廓偏离目标的边界时，该力使得轮廓收缩回之前区域。\item 平滑力（Smoothing Force），该力主要是在迭代过程中，曲率较高的位置逐渐降低曲率，使得轮廓更加平滑。
+\end{compactenum}
 
+由于上述三个力的计算顺序的不同，同样会对曲线轮廓均带来影响。一般定义曲线的迭代按上述顺序进行，即在一次迭代过程中，先进行气球力的迭代，将迭代的结果使用图像吸引力进一步迭代，最终对轮廓进行平滑。
+
+\subsection{离散空间的轮廓迭代算法}
+上一节给出的计算方法的描述基于连续空间，在实际算法的过程中需要根据离散空间进行求解。
+
+对于气球力而言，$g(I)$的大小描述了轮廓与目标图像直接的关系强弱，即如果$g(I)$较大（$g(I)>\theta_{ac}$），则表明轮廓与目标区域距离较远，需要使用气球力来使得轮廓持续运动，反之则不需要气球力的作用。此外，轮廓的收敛和外扩需要通过$\nu$来定义，即希望轮廓向内收敛，则$\nu<0$，反之则$\nu>0$。通过公式？定义，公式？的求解可以转换为
+\begin{align}
+u^{n+\frac{1}{3}}(\mathbf{x})=\left\{ \begin{array}{ll}
+(D_du^n)(\mathbf{x}) &\mbox{ if $g(I)(\mathbf{x})>\theta$ and $\nu>0_{ac}$} \\
+(E_du^n)(\mathbf{x}) &\mbox{ if $g(I)(\mathbf{x})>\theta$ and $\nu<0_{ac}$} \\
+u^{n}(\mathbf{x}) &\mbox{ otherwise}
+\end{array} \right.
+\end{align}
+其中$n$表示轮廓迭代的次数，其中$\frac{1}{3}$表示这一次迭代的第一步，$u^n$是一个映射$u^n:\mathbb{Z} \rightarrow \{0, 1\}$。
+
+对于图像吸引力而言，通过定义上一步的运算结果与$ \nabla g(I)(\mathbf{x}) $的乘积来进行分割，其数学公式表达为
+\begin{align}
+u^{n+\frac{2}{3}}(\mathbf{x})=\left\{ \begin{array}{ll}
+1 &\mbox{ if $\nabla u^{n+\frac{1}{3}}(\mathbf{x}) \cdot \nabla g(I)(\mathbf{x}) > 0$} \\
+0&\mbox{ if $\nabla u^{n+\frac{1}{3}}(\mathbf{x}) \cdot \nabla g(I)(\mathbf{x}) < 0$} \\
+u^{n+\frac{1}{3}}(\mathbf{x}) &\mbox{otherwise}
+\end{array} \right.
+\end{align}
+
+对于平滑力而言，文献中给出证明，其离散求解公式为
+\begin{align}
+u^{n+1} (\mathbf{x}) = (((SI_h) \circ (IS_h)) u^{n+\frac{2}{3}})(\mathbf{x})
+\end{align}
+这一步计算为一次完整迭代的最后一步。
+
+\subsection{针对连续目标识别的改进}
+传统主动轮廓方法主要用于图像分割，主动轮廓线的初始位置往往是相同位置一个圆形或者矩形。而目标识别过程中的初始位置除了使用之前TLD方法提供的矩形框之外，还可以使用上一帧的修正后的主动轮廓模型。这种修正方法基于本章最后一节介绍的方法实现。
+
+在实际迭代过程中，为保证实时性，还需要对终止条件进行设定。首先考虑迭代的停止，如果连续两帧的主动轮廓线的长度变化量小于一定阈值，则需要停止迭代，此时认为轮廓线已经在期望目标附近。其次，由于无人机目标在远距离成像时，目标较小且清晰度较差（如图\ref{fig:chp04_05_landing_data_1_left_Contour}前几帧所示），因此需要在主动轮廓线长度小于某一阈值时及时停止，避免其收主动轮廓线收敛过多，甚至收缩会一个像素点，影响计算。基于形态学运算的主动轮廓目标跟踪方法的伪代码如算法\ref{alg:active_contour}所示。
+\begin{algorithm2e}[ht]
+	\SetAlgoLined
+	%	\KwData{this text}
+	%	\KwResult{how to write algorithm with \LaTeX2e }
+	\BlankLine
+	\SetKwInOut{Input}{Input}
+	\SetKwFunction{TLD}{TLD}
+	\SetKwFunction{Update}{Update}
+	\SetKwFunction{Initialization}{Initialization}
+	\SetKwFunction{ContourInitialization}{ContourInitialization}
+	\SetKwFunction{BallForce}{BallForce}
+	\SetKwFunction{ImageAttractionForce}{ImageAttractionForce}
+	\SetKwFunction{SmoothingForce}{SmoothingForce}
+	\SetKwFunction{Length}{Length}
+	\SetKwFunction{TargetCenter}{TargetCenter}
+	\Input{Image sequence $I_1, ..., I_T$ with bounding box $b_1$}
+	\Initialization($I_1$, $b_1$)\;	
+	\For{$i=2$ \KwTo $T$}{
+		$b_i\ \leftarrow $ \TLD{$I_i$}\;
+		$u^{1}\ \leftarrow$  \ContourInitialization($b_i$)\;
+		// or $u^{1}$ = \ContourInitialization($lastcountour$)\;
+		\For{$j=2$ \KwTo $Iterator$}{
+			$u^{j+\frac{1}{3}}\ \leftarrow$ \BallForce($u^{j-1}$)\;
+			$u^{j+\frac{2}{3}}\ \leftarrow$ \ImageAttractionForce($u^{j+\frac{1}{3}}$)\;
+			$u^{j}\ \leftarrow$ \SmoothingForce($u^{j+\frac{2}{3}}$)\;
+			\If { \Length($u^{j}$)-\Length($u^{j-1}$ < 5) or \Length($u^{j}$) < 20}{
+				break \;			 
+			}			
+		}	
+		$lastcountour\ \leftarrow$ \TargetCenter($u^{j}$)\;     
+	}
+	\caption{基于形态学运算的主动轮廓目标跟踪算法}
+	\label{alg:active_contour}
+\end{algorithm2e}
+
+
+为了验证该算法的有效性和实时性，本文主要测试了两种不同尺寸无人机降落过程中的图像序列。经过离线测试调节，得到算法的参数信息如表\ref{lab:active_contours_params}所示。
+\begin{table}[ht]
+	\centering
+	\caption{基于主动轮廓方法的参数列表}
+	\label{lab:active_contours_params}
+	\begin{tabular}{ccrrrrc}
+		\hline
+		\multicolumn{1}{l}{} & Average Image Size & \multicolumn{1}{c}{$\alpha$} & \multicolumn{1}{c}{$\sigma$} & \multicolumn{1}{c}{$\theta$} & \multicolumn{1}{c}{$\nu$} & Iteration \\ \hline
+		中型尺寸无人机              & $230 \times 100$   & 500                          & 1                            & 0.2                          & -1                        & 20        \\
+		小型尺寸无人机              & $90 \times 90$     & 600                          & 1                            & 0.1                          & -0.5                      & 10        \\ \hline
+	\end{tabular}
+\end{table}
+通过上表可以看到，无人机由远及近有比较明显的尺度变化，因此在计算$g(I)$时涉及到的两个参数（$\alpha$和$\sigma$）以及气球力的参数$\nu$均需要做响应调整，但调整的范围并不大。
+
+%引入Fast Marching方法对解算进一步加速。
+该方法应用到小型无人机的降落过程，其识别效果如图\ref{fig:chp04_05_landing_data_1_left_Contour}所示，每一帧的时间消耗如图\ref{fig:chp04_06_landing_data_1_left_Contour_Time}所示。识别效果图中的图像序列依次按由左至右，由上至下的顺序阵列，即图像矩阵的左上角图像为算法识别到的第一帧，右下角图像为最后一帧。可以看到，在无人机出于远距离状态时，无人机的姿态调整导致成像样式多样：在前四行图像中，飞机以侧向运动为主，成像为黑色；在中间两行图像中，飞机做协调转弯动作，由于反光扰动，成像为白色，且成像区域变小；在后续几行图像中，飞机完成转弯动作后，进一步靠近降落区域，此时飞机成像为黑色，由于机头朝向相机，机翼相对水平，其成像面积有时甚至小于最初几行图像。虽然飞机在由远及近的过程中成像情况多变，但轮廓均较好向内收敛。从时间消耗来看，平均消耗时间为$0.1792\ s$，约$5.58\ fps$。但由于每一帧初始轮廓线的不同以及图像区域不同，消耗时间存在波动。在无人机成像为近似点状时，即100帧到250帧之间，算法的消耗时间相对较小，其主原因是目标经过高斯滤波后特征变小，轮廓线很快收敛到最小长度阈值后终止。在250帧之后的末状态，无人机目标变大，且期望轮廓相对复杂，时间消耗也随之增加。
+
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp04/chp04_03_151221_Fixed_Wing_Right_Select_2_Contour.pdf}
+	\caption{使用主动轮廓方法对于小型无人机的识别效果}
+	\label{fig:chp04_03_151221_Fixed_Wing_Right_Select_2_Contour}
+\end{figure}
+
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=0.8\textwidth]{figs/chp04/chp04_04_151221_Fixed_Wing_Right_Select_2_Contour_Time.pdf}
+	\caption{使用主动轮廓方法对于小型无人机识别的时间消耗}
+	\label{fig:chp04_04_151221_Fixed_Wing_Right_Select_2_Contour_Time}
+\end{figure}
+
+该方法应用到中型无人机的降落过程，其识别效果如图\ref{fig:chp04_05_landing_data_1_left_Contour}所示，每一帧的时间消耗如图\ref{fig:chp04_06_landing_data_1_left_Contour_Time}所示。该型号无人机尺寸相对较大，在远端的成像区域也较大，因此轮廓线的收敛结果相比于小型无人机的收敛效果更好，无人机机翼和起落架部分被轮廓线识别。此时算法的平均时间消耗为$0.262\ s$，约$3.81\ fps$。尺寸的变大让时间消耗明显增加，同时由于迭代总次数的限制在无人机进一步靠近引导设备时，由于图像过大，虽然整体依然稳定向内侧收敛，但对轮廓的描述能力相对变差。
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=0.8\textwidth]{figs/chp04/chp04_05_landing_data_1_left_Contour.pdf}
+	\caption{使用主动轮廓方法对于中型无人机的识别效果}
+	\label{fig:chp04_05_landing_data_1_left_Contour}
+\end{figure}
+
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=0.8\textwidth]{figs/chp04/chp04_06_landing_data_1_left_Contour_Time.pdf}
+	\caption{使用主动轮廓方法对于中型无人机的时间消耗}
+	\label{fig:chp04_06_landing_data_1_left_Contour_Time}
+\end{figure}
+
+
+\section{基于互相关滤波方法的目标跟踪研究}
+上一节的主动轮廓方法虽然在TLD的结果基础上进一步修正了目标期望中心位置，但由于无人机目标在不同位置成像的多样性，中心位置的确定仍然存在不稳定的情况。因此，本节探讨使用相关滤波的方法来进一步研究目标中心位置的确定。
+
+%1.1 Hann Window
+%The Hann function is typically used as a window function in digital signal processing to select a subset of a series of samples in order to perform a Fourier transform or other calculations.
+
+\subsection{互相关性的定义}
+%Ref: http://www.cnblogs.com/hanhuili/p/4266990.html
+互相关滤波（Correlation Filters）在信号领域通常作为信号相似度的度量方式，今年来，该滤波方法被引入目标跟踪领域，主要用于rigid模板的分析。互相关（Cross Correlation, $f \star g$)的数学定义为
+\begin{align}
+&(f \star g)(\tau )\mathop  = \limits^{def} \int_{ - \infty }^\infty  {f*(t)g(t + \tau )dt} \\ 
+&(f \star g)(n)\mathop  = \limits^{def} \sum\limits_{ - \infty }^\infty  {f*[m]g(m + n)}
+\end{align}
+
+衡量两个函数在某个时刻τ的相似程度，如下图所示。
 %![img](http://images.cnitblog.com/blog/714517/201502/040044238596444.png)
 
-1.3 MOSSE
-
+\subsection{MOOSE滤波方法}
 % Ref:http://www.cs.colostate.edu/~draper/papers/bolme_cvpr10.pdf
+一般的基于相关滤波框架的目标跟踪方法与之前的TLD框架相同，主要涉及到两个环节：跟踪和训练。跟踪过程主要是通过当前的互相关滤波器作用在图像上，确定一个矩形框，在该矩形框中，寻找概率的最大值来作为期望目标中心位置。同时，根据该中心位置，更新滤波器的相关参数。
 
+这里需要对卷积运算（Convolution）、互相关运算（Cross Correlation）和自相关运算（Autocorrelation）做一个简单辨析：
+\begin{compactenum}
+	\item 卷积运算是指一个线性时不变系统对输入信号的响应，即系统的零状态响应。卷积运算在计算过程中，需要将其中一个序列折叠，然后与另一个信号对齐后运算。
+	\item 互相关运算是指对两个信号相似度的度量。互相关运算在计算过程中，不需要折叠，两个信号对齐之后即可运算。因此，当其中一个信号是偶函数时，卷积运算结果和互相关运算结果相同。
+	\item 自相关运算是指对同一个信号自身进行互相关运算。
+\end{compactenum}
 
-- 模板与滤波模板的互相关运算
+其示意图如\ref{fig:chp04_08_Comparison_convolution_james}\cite{wiki_cross_correlation}所示，图中描述了信号在做三种不同运算时的离散步骤和最终结果。
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=0.6\textwidth]{figs/chp04/chp04_08_Comparison_convolution_james.pdf}
+	\caption{卷积运算$g*f$，互相关运算$g \star f$和自相关运算$g \star g$示意图}
+	\label{fig:chp04_08_Comparison_convolution_james}
+\end{figure}
+
+根据上述物理含义的差异，需要使用互相关运算来对输入图像和模板进行相似度度量。一般定义输入图像与滤波模板的互相关运算为
 \begin{align}
-g=h\text{ }\otimes  f \qquad (2)
+g=h\text{ }\otimes  f  
 \end{align}
+其中$g$表示输出的响应图，$h$表示滤波模板，$f$表示输入图像，$\otimes$表示互相关运算。
 
-- $g$ 表示输出的响应图
-- $h$ 表示滤波模板
-- $f$ 表示输入图像
-
-- 定义互相关函数的快速傅里叶变换，即计算费时的卷积运算转换为普通的点乘运算。
+由于互相关运算的时间消耗较大，因此需要使用快速傅里叶变换的方法进行转换。定义互相关函数的快速傅里叶变换，即计算费时的卷积运算转换为普通的点乘运算，
 \begin{align}
 \mathcal{F}(g) = \mathcal{F}(h\otimes f)={{\mathcal{F}(h)}^{*}}\odot \mathcal{F}(f )
 \end{align}
+其中，$\mathcal{F}$ 表示傅里叶变换，$\odot$ 表示每个元素的点乘，$h^*$ 表示函数 $h$ 的共轭。此时，时间计算开销为$O(n\log n)$，其中$n$是图像中像素的个数。
 
-- $\mathcal{F}$ 表示傅里叶变换
-- $\odot$ 表示每个元素的点乘
-- $h^*$ 表示函数 $h$ 的共轭
-- 时间计算开销为$O(n\log n)$，其中$n$是图像中像素的个数
-
-- 对H函数的求解。为表达方便，上式用新的符号标记为
+为了后续对H函数的求解过程的表达方便，将上式用新的符号标记为
 \begin{align}
 G=F\odot H^*
 \end{align}
-因为是对于每个元素的点乘，由此可以得到对$H^*$的解析解
+由于上式右侧的运算是对于每个元素的点乘，由此可以得到对$H^*$的解析解
 \begin{align}
 H^* = \frac{G}{F}
 \end{align}
 
-- 考虑到对跟踪目标区域周边$m$个区块进行搜索，因此设计目标函数为
+由于滤波器需要对跟踪目标区域周边$m$个区块进行搜索，因此设计的目标函数需要对每一个区域进行运算，并与实际输出进行对比。目标函数的数学表达为
 \begin{align}
-\underset{{{H}^{*}}}{\mathop{\min }}\,\sum\limits_{i=1}^{m}{|{{H}^{*}}\odot{{F}_{i}}-{{G}_{i}}{{|}^{2}}} \qquad (5)
+\underset{{{H}^{*}}}{\mathop{\min }}\,\sum\limits_{i=1}^{m}{|{{H}^{*}}\odot{{F}_{i}}-{{G}_{i}}{{|}^{2}}} 
 \end{align}
 即对每一个输入的图像$F_i$和实际输出$G_i$是在频域的运算结果，目标是寻找合适的滤波器$H$，使得该滤波器与输入图像进行互相关运算后的输出结果与实际输出结果之间的误差最小。在频率域中，每一个运算都作用在图像的每一个元素上，由此可得
 \begin{align}
-\underset{H_{w,v}^{*}}{\mathop{\min }}\,\sum\limits_{i=1}^{m}{|H_{w,v}^{*}{{F}_{w,v,i}}-{{G}_{w,v,i}}{{|}^{2}}}\qquad (6)
+\underset{H_{w,v}^{*}}{\mathop{\min }}\,\sum\limits_{i=1}^{m}{|H_{w,v}^{*}{{F}_{w,v,i}}-{{G}_{w,v,i}}{{|}^{2}}} 
 \end{align}
 对目标函数求导，寻找解析解
 \begin{align}
-\begin{array}{l} \frac{\partial }{{\partial H_{w,v}^*}}\sum\limits_{i = 1}^m {(H_{w,v}^*{F_{w,v,i}} - {G_{w,v,i}}) \cdot } {(H_{w,v}^*{F_{w,v,i}} - {G_{w,v,i}})^{\rm{*}}}{\rm{ = }}0\\  \Rightarrow \frac{\partial }{{\partial H_{w,v}^*}}\sum\limits_{i = 1}^m {H_{w,v}^*{F_{w,v,i}} \cdot {H_{w,v}}F_{w,v,i}^{\rm{*}} - H_{w,v}^*{F_{w,v,i}}G_{w,v,i}^{\rm{*}} - {H_{w,v}}F_{w,v,i}^{\rm{*}}G_{w,v,i}^{}{\rm{ + }}{G_{w,v,i}}G_{w,v,i}^{\rm{*}}} {\rm{ = }}0\\  \Rightarrow \sum\limits_{i = 1}^m {{F_{w,v,i}} \cdot {H_{w,v}}F_{w,v,i}^{\rm{*}} - {F_{w,v,i}}G_{w,v,i}^{\rm{*}}} {\rm{ = }}0\\  \Rightarrow {H_{w,v}}{\rm{ = }}\frac{{\sum\limits_{i = 1}^m {{F_{w,v,i}}G_{w,v,i}^{\rm{*}}} }}{{\sum\limits_{i = 1}^m {{F_{w,v,i}}F_{w,v,i}^{\rm{*}}} }} \qquad (7) \end{array}
+&\frac{\partial }{{\partial H_{w,v}^*}}\sum\limits_{i = 1}^m {(H_{w,v}^*{F_{w,v,i}} - {G_{w,v,i}}) \cdot } {(H_{w,v}^*{F_{w,v,i}} - {G_{w,v,i}})^{\rm{*}}}{\rm{ = }}0\\  &\Rightarrow \frac{\partial }{{\partial H_{w,v}^*}}\sum\limits_{i = 1}^m {H_{w,v}^*{F_{w,v,i}} \cdot {H_{w,v}}F_{w,v,i}^{\rm{*}} - H_{w,v}^*{F_{w,v,i}}G_{w,v,i}^{\rm{*}} - {H_{w,v}}F_{w,v,i}^{\rm{*}}G_{w,v,i}^{}{\rm{ + }}{G_{w,v,i}}G_{w,v,i}^{\rm{*}}} {\rm{ = }}0\\  
+&\Rightarrow \sum\limits_{i = 1}^m {{F_{w,v,i}} \cdot {H_{w,v}}F_{w,v,i}^{\rm{*}} - {F_{w,v,i}}G_{w,v,i}^{\rm{*}}} {\rm{ = }}0\\  
+&\Rightarrow {H_{w,v}}{\rm{ = }}\frac{{\sum\limits_{i = 1}^m {{F_{w,v,i}}G_{w,v,i}^{\rm{*}}} }}{{\sum\limits_{i = 1}^m {{F_{w,v,i}}F_{w,v,i}^{\rm{*}}} }}
 \end{align}
-对每一个元素求解，可以得到最优$H^*$函数的解析表达形式：
+
+根据上述求导公式，对区域中的每一个元素求解，可以得到函数最优解$H^*$的解析表达形式为
 \begin{align}
-H^*\text{=}\frac{\sum\limits_{i=1}^{m}{{{F}_{i}}\odot G_{i}^{\text{*}}}}{\sum\limits_{i=1}^{m}{{{F}_{i}}\odot F_{i}^{\text{*}}}}\qquad (8)
+H^*\text{=}\frac{\sum\limits_{i=1}^{m}{{{F}_{i}}\odot G_{i}^{\text{*}}}}{\sum\limits_{i=1}^{m}{{{F}_{i}}\odot F_{i}^{\text{*}}}} 
 \end{align}
 
-- 设计线性更新方式，可以得到模板$H$的更新公式：
+得到新的模板表达公示后，一般设计线性更新方式，得到对模板$H$的更新
 \begin{align}
-{{H}_{t}}=(1-\eta ){{H}_{t-1}}+\eta H(t)\qquad (9)
+{{H}_{t}}=(1-\eta ){{H}_{t-1}}+\mu H(t) 
 \end{align}
-
-- 在运算过程中，将模板$H$与 输入的图像$f$做相关运算，在得到的响应图中，将数值最大的点作为当前图像模板的所在位置。
-
-- 一般而言，分子和分母分别进行更新
+其中$\mu$是模板更新的学习速率。为化简更新公式，可以对分子和分母分别进行更新
 \begin{align}
-H_t=\frac{A_t}{B_t}\\
-A_t=\mu F_t\odot G_t^*+(1-\mu)A_{t-1}\\
-B_t=\mu F_t\odot F_t^*+(1-\mu)B_{t-1}
+&H_t=\frac{A_t}{B_t}\\
+&A_t=\mu F_t\odot G_t^*+(1-\mu)A_{t-1}\\
+&B_t=\mu F_t\odot F_t^*+(1-\mu)B_{t-1}
 \end{align}
 
+在具体求解目标中心位置的过程中，通过将模板$H$与输入的图像$f$做相关运算，并在得到的响应图中，寻找数值最大的点，以此作为当前图像模板的所在位置。但由于MOOSE方法没有考虑模板尺寸的变化，因此无法适用于无人机由远及近过程中的跟踪问题。
 
-
-
-
-
-1.4 Kernelized Correlation Filters
-
-- Ref:An Experimental Survey on Correlation Filter-based Tracking
-- 训练:  Input (F) *Gaussian ---> Kernel H
-- 更新:  Input(Z) * Kernel H --IFFT--> response map y
-
-1.4.1 Ridge Regression Problem
-
-- 定义输入输出函数关系$f(\mathbf{x}_i)=y_i$，即对于每一个输入$\mathbf{x}_i$都可以得到一个标签输出$y_i$，训练过程可以用最小化下列公式表达：
-\begin{align}
-\min_\mathbf{w}=\sum_{i}L(f(\mathbf{w},\mathbf{x}_i),y_i)+\lambda||\mathbf{w}||^2
-\end{align}
-
-- 其中，$\mathbf{w}$是对输入进行变换的参数，$\lambda$是正则化参数，避免目标方程过拟合，$L(\cdot)$是损失函数，可以根据需要进行设计。
-
-- 在SVM中，损失函数定义为 Hinge 损失，即$L(f(\mathbf{w},\mathbf{x}_i),y_i)=\max (0,1-y_i f(\mathbf{w},\mathbf{x}_i))^2$
-
-- 在Ridge回归中，损失函数的定义为二次损失，即
-
-$L(f(\mathbf{w},\mathbf{x}_i),y_i)=(y_i-f(\mathbf{w},\mathbf{x}_i))^2$
-
-- 如果函数$f(\cdot)$是对输入数据的线性变化，则可以得到解析解
-\begin{align}
-\mathbf{w}=(X^TX+\lambda I)^{-1}X^T\mathbf{y}
-\end{align}
-如果计算是在频域空间，则$X^T$需要变换为$X^H$，即$X^H=(X^*)^T$
-
-- 如果函数$f(\cdot)$是非线性变换，即将输入数据$\mathbf{x}$转换到特征空间$\varphi(\mathbf{x})$，则参数$\mathbf{w}$定义为$\mathbf{w}=\sum_i\alpha_i \varphi(\mathbf{x}_i)$，由此可以得到
-\begin{align}
-f(\mathbf{x}_i)=\sum_{j=1}^n\alpha_i \kappa(\mathbf{x}_i,\mathbf{x}_j)
-\end{align}
-其中，$ \kappa(\mathbf{x}_i,\mathbf{x}_j)=<\varphi(\mathbf{x}_i), \varphi(\mathbf{x}_j)>$是核函数，定义$K$是核函数矩阵，即$K_{ij}=\kappa(\mathbf{x}_i,\mathbf{x}_j)$
-
-此时目标函数的解为
-\begin{align}
-\mathbf{\alpha}=(K+\lambda I)^{-1}\mathbf{y}
-\end{align}
-
-- ​
-
-​
-
-1.4.2 引入循环矩阵求解目标函数
-
-%- Ref: High-Speed Tracking with Kernelized Correlation Filters
-%- http://blog.csdn.net/carrierlxksuper/article/details/46461245
-% Code: 84.edge_box
-
-
-- 引入循环矩阵的目的是产生一系列训练样本，从而可以简化计算量。
-
-- 为避免计算矩阵求逆，引入循环矩阵求解。定义一组基采样（Base Sample）为$\mathbf{x}=(x_0, x_1, ..., x_{n-1})$，则循环矩阵的定义为
-\begin{align}
-X=C(\mathbf{x})=\begin{pmatrix}x_{0}&x_{1}&...&x_{n-1}\\x_{n-1}&x_{0}&...&x_{n-2}\\...&...&...&...\\x_{1}&x_{2}&...&x_{0}\end{pmatrix}
-\end{align}
-循环矩阵可以展开成如下形式
-\begin{align}
-X=F \mathtt{diag} (\mathcal{F(\mathbf{x})})F^H
-\end{align}
-其中$F$是傅里叶变换矩阵，即$\mathcal{F}(\mathbf{x})=\sqrt{n}F\mathbf{x}$。此时可以得到参数$\mathbf{w}$在时域的表达式为
-\begin{align}
-\mathbf{w}=F\mathtt{diag}(\frac{\mathcal{F}(\mathbf{x})}{\mathcal{F}(\mathbf{x})^*\odot\mathcal{F}(\mathbf{x})+\lambda})F^H\mathbf{y}
-\end{align}
-在频域的表达式为
-\begin{align}
-\mathcal{F}(\mathbf{w})=\frac{\mathcal{F}(\mathbf{x})\odot\mathcal{F}(\mathbf{y})}{\mathcal{F}(\mathbf{x})^*\odot\mathcal{F}(\mathbf{x})+\lambda}
-\end{align}
-
-- 进一步推导
-\begin{align}
-\mathbf{\alpha}=(K+\lambda I)^{-1}\mathbf{y}
-\end{align}
-
-- $\mathbf{k}^{\mathbf{xx}}$是核矩阵的第一行，即$K=C(\mathbf{k}^{\mathbf{xx}})$
-
-- 引入核函数定义后，则Ridge回归对$\alpha$的求解公式变为
-\begin{align}
-\mathbf{\alpha}=(C(\mathbf{k}^{\mathbf{xx}})+\lambda I)^{-1}\mathbf{y}
-\end{align}
-
-\begin{align}
-\mathbf{\alpha}=(F\mathtt{diag}(\mathcal{F}(\mathbf{k}^{\mathbf{xx}}))F^H+\lambda I)^{-1}\mathbf{y}
-\end{align}
-
-则在时域的解为
-
-\begin{align}
-\mathbf{\alpha}=\mathcal{F}^{-1}(\frac{\mathcal{F}(\mathbf{y})}{\mathcal{F}(\mathbf{k}^{\mathbf{xx}})+\lambda})
-\end{align}
-
-​
-
-- 用一个核函数$\mathbf{k}$用于度量$\mathbf{x}$与$\mathbf{x'}$直接的关系，用符号$\mathbf{k}^{\mathbf{x}\mathbf{x'}}$表达
-
-- 一个传统的多项式核函数$\mathbf{k}^{\mathbf{x}\mathbf{x'}}=(\mathbf{x}^T\mathbf{x'}+a)^b$可以表达为
-
-\begin{align}
-\mathbf{k}^{\mathbf{x}\mathbf{x'}}=(\mathcal{F}^{-1}(\mathcal{F}(\mathbf{x})^*\odot\mathcal{F}(\mathbf{x'}))+a)^b
-\end{align}
-
-- 一个传统的高斯核函数$\mathbf{k}^{\mathbf{x}\mathbf{x'}}=\exp{-\frac{1}{\sigma^2}(||\mathbf{x}-\mathbf{x'}||^2)}$可以表达为
-\begin{align}
-\mathbf{k}^{\mathbf{x}\mathbf{x'}}=\exp(-\frac{1}{\sigma^2}(||\mathbf{x}||^2+||\mathbf{x'}||^2-2\mathcal{F}^{-1}(\mathcal{F}(\mathbf{x})^*\odot\mathcal{F}(\mathbf{x'})))
-\end{align}
-
-- 在检测过程中，可以根据一个基本采用样本$\mathbf{x}$ 和新的采样$\mathbf{z}$得到的置信区域
-
-根据回归方程的基本定义
-\begin{align}
-f(\mathbf{z})=\mathbf{w}^T\mathbf{z}=\sum_{j=1}^n\alpha_i \kappa(\mathbf{z},\mathbf{x}_j)
-\end{align}
-
-\begin{align}
-f(\mathbf{z})=C(\mathbf{k}^{\mathbf{x}\mathbf{z}})^T\mathbf{\alpha}\\
-f(\mathbf{z})=\mathcal{F}^{-1}(\mathcal{F}(\mathbf{k}^{\mathbf{x}\mathbf{z}})\odot\mathcal{F}(\mathbf{\alpha}))
-\end{align}
-
-其中$y$中数值最大的点的坐标为目标位置。
-
-- 更新策略
-\begin{align}
-\mathcal{F}(\mathbf{\alpha})_t=\mu\frac{\mathcal{F}(\mathbf{z})}{\mathcal{F}(\mathbf{k})+\lambda}+(1-\mu)\mathcal{F}(\mathbf{\alpha})_{t-1}
-\end{align}
-
-\begin{align}
-\mathcal{F}(\mathbf{k}_t)=\mu\mathcal{F}({\mathbf{k}^{\mathbf{x}\mathbf{z}}})+(1-\mu)\mathcal{F}(\mathbf{k}_{t-1})
-\end{align}
-
-​
-
-​
-
-1.5 引入概率来描述周边场景信息
-
-- Ref: Fast Tracking via Spatio-Temporal Context Learning
-
-
-- 一般而言，目标核心区域出现的信息是设计跟踪器的关键。但如果图像出现旋转和尺度变化，目标周边区域的图像信息同样可以作为有效信息进行处理。$\mathbf{x}^{*}\in \mathbb{R}^2$表示目标区域中心点所在位置，${{\Omega }_{c}}({{\mathbf{x}}^{*}})$ 表示在目标中心位置周边的图像区域，$\mathbf{z}$表示该区域中的一个像素点，$I(\mathbf{z})$表示该像素点对应的灰度值，$c(\mathbf{z})=(I(\mathbf{z}), \mathbf{z}))$表示在$\mathbf{z}$点的特征，${{X}^{c}}=\{\operatorname{c}(\mathbf{z})=(I(\mathbf{z}),\mathbf{z})|\mathbf{z}\in {{\Omega }_{c}}({{\mathbf{x}}^{*}})\}$ 表示在目标点周边场景（Context）所有像素点的集合。
-
-- 定义$o$ 表示目标出现在当前区域，由此可以用目标出现的可能性可以用似然函数来描述
-\begin{align}
-c(\mathbf{x})=P(\mathbf{x}|o)
-\end{align}
-根据边缘联合概率的定义，可以将上式展开
-\begin{align}
-c(\mathbf{x})=\sum_{c(\mathbf{z})\in X^c}P(\mathbf{x}, c(\mathbf{z})|o))
-\end{align}
-根据条件概率公式，可以进一步得到
-
-​
-\begin{align}
-c(\mathbf{x})=\sum_{c(\mathbf{z})\in X^c}P(\mathbf{x}|c(\mathbf{z}),o)P(c(\mathbf{z})|o)
-\end{align}
-​
-
-- 设计一个与高斯函数形状类似的置信区间映射（Confident Map），即
-\begin{align}
-c(\mathbf{x})=b\exp(-|\frac{\mathbf{x}-\mathbf{x}^{*}}{\alpha}|)
-\end{align}
-由此可以得到在目标点周边任意像素的概率分布情况。
-
-- 根据定义上下文先验可以根据灰度和权重函数相乘，来描述目标周边的表观信息
-\begin{align}
-P(c(\mathbf{z})|o))=I(\mathbf{z})\omega_\sigma(\mathbf{z}-\mathbf{x}^*)
-\end{align}
-权重函数的定义为一个高斯函数$\omega_{\sigma}(\mathbf{z})=a\exp(-\frac{|\mathbf{z}|}{\sigma^2})$
-
-- 定义似然函数，用于描述目标周围区域信息与目标位置直接的模型
-\begin{align}
-P(\mathbf{x}|\operatorname{c}(\mathbf{z}),o)={{h}^{sc}}(\mathbf{x}-\mathbf{z})
-\end{align}
-其中${{h}^{sc}}(\mathbf{x}-\mathbf{z})$是目标位置与其周边场景中某一个点的相对距离和方向的度量，且不是一个对称函数。
-
-- 根据置信区间映射的定义和全概率展开公式，可以得到
-\begin{align}
-b\exp(-|\frac{\mathbf{x}-\mathbf{x}^{*}}{\alpha}|)=\sum_{c(\mathbf{z})\in X^c}P(\mathbf{x}|c(\mathbf{z}),o)P(c(\mathbf{z})|o)\\
-=\sum_{\mathbf{z}\in\Omega_c(\mathbf{x}^*)}{{h}^{sc}}(\mathbf{x}-\mathbf{z})I(\mathbf{z})\omega_\sigma(\mathbf{z}-\mathbf{x}^*)\\
-=h^{sc}(\mathbf{x})\otimes (I(\mathbf{x})\omega_\sigma(\mathbf{x}-\mathbf{x}^*))
-\end{align}
-
-- 根据卷积定理求解似然函数，得到当前目标点的周边场景模型
-\begin{align}
-\mathcal{F}(b\exp(-|\frac{\mathbf{x}-\mathbf{x}^{*}}{\alpha}|))=\mathcal{F}(h^{sc}(\mathbf{x}))\odot\mathcal{F}(I(\mathbf{x})\omega_\sigma(\mathbf{x}-\mathbf{x}^*))
-\end{align}
-
-\begin{align}
-h^{sc}(\mathbf{x})=\mathcal{F}^{-1}(\frac{\mathcal{F}(b\exp(-|\frac{\mathbf{x}-\mathbf{x}^{*}}{\alpha}|))}{\mathcal{F}(I(\mathbf{x})\omega_\sigma(\mathbf{x}-\mathbf{x}^*))})
-\end{align}
-
-- 利用该模型，可以得到在时序空间场景模型，定义其更新策略为线性模型
-\begin{align}
-H^{stc}_{t+1}=(1-\mu)H^{stc}_{t}+\mu h^{sc}_t
-\end{align}
-
-- 基于时序场景的模型，可以得到下一个时刻置信区间的更新
-\begin{align}
-c_{t+1}(\mathbf{x})=\mathcal{F}(h^{sc}_{t+1}(\mathbf{x}))\odot\mathcal{F}(I_{t+1}(\mathbf{x})\omega_{\sigma_{t}} (\mathbf{x}-\mathbf{x}^*_t))
-\end{align}
-​
-
-- 此时建立目标函数，期寻找合适的$\mathbf{x}^*$使得置信区间的值最大
-\begin{align}
-\mathbf{x}^{*}_{t+1}=\arg\max_{\mathbf{x}\in \Omega_c(\mathbf{x}^*_t)}c_{t+1}(\mathbf{x})
-\end{align}
-
-- 根据连续两帧估计目标尺度变化的大小
-\begin{align}
-s_t^{'}=\sqrt{\frac{c_t(\mathbf{x}_t^*)}{c_{t-1}(\mathbf{x}_{t-1}^*)}}
-\end{align}
-
-- 根据过去一段时间，目标尺度的变化大小的平均值
-\begin{align}
-\bar{s}_t=\frac{1}{n}\sum_{i=1}^{n}s_{t-i}^{'}
-\end{align}
-
-- 下一个时刻目标尺度变化大小的计算
-\begin{align}
-s_{t+1}=(1-\lambda)s_t+\lambda\bar{s}_t
-\end{align}
-
-- 同时，更新权重函数参数$\sigma$
-\begin{align}
-\sigma{t+1}=s_t\sigma_t
-\end{align}
-
-
-
-
-1.5 局部跟踪
-
-- Ref: [Real-time part-based visual tracking via adaptive correlation filters](http://blog.csdn.net/tjdatamining/article/details/45577295)
-
-Ref: http://blog.csdn.net/tjdatamining/article/details/45577045
-
-
-- 在图像$\mathbf{x}$位置，新观测图像$\mathbf{z}$置信分数的计算
-\begin{align}
-\hat{f}(\mathbf{z})=\mathcal{F}^{-1}(\mathcal{F}(\mathbf{k}^{\mathbf{x}\mathbf{z}})\odot\mathcal{F}(\mathbf{\alpha}))
-\end{align}
-​
-
-- 联合置信度
-\begin{align}
-C^t=\sum_{i=1}^Nw_i^t\hat{f}^t_{p(i)}
-\end{align}
-其中，$\hat{f}^t_{p(i)}$表示在候选目标第$i$个区域的置信度，$p(i)$是局部响应的相关位置。
-
-- PSR的定义
-
-- 贝叶斯框架
-
-- 观测到的置信图序列$O^t=[o^1, o^2, ..., o^n]$
-
-- 描述物体仿射变换的参数$s^t$ 
-
-- 最优的仿射参数$\hat{s}^t$可以通过极大后验进行计算
-\begin{align}
-\hat{s}^t=\arg\max_{s^t_j}p(s^t_j|O^t)
-\end{align}
-
-- 极大后验的计算可以转换为迭代求解
-\begin{align}
-p(s^t|O^t)\propto p(o^t|s^t)\int p(s^t|s^{t-1})p(s^{t-1}|O^{t-1})ds^{t-1}
-\end{align}
-其中$ p(o^t|s^t)$是当前时刻的观测的似然函数。此时，最大化该似然函数，就是最大化上式中的后验概率。这里设计该观测函数为
-\begin{align}
-p(o^t|s^t)=\frac{1}{|M^t|}\sum C^t(s^t)\odot M^t
-\end{align}
-其中$M^t$是一个空间约束模板（Spatial Layout Constraint Mask），该模板主要通过$N$各余弦函数窗口组成，使得靠近边缘的像素接近零。
-
-- 一般来说，物体在连续两帧主要做布朗运动（Brownian Motion），则连续两个状态的模型可以用高斯分布来表达
-\begin{align}
-p(s^t|s^{t-1})=\mathcal{N}(s^t|s^{1:t-1},\Psi)
-\end{align}
-​
-
-1.6 对尺度变换的处理
-
-- MOSSE和KCF方法只针对固定大小的目标，即搜索窗口的大小是固定的。
-- SAMF和DSST采用尺度池方法（Scaling Pool），在对输入的图像按一定尺寸进行切割，之后对每一个不同大小的图像进行后续运算。
-
-1.7 DDST方法
-
+ 
+\subsection{DDST方法} 
 %Ref: http://blog.csdn.net/roamer_nuptgczx/article/details/50134633
-
 %Ref: http://blog.csdn.net/autocyz/article/details/48651013
-
 %Ref HOG: https://xiangjiang.live/2016/02/09/histograms-of-oriented-gradients/
+%Discriminative Scale Space Tracking
+针对MOOSE方法的缺陷，Discriminative Scale Space Tracking（DDST）方法通过设计两个不同的滤波器来解决该问题，其核心思想是利用多个维度的特征来分别描述目标的平移变换和尺度变换。
 
-1.7.1 基本思想
+该方法主要设计两个滤波器来实现：
+\begin{compactenum}
+	\item 该方法设计平移变化滤波器来估计目标的平移变换情况，该滤波器计算每个像素点的一个一维灰度和和20维FHOG特征，最终计算出目标的最新位置。其中FHOG特征是指由Felzenszwalb提出的一种快速计算HOG特征的方法，该方法能够快速根据当前彩色图像计算出9个方向，32维的图像特征。为了提高后续处理的运算效率，这里只使用其中的前20个作为主要特征。
+	\item 该方法设计一个尺度变化滤波器来估计目标的尺度变化情况，该滤波器将样本进行30种不同尺度的变换，通过提取上述每种变化中的20维FHOG特征，最终计算出目标的当前的尺寸变化。
+\end{compactenum}
 
-- 核心是利用多个维度的特征来解决尺度变化问题
-- 一维滤波器来估计目标的尺度变换
-- （1 灰度 + 27 Hog）* 2D Hann Window
-- 二维滤波器来估计目标的旋转变换
-- Resize 固定尺寸33个
-- 分别提取31D HOG 特征
-- 级联成金字塔 33层 * 1D Hann Window
-- 三位滤波器来估计目标尺度空间的位置变化
 
-1.7.2 经典多维度特征互相关滤波方法
 
-- 对于一副图像，我们使用$d$维特征来进行描述，定义在目标区域的一块图像的大小为$f$
-- 对于不同维度的特征用$f^l\ l \in {1, 2, ..., d}$来表达
-
+根据上述设计思路，一副图像可以使用$d$维特征来进行描述，定义在目标区域的一块图像的大小为$f$，对于不同维度的特征用$f^l,\ l \in {1, 2, ..., d}$来表达
 \begin{align}
 \underset{{{H}^{*}}}{\mathop{\min }}\,\sum\limits_{l=1}^{d}{|{{H}^{*}}\odot{{F}^{l}}-{{G}^{l}}{{|}^{2}}}+\lambda \sum_{l=1}^{d}|H^{l}|^2
 \end{align}
-
-​	可以得到解析解
+其中等式右侧的第二项为正则项，主要用于避免在频域转换过程后，分母等于零的情况出现。对上式求微分，可以得到最优解的计算公式
 \begin{align}
 H^l\text{=}\frac{\sum\limits_{i=1}^{m}{{{F}^{l}}\odot {G^{i}}^{{*}}}}{\sum\limits_{i=1}^{d}{{{F}^{i}}\odot {F^{i}}^{\text{*}}}+\lambda}=\frac{A^{l}_{t}}{B^{l}_{t}+\lambda}
 \end{align}
-
-- 更新策略
-
+与MOOSE方法相同，分别对上述公式的分子和分母独立更新
 \begin{align}
-A_t^l=(1-\mu)A_{t-1}^{l}+\mu G_{t}^{*}\odot F_{t}^{l}\\
-B_t^l=(1-\mu)B_{t-1}^{l}+\mu \sum_{l=1}^{d}{F_{t}^{l}}^{*}\odot F_{t}^{l}\\
+\label{eq:moose_at_update}
+&A_t^l=(1-\mu)A_{t-1}^{l}+\mu G_{t}^{*}\odot F_{t}^{l}\\
+&B_t^l=(1-\mu)B_{t-1}^{l}+\mu \sum_{l=1}^{d}{F_{t}^{l}}^{*}\odot F_{t}^{l}
 \end{align}
 
-- 对目标检测的计算，即响应区域的计算
-
+在得到更新后的分子和分母后，在响应区域进行计算，并求解出目标位置
 \begin{align}
 \mathbf{y}_t=\mathcal{F}^{-1}(\frac{\sum_{i=1}^{d}{A^{l}_{t-1}}^*\odot Z^{l}_{t}}{B_{t-1}+\lambda})
 \end{align}
 
-1.7.3 基本流程
+平移部分计算的示意图如图\ref{fig:chp04_09_translation_map}所示。其中FHOG的基本运算可以参考文献\cite{lsvm-pami}，对FHOG的C++与MATLAB代码实现可以参考\cite{voc-release5}。
 
-- 先利用二维Filter确定新位置
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp04/chp04_09_translation_map.pdf}
+	\caption{平移变化滤波器}
+	\label{fig:chp04_09_translation_map}
+\end{figure}
 
-- 再用一维Filter精确估计目标的尺度变化
-
-- 尺度选择原则
-
-$a^nP_{t-1}\times a^nR_{t-1}\ n \in \{-\frac{S-1}{2},...,\frac{S-1}{2}\} $
-
-- a = 1.02
-- S = 33，即尺度滤波器的总尺度级数。
-
-- 根据不同尺度缩放的比例，在原图中进行截取
-
-- 将截取的图像缩放会同等比例 $scale_model_sz$ ，计算HOG特征
-
-- 将HOG特征转换为1D向量
-
-1.7.4 多尺度的处理
-
-- 在目标区域提取$M\times N \times S$的立方体，其中$M$和$N$代表高和宽，$S$代表尺度等级。
-- 构造一个三维高斯函数
-
-
-- 计算互相关输出
+对于尺度变化滤波器对图像进行变换的选择，通常采用如下方法。定义当前目标的尺度为$P\times R$，则定义$a = 1.05$作为横向尺度因子，$b = 1.02$作为纵向尺度因子，$S=30$作为尺度滤波器的宽度，则序列尺寸的变化可以通过如下公式计算得到
 \begin{align}
-\mathbf{y}=\frac{\mathcal{F}^{-1}(\sum_{i=1}^{d}{A^{l}}^*\odot Z^{l})}{B+\lambda}
+a^nP_{t-1}\times b^nR_{t-1}\ ,n \in \{-\frac{S-1}{2},...,\frac{S-1}{2}\} 
 \end{align}
+上述$a$和$b$两个因子的选择主要是依赖无人机的原始尺寸。尺度变换部分计算的示意图如图\ref{fig:chp04_10_scale_map}所示。
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp04/chp04_10_scale_map.pdf}
+	\caption{尺度变化滤波器}
+	\label{fig:chp04_10_scale_map}
+\end{figure}
+对于多尺度问题，通过在目标区域提取$M\times N \times S$的立方体，其中$M$和$N$代表高和宽，$S$代表尺度等级，构造一个三维高斯函数，并计算互相关输出。这种方法实际就是把上述两个滤波器结合起来，构成一个新的三维空间滤波器进行滤波。
 
 
-
-
-1.7.5 提速算法
-
-- Sub-grid迭代求解互相关值
+为了更快的运行上述算法，可以使用Sub-gird迭代方法进行优化。该方法是信号领域的一种迭代方法\cite{oppenheim1996signals}。Sub-grid迭代求解互相关值
 \begin{align}
 \mathbf{y}_t=\mathcal{F}^{-1}(\frac{\sum_{i=1}^{d}{A^{l}_{t-1}}^*\odot Z^{l}_{t}}{B_{t-1}+\lambda})
 \end{align}
+其中在$Y_t$的高频位置采用Zero-Padding方法来进行优化提速。
 
-- 在$Y_t$的高频位置采用Zero-Padding方法，使其尺寸等于Interpolation Grid
-
-- 使得采样维度下降的方法
-
-- 跟踪目标模板$u_t$的更新
+此外，DSST计算的时间开销主要是FFT运算，因此可以通过使用采样维度下降的方法进行进一步优化， 跟踪目标模板$u_t$的更新不再使用线性更新方法
 \begin{align}
 u_t = (1-\mu)u_{t-1}+\mu f_t
 \end{align}
-
-- $A_t^l$可以化简为
+根据傅里叶变换的线性化特点，公式\ref{eq:moose_at_update}中$A_t^l$的求解公式可以化简为
 \begin{align}
 A_t^l=G^* \mathcal{F}(u_t^l)
 \end{align}
+由此，对模板$u_t$的更新转换为，建立一个映射矩阵$P_t$，其维度大小是$\hat{d} \times d$，其中$\hat{d}$是压缩特征的维数。
 
-- 建立一个映射矩阵$P_t$，其维度大小是$\hat{d} \times d$，其中$\hat{d}$是压缩特征的维数。该矩阵的计算方式通过使构造误差最小得到，即最下化一下公式
+该矩阵的计算方式通过使构造误差最小得到，即最小化公式
 \begin{align}
 \epsilon=\sum_\mathbf{n}||u_t(\mathbf{n})-P_t^TP_tu_t(\mathbf{n})||^2
 \end{align}
@@ -673,59 +686,88 @@ C_t=\sum_{\mathbf{n}}u_t(\mathbf{n})u_t(\mathbf{n})^T
 \end{align}
 其中映射矩阵$P_t$的每一行是$C_t$矩阵的特征向量。
 
-- 由此两个滤波器的计算可以作用在压缩之后的采样图像上
-
+所以，分子和分母的更新方法转换为
+\begin{align}
+&\hat{A}_t^l=G^*\hat{U}_t\\
+&\hat{B}_t^l=(1-\mu) \hat{B}_{t-1}^{l}+\mu \sum_{l=1}^{\hat{d}}\hat{F}_t^{l*}\hat{F}^l_t
+\end{align}
+其中
 \begin{align}
 \hat{F}_t=\mathcal{F}(P_tf_t)\\
 \hat{U}_t=\mathcal{F}(P_tu_t)
 \end{align}
 
-- 使用压缩后的采样后，平移滤波器的数学表达为
+使用压缩后的采样后，响应函数的输出变换为
 \begin{equation}
 \mathbf{y}_t={\mathcal{F}^{-1}}(\frac{\sum_{i=1}^{\hat{d}}{\hat{A}^{*l}_{t-1}} \odot \hat{Z}^{l}_{t}}{\hat{B}_{t-1}+\lambda})
 \end{equation}
-%\begin{align}
-%\mathbf{y}_t=\mathcal{F}^{-1}(\frac{\sum_{i=1}^{\hat{d}}{\hat{A}^{l}_{t-1}}^*\odot \hat{Z}^{l}_{t}}{\hat{B}_{t-1}+\lambda})
-%\end{align}
-- 对尺度滤波器的压缩处理（见原文）
- 1.7.6 思考
-尺度变换只针对于整体缩放，是否有考虑横向和纵向不同尺寸的缩放？
-1.8 对Filter和Loss Function的改进
-- 原始目标函数
-\begin{align}
-\min_\mathbf{w}=\sum_{i}l(f(\mathbf{x}_i)-y_i)+\lambda||\mathbf{w}||^2_2
-\end{align}
-其中$f(\mathbf{x}_i)=\mathbf{w}^T\varphi(\mathbf{x}_i)$
-- Loss Function可以改造为
-\begin{align}
-l \in \{l_1, l_1l_2, l_{2,1}\}
-\end{align}
-- Loss-1 允许误差巨大变化，能够忽略目标表观的显著变化
-- Loss-1,2 对全局改变不敏感，能更在处理被遮挡和目标表观缓慢变化情况。
-- Loss-2,1 能够处理局部表观变化的情况
-- 原始目标函数是NP-hard问题，目标函数可以等价变换为
-\begin{align}
-\min_{\mathbf{w}\ \mathbf{e}}=\sum_{i}l(e_i)+\lambda||\mathbf{w}||^2_2\\
-s.t.\ e_i=y_i - f(\mathbf{x}_i)
-\end{align}
-- $e_i$描述回归值与真实值之间的误差
-- $y_i$是二维高斯函数
-- 变换后的目标函数是凸函数
-- 经过变换的函数仍然是一个NP-hard问题，因此只能通过迭代方法求解
-\begin{align}
-\min_{\mathbf{w}\ \mathbf{e}}=\sum_{i}(f(\mathbf{x}_i) + e_i - y_i)^2+\lambda||\mathbf{w}||^2_2 + \tau \sum_i l(e_i)\\
-\end{align}
-上述公式可以转化为两部分分别进行求解
-\begin{align}
-\min_{\mathbf{w}}||\mathbf{f}(\mathbf{X})+\mathbf{e}-\mathbf{y})||^2_2+\lambda||\mathbf{w}||^2_2\\
-\min_{\mathbf{e}}||\mathbf{f}(\mathbf{X})+\mathbf{e}-\mathbf{y})||^2_2+\tau l(\mathbf{e})\\
-\end{align}
-其中，$\mathbf{X}$是采样矩阵，每一行代表一个采样。
-- 对第一个的求解和传统方法一样
-- 对第二个的求解需要根据不同损失函数进行设计
- 2. 特征选择
-- HOG特征基于每一个原包的梯度统计特性，局部鲁棒性强，但对目标发生形变是描述效果差。
-- Color直方图基于全局统计，在一定程度上具有全局不变性。
+
+为了测试DSST方法，选用小型无人机和中型无人机的两类数据集共七组进行测试。其中DSST方法中的参数除了上述定义之外，实验中使用的目标函数正则化参数$\lambda=0.01$, 学习速率$\mu=0.025$。图\ref{fig:chp04_11_small_uav_cle}和\ref{fig:chp04_12_small_uav_overlap}所示为小型无人机数据集的第一组结果。图\ref{fig:chp04_13_middle_uav_cle}和\ref{fig:chp04_14_middle_uav_overlap}所示为中型无人机数据集的第一组结果。对于小型无人机的结果可以发现，在长度为350帧的目标跟踪过程中，中心点出现过两次较大偏差，其主要原因是在相应的两帧，转台出现了抖动（通过查询响应帧的转台返回数据）。从整体情况来看，在小型无人机的纵向跟踪误差略大于横向误差，其主要原因是转台在俯仰方向的运动相对较大。
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=0.8\textwidth]{figs/chp04/chp04_11_small_uav_cle.pdf}
+	\caption{小型无人机第一组数据中心点偏差情况}
+	\label{fig:chp04_11_small_uav_cle}
+\end{figure}
+
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=0.8\textwidth]{figs/chp04/chp04_12_small_uav_overlap.pdf}
+	\caption{小型无人机第一组数据矩形框覆盖率情况}
+	\label{fig:chp04_12_small_uav_overlap}
+\end{figure}
+
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=0.8\textwidth]{figs/chp04/chp04_13_middle_uav_cle.pdf}
+	\caption{中型无人机第一组数据中心点偏差情况}
+	\label{fig:chp04_13_middle_uav_cle}
+\end{figure}
+
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=0.8\textwidth]{figs/chp04/chp04_14_middle_uav_overlap.pdf}
+	\caption{中型无人机第一组数据矩形框覆盖率情况}
+	\label{fig:chp04_14_middle_uav_overlap}
+\end{figure}
+
+使用DSST方法在七组不同数据集的测试结果如表\ref{lab:dsst_seven_results}所示，其中平均中心偏差的结果和误差带如图\ref{fig:chp04_15_seven_cle}所示，图\ref{fig:chp04_16_seven_speed}描述了无人机在七组不同数据集的跟踪速率。通过比较中型无人机和小型无人机可以得到以下结论：
+\begin{compactenum}
+	\item 小型无人机的中心点误差小于中型无人机。其主要原因是小型无人机的成像面积较小，在近端成像时，机头中心位置的成像最为明显。而中型无人机由于成像面积大，机身的整体图像信息对中心点的影响相对较大。
+	\item DSST方法的解算精读鲁棒性较强。实验中两种类型的数据集使用相同的DSST参数，七组数据的中心点误差均控制在5个像素以下。	
+	\item DSST方法的速度严重受制于目标图像尺寸。
+\end{compactenum}
+
+\begin{table}[ht]
+	\centering
+	\caption{DSST方法在七组不同数据集的测试结果}
+	\label{lab:dsst_seven_results}
+	\begin{tabular}{lcccc}
+		\hline
+		& \begin{tabular}[c]{@{}c@{}}Center Location \\ Error(Pixel)\end{tabular} & \begin{tabular}[c]{@{}c@{}}Distance \\ Precision (\%)\end{tabular} & \begin{tabular}[c]{@{}c@{}}Overlap \\ Precision(\%)\end{tabular} & Speed (fps) \\ \hline
+		\multicolumn{1}{c}{小型尺寸无人机第一组} & 3.41                                                                    & 97.53                                                              & 74.32                                                            & 32.31       \\
+		\multicolumn{1}{c}{小型尺寸无人机第二组} & 3.27                                                                    & 98.12                                                              & 75.23                                                            & 30.13       \\
+		小型尺寸无人机第三组                     & 3.12                                                                    & 98.23                                                              & 74.34                                                            & 29.12       \\
+		小型尺寸无人机第四组                     & 2.80                                                                    & 96.84                                                              & 74.32                                                            & 31.84       \\ \hline
+		中型尺寸无人机第一组                     & 4.67                                                                    & 94.94                                                              & 85.35                                                            & 10.65       \\
+		中型尺寸无人机第二组                     & 4.93                                                                    & 95.14                                                              & 83.35                                                            & 12.31       \\
+		中型尺寸无人机第三组                     & 4.12                                                                    & 95.31                                                              & 82.66                                                            & 11.98       \\ \hline
+	\end{tabular}
+\end{table}
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=0.8\textwidth]{figs/chp04/chp04_15_seven_cle.pdf}
+	\caption{七组数据集平均中心偏差结果}
+	\label{fig:chp04_15_seven_cle}
+\end{figure}
+
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=0.8\textwidth]{figs/chp04/chp04_16_seven_speed.pdf}
+	\caption{七组数据集平均运算帧频结果}
+	\label{fig:chp04_16_seven_speed}
+\end{figure}
+
 
 \section{引入转台运动后的目标位置估计}
 \subsection{低通滤波器的设计}
@@ -733,7 +775,7 @@ s.t.\ e_i=y_i - f(\mathbf{x}_i)
 
 一般情况，均认为系统的图像采样时间间隔基本相同。但通过实际测试实验发现系统采样时间抖动较大，其中一组降落过程中的图像采样时间间隔情况如图\ref{fig:chp04_01_delta_time_stamp}所示。图中的蓝色实线表明系统在最后18\ s左右的降落过程中，系统的采样出现较大的波动，其峰值甚至达到190\ ms。所以，在进行像平面位置估计等计算时，需要实时计算每一帧的采样时间间隔，以此来提升解算精度。
 
-\begin{figure}[htb]   
+\begin{figure}[ht]   
 	\centering
 	\includegraphics[width=0.8\textwidth]{figs/chp04/chp04_01_delta_time_stamp.pdf}
 	\caption{一组降落实验中的图像时间间隔采样情况}
@@ -775,7 +817,7 @@ s \mapsto \frac{2}{T_s}\frac{z-1}{z+1}
 
 \subsection{引入转台信息后的位置估计}
 由于受到采样间隔时间和转台系统误差的影响，转台在俯仰角和方位角的返回值同样存在较大偏差。左右两侧转台在一组降落过程中的末状态角度读取结果和偏差计算如图\ref{fig:chp04_02_pan_tilt_status}所示。其中，图中的蓝色虚线为通过串口读取到的转台实际角度，橙色实线为相邻两次采样之间转台的变化量。通过曲线的趋势可以看到，由于采样时间的波动，转台俯仰角和方位角的变化率整体平稳，在$12\ s$到$16\ s$之间，两个转台的俯仰角和横滚角都出现了较大的几次波动，这几次波动与图\ref{fig:chp04_01_delta_time_stamp}响应时刻的采样间隔变大相吻合。同时，突然出现的较大延时，还会对转台控制系统和目标在位置中的估计带来较大影响，因此不能仅仅依赖目标在图像中的位置来中下一帧的位置进行估计，而是需要通过读取转台的角度信息来对原有模型进行修正。
-\begin{figure}[htb]   
+\begin{figure}[ht]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp04/chp04_02_pan_tilt_status.pdf}
 	\caption{时间采样间隔的对转台读数的影响情况}
@@ -829,14 +871,12 @@ T_c(t) =\begin{pmatrix} 1 & 0 & 0 & 0 \\ 0 & \cos \theta & -\sin \theta & \rho_y
 \begin{equation}
 T_c(t)^{-1} =\begin{pmatrix} 1 & 0 & 0 & 0 \\ 0 & \cos \theta & \sin \theta & -\cos \theta \rho_y -\sin \theta \rho_z \\0 & -\sin \theta & \cos \theta & \sin\theta \rho_y-\cos \theta \rho_z \\ 0 & 0 & 0 & 1 \end{pmatrix}
 \end{equation}
-
 带入上述公式之后，可以得到
 \begin{align}
 &X_{t-1} = X_t + \psi \sin \theta Y_t + \psi \cos \theta Z_t + \psi \rho_z \\
 &Y_{t-1} = -\psi \sin \theta X_t +  Y_ t - \phi Z_t + \phi \sin \theta \rho_y - \phi \cos \theta \rho_z \\
 &Z_{t-1}  = -\psi \cos \theta X_t + \phi  Y_ t + Z_t + \phi \cos \theta \rho_y - \phi \sin \theta \rho_z
 \end{align}
-
 根据相机的针孔成像模型
 \begin{equation}
 x = f \frac{X}{Z}
@@ -848,16 +888,57 @@ y_{t-1} = f\frac{-\psi \sin \theta x_t +y_t -f\phi}{- \psi \cos \theta x_t + \ph
 \end{align}
 当系统的初始偏差不存在时，向后地推公式可以表达为
 \begin{align}
+\label{eq:curr_predict_prev]}
 x_{t-1} = f\frac{x_t + f\psi }{- \psi  x_t  + \phi y_t + f} \\
 y_{t-1} = f\frac{y_t -f\phi}{- \psi  x_t + \phi y_t + f}
 \end{align}
 同理，如果已知上一帧位置和转台转动的情况，可以推算出当前帧的像素位置
 \begin{align}
+\label{eq:prev_predict_curr}
 x_{t} = f\frac{x_{t-1} - f\psi }{x_{t-1}  \psi  - \phi y_{t-1} + f} \\
 y_{t} = f\frac{y_{t-1} -f\phi}{  x_{t-1} \psi - \phi y_{t-1} + f} \\
 \end{align}
 
- 
+根据上述方法定义，在实际数据中可以得到进一步验证。图\ref{fig:chp04_17_predict_1}和图\ref{fig:chp04_18_predict_2}所示为选取两组转台方位角和俯仰角偏差较大的情况。其中上一帧目标坐标位置的真值用黄色点标记，根据上一帧坐标预测出的当前帧坐标用蓝色点标记。此外，当前帧坐标真值用绿色标记，通过当前帧真值反向预测上一帧目标位置的坐标用墨绿色标记。通过比较向前和向后预测的真值，可以验证之前的推算是正确。
+
+图\ref{fig:chp04_17_predict_1}左侧是中心无人机第一组降落数据集中第138帧的数据，右侧为第139帧的数据，通过直观比较左右两幅图像的地平线位置，并参考转台提供的数据可以判断出：转台在连续两帧中俯仰角的变化较大。同理，图\ref{fig:chp04_17_predict_1}所示是该组图像序列的第104帧和第105帧图像，通过比较两幅图像白色文字右侧的地面栏杆变化，并参考转台提供的数据可以判断出：转台在连续两帧中方位角变化较大。通过公式\ref{eq:prev_predict_curr}可以对该部分偏差进行有效修正，同时也可以通过公式\ref{eq:prev_predict_curr}来反向验证算法是否有效。这两组图像的具体数据结果如表所示。
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp04/chp04_17_predict_1.pdf}
+	\caption{当转台出现方位角较大偏差时，目标位置的估计情况}
+	\label{fig:chp04_17_predict_1}
+\end{figure}
+
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp04/chp04_18_predict_2.pdf}
+	\caption{当转台出现俯仰角较大偏差时，目标位置的估计情况}
+	\label{fig:chp04_18_predict_2}
+\end{figure}
+
+\begin{table}[]
+	\centering
+	\caption{引入转台信息后的位置估计结果}
+	\label{my-label}
+	\begin{tabular}{lccc|ccc}
+		\hline
+		& \multicolumn{3}{c|}{x方向坐标（pixel）}                         & \multicolumn{3}{c}{y方向坐标（pixel）}   \\ \cline{2-7} 
+		& 真实值 & \multicolumn{1}{l}{估计值} & \multicolumn{1}{l|}{误差值} & 真实值 & 估计值 & \multicolumn{1}{l}{误差值} \\ \hline
+		\multicolumn{1}{c}{第104帧} & 287 & 299                     & -12                      & 271 & 270 & 1                       \\
+		\multicolumn{1}{c}{第105帧} & 307 & 295                     & 12                       & 267 & 268 & -1                      \\ \hline
+		第138帧                     & 450 & 464                     & -14                      & 329 & 308 & 21                      \\
+		第139帧                     & 444 & 430                     & 14                       & 284 & 304 & -20                     \\ \hline
+	\end{tabular}
+\end{table}
+
+\section{本章小结}
+本章首先将无人机降落过程中的目标跟踪问题划归为One-shot Tracking问题，即通过目标识别方法或人工选取来得到跟踪目标的初始位置。其次，根据无人机降落过程中的成像特性，选用形态学滤波方法对左右视觉传感器采集到的图像进行预处理。随后，通过改进TLD方法、主动轮廓线方法和相关滤波三种方法，来尽可能的实现对无人机目标的实时跟踪和中心点位置估计。最后，通过引入转台的方位角和俯仰角信息对无人机目标的位置进行进一步修正，并基于修正后的位置使用上述三种目标识别方法，最终能够提升对中心点位置估计的稳定性和可靠性，系统的整体工作示意图如图\ref{fig:chp04_19_tracking_diagram}所示。
 
 
-
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp04/chp04_19_tracking_diagram.pdf}
+	\caption{当转台出现俯仰角较大偏差时，目标位置的估计情况}
+	\label{fig:chp04_19_tracking_diagram}
+\end{figure}
