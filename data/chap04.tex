@@ -1,6 +1,6 @@
-\chapter{基于传统视觉算法的无人机目标跟踪方法研究}
+\chapter{基于视觉传感器的无人机跟踪方法研究}
 
-针对目标检测问题，很多学者提出了不同的解决方法，但目标实时监测问题中的所涉及的目标尺度变化、被遮挡和实时性等问题仍然没有得到有效解决。本章针对无人机自主降落过程中的目标跟踪问题进行进一步分析，并提出了满足实时性需求的目标跟踪算法。
+针对目标检测问题，很多学者提出了不同的解决方法，但目标实时监测问题中的所涉及的目标尺度变化、被遮挡和实时性等问题仍然没有得到有效解决。本章针对无人机自主降落过程中的目标跟踪问题进行进一步分析，并给出了满足实时性和精度需求的无人机目标跟踪算法。
 
 \section{目标跟踪问题的概述}
 One-shot Tracking问题的核心是目标位置的先验信息唯一，一般定义为图像序列第一帧$I_1$的位置信息$b_1$（Bounding Box），且该问题针对单一目标图像进行跟踪。这一概念于2006年由华人研究者李飞飞提出\cite{fei2006one}，并有CMT算法\cite{Nebehay2016}的作者Georg Nebehay将这一概念引入到目标跟踪领域。在算法的运行过程中，随着图像目标的连续运动，跟踪算法可以利用之前的图像纹理信息和位置信息作为新的先验信息对当前图像进行解算，其基本流程如算法\ref{al:one_shot_tracking}所示。
@@ -25,7 +25,7 @@ One-shot Tracking问题的核心是目标位置的先验信息唯一，一般定
 	\caption{One-shot Tracking 算法框架}
 	\label{al:one_shot_tracking}
 \end{algorithm2e}
-综上所述，本文涉及到的无人机降落过程中的跟踪问题划归为One-shot Tracking问题。在后续使用的目标跟踪数据集中，无人机第一帧所在的中心位置和矩形框通过手动标记共处，后续图像序列根据第一帧给出的信息进行进一步的迭代和解算。
+综上所述，本文涉及到的无人机降落过程中的跟踪问题划归为One-shot Tracking问题。在后续使用的目标跟踪数据集中，无人机第一帧所在的中心位置和矩形框通过手动标注得到，后续图像序列根据第一帧给出的信息进行进一步的迭代和解算。
 
 \section{形态学滤波方法进行图像预处理}
 
@@ -94,14 +94,14 @@ All models are wrong, but some are useful.
 
 \begin{figure}[ht]   
 	\centering
-	\includegraphics[width=0.4\textwidth]{figs/chp04/chp04_20_TLD_framework.pdf}
+	\includegraphics[width=0.8\textwidth]{figs/chp04/chp04_20_TLD_framework.pdf}
 	\caption{Tracking-Learning-Detection跟踪框架}
 	\label{fig:chp04_20_TLD_framework}
 \end{figure}
 
 
 \subsection{跟踪器的设计}
-TLD的作者提出：一个好的跟踪算法应当具备正反向连续性（Forward-backward Consistency）\cite{kalal2010forward}，即图像序列是正时序进入系统还是反时序进入系统，系统对目标跟踪之后所产生的轨迹应当是相同的。根据该特性，作者定义了跟踪器的向前向后误差（Forward-backward Error， FB）：当前$t$时刻的初始位置为$\mathbf{p}(t)$，基于该位置得到$t+1$时刻的目标位置$\mathbf{p}(t+1)$，再根据得到的$\mathbf{p}(t+1)$位置反向计算$t$时刻的位置$\epsilon = \mathbf{p}'(t)$，定义$||\mathbf{p}(t)-\mathbf{p}'(t)||$作为向前向后误差的度量。
+TLD的作者提出：一个好的跟踪算法应当具备正反向连续性（Forward-backward Consistency）\cite{kalal2010forward}，即图像序列是正时序进入系统还是反时序进入系统，系统对目标跟踪之后所产生的轨迹应当是相同的。根据该特性，作者定义了跟踪器的向前向后误差（Forward-backward Error， FB）：当前$t$时刻的初始位置为$\mathbf{p}(t)$，基于该位置得到$t+1$时刻的目标位置$\mathbf{p}(t+1)$，再根据得到的$\mathbf{p}(t+1)$位置反向计算$t$时刻的位置$ \mathbf{p}'(t)$，定义$\epsilon =||\mathbf{p}(t)-\mathbf{p}'(t)||$作为向前向后误差的度量。
 
 该误差的直观表达如图\ref{fig:chp04_21_FB_Error}所示。该图像是将无人机降落过程中的连续两帧图像叠加起来显示在一幅图像中。其中红色无人机表示$t$时刻无人机成像位置，蓝色无人机表示$t+1$时刻无人机成像位置。在前向计算过程中，红色点1在对应得到蓝色点，该蓝色点在反向运算中正确得到红色点1，此时的前向后向传递误差为零。但图中红色点2在前向计算过程中得到的对应蓝色点并没有在反向运算中返回到正确位置，而是反向对应得到红色点3，此时的前向后向传递误差需要通过上述定义进行求解。为更快的计算连续两帧的对应点位置，主要采取Lucas-Kande Model\cite{lucas1981iterative}来完成图h像中兴趣点的跟踪，该方法也是经典光流算法中使用的模型，使用$\mathbb{LK}$定义为该模型算子的数学记号。则上述坐标点直接的关系定义为
 \begin{align}
@@ -151,43 +151,105 @@ NCC(P_1, P_2) = \frac{1}{n-1}\sum_{x=1}^{n}\frac{(P_1-\mu_1)(P_2-\mu_2)}{\sigma_
 \end{algorithm2e}
 
 
+
 \subsection{检测器的设计}
 在上述跟踪器的设计主要在兴趣点周边对图像进行跟踪，但考虑到目标跟踪有可能存在持续偏移或者目标被瞬间遮盖，因此需要设计检测器来减少目标跟踪丢失的情况。与跟踪器的设计思路不同，检测器并不使用连续两帧图像中的信息进行识别，而是将各帧图像视为相互独立的信息。检测器通过对每一帧图像进行全局搜索，以找出图像中所有与目标表观特征相似的候选样本。此外，检测器的另一个重要作用是通过对候选样本筛选，来更新学习器。这里需要注意，通过对图\ref{fig:02_big_uav_light_black}观察可以发现，与跟踪器和学习器不同，检测模块有两个信息输出流，其中一个是将检测好的目标传递给跟踪器，另一个是将检测过程中的正负样本信息传递给学习器。
 
 %一般而言，探测器会产生两类样本：错误的正样本（False Positives）和错误的负样本（False Negatives）。
 检测器的检测范围是当前帧的完整图像，但由于对当前帧目标的尺寸信息没有先验知识，因此需要设计密度足够大、尺寸种类足够多的扫描窗网格（Grid）来对全图进行扫描。一般通过可能出现的比例（Scales）和平移（Shifts）的初两个参数进行构建。例如，定义比例值$s=1.2$，水平和竖直方向的尺度变化$a=10$，最小边界框大小为20个像素。针对一个尺寸为$640\times480$的图像，大约需要生成约$5\times10^4$个扫描窗口。由于对于每一个扫描窗口的检测是相对独立的，因此在程序编写的过程中，可以将上述窗口的检测通过线程设计来提高检测速度。
 
-针对每一个检测窗口，主要设计一个级联分类器（Cascaded Classifier），该级联分类器由三个算法不同的分类器串行组成。这三种算法分别是表观特征筛选（Patch Variance）、组合分类器（Ensemble Classifier）和最近邻筛选（Nearest Neighbor）。在每一个分类阶段，上述扫描窗口被一一筛选，最终留下可信度较高的区域。
+针对每一个检测窗口，主要设计一个级联分类器（Cascaded Classifier），该级联分类器由三个算法不同的分类器串行组成。这三种算法分别是表观特征滤波（Variance Filter）、组合分类器（Ensemble Classifier）和最近邻筛选（Nearest Neighbor）。在每一个分类阶段，上述扫描窗口被一一筛选，最终留下可信度较高的区域。该算法的基本流程示意图如图\ref{fig:chp04_22_TLD_Detection}所示。
 \begin{figure}[ht]   
 	\centering
-	\includegraphics[width=\textwidth]{figs/161002_Thesis_Tracking_Section_04.pdf}
-	\caption{集成分类器示意图}
-	\label{fig:161002_Thesis_Tracking_Section_04}
+	\includegraphics[width=\textwidth]{figs/chp04/chp04_22_TLD_Detection.pdf}
+	\caption{TLD框架中的Detection部分}
+	\label{fig:chp04_22_TLD_Detection}
 \end{figure}
 
 %正样本区域的放射变换对每个正样本区域，进行$±1\%$范围的偏移，$±1\%$范围的尺度变化，$±10\%$范围的平面内旋转，并且在每个像素上增加方差为5的高斯噪声（确切的大小是在指定的范围内随机选择的），那么每个box都进行20次这种几何变换，那么10个box将产生200个仿射变换的bounding box，作为正样本。
 
-Patch Variance: 首先利用积分图求出当前要分类扫描窗的灰度值期望，再根据期望计算出方差，与原bounding-box的方差作对比，方差小于bounding-box方差的$50\%$的扫描窗都不会通过这个分类器。（这里的阈值是可以调整的）
+表观特征滤波的核心思想是利用计算图像中的灰度值来对图像区域中信息的一致性进行度量，以此达到对备选图源的筛选。一般而言，对于天空中的背景信息，其各个位置的一致性较大；对于出现无人机目标或其他物体后的图像区域，其一致性相对较差。因此通过灰度值的相关计算，可以对当前备选图源是否是背景区域进行初步筛选。为了提高计算效率，需要引入积分图（Integral Image）这一概念。定义当前输入的图像为$I(x,y)$，则在该点对应的积分图用$\bar{I}(x,y) $进行表达，根据定义，积分图的公式表达为
+\begin{equation}
+\label{eq:intergral}
+\bar{I}(x,y) = \sum_{p \le x, q \le y}I(p,q)
+\end{equation}
+由于其特性，可以将公式\ref{eq:intergral}展开为如下形式
+\begin{equation}
+\bar{I}(x,y) = I(x,y) + \bar{I}(x-1, y) + \bar{I}(x, y-1) - \bar{I}(x-1, y-1)
+\end{equation}
 
-集成分类器（Ensemble Classifier） 主要采用随机森林（Random Forest ）的方法，其中特征选择2bitBP和Pixel Comparisions特征。Pixel Comparisons 的实现方法如下：首先，图像与高斯核进行方差为3像素的卷积，以提高转换稳健性和图像噪声。然后，根据决策树方法进行比较。
+对于“背景”这一高层语义信息，可以通过定义图像区域中的方差的大小来判断，定义一副图像的方差信息为$\sigma^2$，其计算公式为
+\begin{align}
+\label{eq:variance_integral}
+\sigma^2&=\frac{1}{n}\sum_{i=1}^n(x_i-\mu)^2 \\
+&=\frac{1}{n}\sum_{i=1}^nx_i^2-\mu^2
+\end{align}
+其中$\mu$是该图像区域的均值，其计算方法定义为
+\begin{equation}
+\mu=\frac{1}{n}\sum_{i=1}^nx_i
+\end{equation}
 
+根据积分图的定义，对方差的求解可以转换为积分图的相关运算。定义当前备选图像区域为$B(x,y,w,h)$，即当前图像的矩形框位置为$(x,y)$,矩形框的横纵尺寸为$(w,h)$，则当前位置的所有像素点灰度值之和的计算公式为
+\begin{equation}
+\label{eq:variance_x}
+\sum_{i=1}^nx_i = \bar{I}(x-1, y-1)-\bar{I}(x+w,y-1)-\bar{I}(x-1,y+h)+\bar{I}(x+h,y+w)
+\end{equation}
+该部分用数学符号$\bar{I}(B)$进行标记。
 
-Random Forest 方法 ：andom Forests方法主要源于BinaryDecision Trees。传统的决策树主要由一系列子二叉树组成，在每一个节点通过简单的YES/NO问题进行分类。在叶子节点，表明数据所属的类型。因此，对于一个决策树而言，一组特征数据通过不同节点的判断，最终得到一个分类结果。通过训练，我们可以根据训练数据的特征，构建一棵“完美”的决策树用于实际应用。但一般而言，单棵决策树训练速度较快，可以快速处理大量数据，但存在过拟合现象，在实际应用中误差较大。为解决单棵决策树存在的缺陷，1995年Ho以及2001年Breiman分别提出采用多个决策树并引入随机特征方法，即Random Forests。其中，通过构建相互独立的多个决策树，从而提高数据处理的多样性；通过在学习过程中引入随机性，来增强系统的鲁棒性。最后，根据少数服从多数的投票原则，判定一个数据的类别。
+同理可以进一步推导出
+\begin{equation}
+\label{eq:variance_x2}
+\sum_{i=1}^nx_i^2 = \sum_{p \le x, q \le y}I(p,q)^2 = \hat{I}(x,y)
+\end{equation}
+同样用数学符号$\hat{I}(B)$进行标记。
 
-对样本的处理。Bootstrap Sampling 思想。通过有重复的随机抽取样本，重新组成新的样本集。原始数据集的数学表示如下：
+将公式\ref{eq:variance_x}和\ref{eq:variance_x2}带入到公式\ref{eq:variance_integral}中，可以得到对当前区域方差的快速求解方法
+\begin{equation}
+\sigma^2=\frac{1}{n}\hat{I}(B)-(\frac{1}{n}\bar{I}(B))^2
+\end{equation}
+通过该公式，可以得到该图像区域的灰度阈值，通过设定响应的阈值，完成对备选区域的第一步筛选。
+
+对于第二步集成分类器来说，其主要工作是对筛选之后的“非背景”图像进行进一步筛选。该分类其的基础与随机森林（Random Forest）方法相似的随机蕨（Random Ferns）方法。分类器的分类目标是图像中的特征。首先需要对样本引入随机性，最常见的方法为Bootstrap Sampling。该采样方法通过有重复的随机抽取样本，重新组成新的样本集。定义原始数据集的数学表示如下：
 $$\mathbf{\{Dat}{{\mathbf{a}}_{\mathbf{1}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{2}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{3}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{4}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{5}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{6}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{7}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{8}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{9}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{10}}}\mathbf{\}}$$
 
-随机抽取之后的数据集如下：
+在随机抽取之后的数据集如下：
 $$\mathbf{\{Dat}{{\mathbf{a}}_{\mathbf{7}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{6}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{3}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{1}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{1}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{8}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{7}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{2}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{9}}}\mathbf{,Dat}{{\mathbf{a}}_{\mathbf{5}}}\mathbf{\}}$$
 
-可以看到，则随机抽取之后的数据样本集中，不仅样本集的顺序发生了改变，个别样本集也出现了重复。
+可以看到，则随机抽取之后的数据样本集中，不仅样本集的顺序发生了改变，个别样本集也出现了重复。同时，对于数据集中的特征$\{f_i\}$也同样进行相应的随机算则。
 
-子特征集的提取。系统不再对全部特征进行训练，而是从中随机选出一个子集进行训练，基于这些子集得到不同类型的决策树。
-
-
-Random Fern 方法：Random Fern 的思想就是用多个特征组合来表达对象。
-
-
+Random Fern的方法的核心是用多个特征组合来对目标进行描述，其理论基础为贝叶斯理论。本质是对简单贝叶斯分类器（Navie Bayes Classifiers）的改进。对于不同的特征$(f_1, f_2, ..., f_N)$而言，分类的最大化这些特征的后验概率：
+\begin{equation}
+\arg \max_{k}P(C_k|f_1, f_2, ..., f_N)
+\end{equation}
+通过贝叶斯公式可以转换为求解最大化极大似然函数与先验概率的乘积
+\begin{equation}
+\arg \max_{k}P(f_1, f_2, ..., f_N|C_k)P(C_k)
+\end{equation}
+这里引入各个特征相互独立的基本假设，方程可以将极大似然函数的求解进一步化简为
+\begin{equation}
+P(f_1, f_2, ..., f_N|C_k)=\prod\limits_{i=1}^{N}P(f_i|C_k)
+\end{equation}
+此时，可以得到新的分类公式
+\begin{equation}
+\arg\max_kP(C_k)\prod\limits_{i=1}^{N}P(f_i|C_k)
+\end{equation}
+但是在实际问题的求解过程中，每个特征的独立性假设过于严格，不符合实际情况。2007年的CVPR的一篇文章中使用Semi-Navie Bayes方法进行进行改进\ref{ozuysal2007fast}，通过对特征进行分组，将特征之间的独立性假设弱化为特征组与特征组之间的独立性假设，即组间内部特征存在相互依赖。假设所有的特征可以分为$L$个组别，每个组别中包含$S$个特征，每个组别被称为Ferns，每一个特征组的表达为
+\begin{equation}
+\mathbf{F}_l=\{f_{l,1}, f_{l,2},..., f_{l,S}\}
+\end{equation}
+为了在检测过程中计算便捷，选用二维编码的方式对图像进行描述，因此每一个特征满足$f_n\in\{{0,1}\}$。由此，可以进一步将极大似然函数重新表达
+\begin{equation}
+P(f_1, f_2, ..., f_N|C_k)=\prod\limits_{i=1}^{L}P(\mathbf{F}_l|C_k)
+\end{equation}
+基于特征分组的分类公示为
+\begin{equation}
+\arg\max_kP(C_k)\prod\limits_{i=1}^{L}P(\mathbf{F}_i|C_k)
+\end{equation}
+在实际训练过程中，由于训练样本数量较少，会导致分类概率为零的情况。因此，我们认为$P(\mathbf{F}|C_k)$符合Dirchlet分布，因此设定一个最小的概率输出
+\begin{equation}
+p(\mathbf{F}=z|C_k)=\frac{\mathbb{N}(\mathbf{F}=z|C_k)+1}{\sum_{z=0}^{2^S-1}(\mathbb{N}(\mathbf{F}=z|C_k)+1)}
+\end{equation}
+其中，$\mathbb{N}(\mathbf{F}=z|C_k)$是计算在类别$C_k$情况下，观测到$\mathbf{F}=z$的特征个数。分类器的示意图如图\ref{fig:161002_Thesis_Tracking_Section_05}所示。
 \begin{figure}[ht]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/161002_Thesis_Tracking_Section_05.pdf}
@@ -195,56 +257,31 @@ Random Fern 方法：Random Fern 的思想就是用多个特征组合来表达�
 	\label{fig:161002_Thesis_Tracking_Section_05}
 \end{figure}
 
-Random Fern 方法基于贝叶斯理论，主要是对简单贝叶斯分类器（Navie Bayes Classifiers）的改进。对于不同的特征$(f_1, f_2, ..., f_N)$而言，分类的最大化这些特征的后验概率：
+在分类方法结构确定之后，需要选取合适的特征。特征的选取的基本思想来自文献\cite{lepetit2005randomized}，该类特征的选取综合考虑了计算的实时性以及特征的独立性。该方法的基本步骤为，在目标区域内随机采样几对特征点，本文的选择为五对$\{(\mathbf{p}_i,\mathbf{q}_i),i=1,...,5\}$，这五对特征点对应的像素灰度值为$I(\mathbf{p}_i)$和$I(\mathbf{q}_i)$，通过比较灰度值的大小，得到对图像特征的二进制编码（Binary Code），
+\begin{align}
+f_i=\left\{ \begin{array}{ll}
+0 &\mbox{if $I(\mathbf{p}_i) < I(\mathbf{q}_i)$} \\
+1 &\mbox{otherwise} \end{array} \right.
+\end{align}
+这种编码方式的基本过程如图\ref{fig:chp04_23_Binary_Code}所示。在得到一组0-1编码之后，将该编码视为二进制，并将其转换为十进制之后，用于计算当前图像是否包含有效目标的概率。这部分概率的计算是学习器的主要工作。
 
-$$\arg \max_{k}P(C_k|f_1, f_2, ..., f_N)$$
+从图中还可以看到，虽然随机选取五组位置使得编码尽可能的重复描述目标区域图像特性，但由于无人机成像的特殊性，即机翼的成像面积相对狭长，机头部分的成像面积相对较大。因此，如果完全随机产生特征点，将会出现目标虽然出现在当前区域，但由于特征点位置的特殊性，导致无法正确描述目标特性。因此，本文设计了一种半随机选取特征点对（Semi-random Pairs）的方法。在每一组图像区域的横向中心位置选取一个矩形区域如图\ref{fig:chp04_23_Binary_Code}坐下测所示，该部分区域的宽度与目标区域宽度相同，高度按目标区域高度的比例确定，一般为$\theta_{width}=0.3$。特征点对的其中一个点在该矩形区域中随机选择，另一个点在剩余的区域中随机选择。这种方法可以提高对无人机目标特征的准确性。
 
-通过贝叶斯公式可以转换为求解最大化极大似然函数与先验概率的乘积
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp04/chp04_23_Binary_Code.pdf}
+	\caption{图像特征编码示意图}
+	\label{fig:chp04_23_Binary_Code}
+\end{figure}
 
-$$\arg \max_{k}P(f_1, f_2, ..., f_N|C_k)P(C_k)$$
-
-这里引入各个特征相互独立的基本假设，方程可以将极大似然函数的求解进一步化简为
-$$
-P(f_1, f_2, ..., f_N|C_k)=\prod\limits_{i=1}^{N}P(f_i|C_k)
-$$
-此时，可以得到新的分类公式
-$$
-\arg\max_kP(C_k)\prod\limits_{i=1}^{N}P(f_i|C_k)
-$$
-但是在实际问题的求解过程中，每个特征的独立性假设过于严格，因此2007年的CVPR M.Oezuysal中提出Semi-Navie Bayes方法，即将特征进行分组，认为组与组之间保持严格的独立性，而组件的特征相互依赖。假设所有的特征可以分为$L$个组别，每个组别中包含$S$个特征，每个组别被称为Ferns，每一个特征组的表达为
-$$
-\mathbf{F}_l=\{f_{l,1}, f_{l,2},..., f_{l,S}\}
-$$
-为了在检测过程中计算便捷，选用二维编码的方式对图像进行描述，因此每一个特征满足$f_n\in\{{0,1}\}$。由此，可以进一步将极大似然函数重新表达
-$$
-P(f_1, f_2, ..., f_N|C_k)=\prod\limits_{i=1}^{L}P(\mathbf{F}_l|C_k)
-$$
-基于特征分组的分类公示为
-$$
-\arg\max_kP(C_k)\prod\limits_{i=1}^{L}P(\mathbf{F}_i|C_k)
-$$
-在实际训练过程中，由于训练样本数量较少，会导致分类概率为零的情况。因此，我们认为$P(\mathbf{F}|C_k)$符合Dirchlet分布，因此设定一个最小的概率输出
-$$
-p(\mathbf{F}=z|C_k)=\frac{\mathbb{N}(\mathbf{F}=z|C_k)+1}{\sum_{z=0}^{2^S-1}(\mathbb{N}(\mathbf{F}=z|C_k)+1)}
-$$
-其中，$\mathbb{N}(\mathbf{F}=z|C_k)$是计算在类别$C_k$情况下，观测到$\mathbf{F}=z$的特征个数。
+在通过随机蕨分类器计算得到新的样本之后，还需要经过最近邻分类器做最后一次筛选。最近邻分类器实质上是对待分类的样本计算与其他正负样本直接的相似度，这种相似度可以用相关相似度（Relative Similarity）来定义或保守相似度（Conservative Similairy）来定义。
 
 \subsection{学习器的设计}
-学习模块（Leaner）学习过程实时观测追踪器和探测器的执行，并预估探测器的错误，生成训练样例以使能在未来避免类似的错误。学习组件假设追踪器和探测器都有可能出现失败执行，但学习组件的引入可以使得探测器生成更多的追踪目标外观（generalizes to more object appearances），以区别背景。
+学习器的设计时平衡新信息和旧信息的关键，也是目标跟踪算法能否适应目标周边场景实时变化的关机。在机器学习领域，学习的机制一般分为监督学习、非监督学习和半监督学习。而TLD框架中使用的学习器属于半监督学习。因为在跟踪的过程中，学习期得到的样本信息一部分为有标签的样本，一部分为没有标签的样本。
 
-PN学习即PN learning, P指代Positive Constraint,也称之为P-expert或者growing event,N指代Negative Constraint,也称之为N-expert或者pruning event。
+这里的学习机制被称为PN Learning。其中P指代Positive Constraint，也称之为P-expert或者；N指代Negative Constraint，也称之为N-expert。
 
-P-expert的作用是发现目标的新的外观（形变），并以此来增加正样本的数量，从而使得检测模块更具鲁棒性；N-expert的作用是生成负的训练样本。N-expert的前提假设是，（被跟踪的）前景目标仅可能出现在视频帧中的一个位置，因此，如果前景目标的位置是确定的，那么其周围必然是负样例。
-
-TLD模块中的PN学习作用是通过对视频序列的在线处理来逐步改善检测模块(TLD中的Detection)的性能。对视频中的每一帧而言，我们希望评估检测模块在当前帧中的误检，并以此来更新目标模型，从而使得在以后的视频帧处理过程中避免类似的错误再次发生。PN学习的关键在于两种类型的“专家(experts)”：P-experts检查那些被检测模块错误分类为正样本（前景目标）的数据；N-experts检查哪些被检测模块错误分类为负样本(背景)的数据；需要提醒的是，无论P-experts还是N-experts都会产生一定的偏差。那么，如果用这些存在偏差的数据来更新检测模块（目标模型），是否会造成检测模型的性能恶化呢？作者经过研究发现，尽管存在误差，在一定条件下，误差是允许的，并且检测模块的性能会因此得到改善。
-
-PN学习包含四个部分：（1）一个待学习的分类器；（2）训练样本集–一些已知类别标签的样本；（3）监督学习–一种从训练样本集中训练分类器的方法；（4）P-N experts–在学习过程中用于产生正（训练）样本和负（训练）样本的表达函数；这四个部分之间的关系如下图所示：
-
-首先根据一些已有类别标记的样本，借助监督学习方法来训练，从而得到一个初始分类器。之后，通过迭代学习，利用上一次迭代得到的分类器对所有的未赋予标签的样本数据进行分类，而P-N experts则找出那些错误分类的样本，并依此来对训练样本集做出修正，使得下一次迭代训练之后得到的分类器的性能有所改善。P-experts将那些被分类器标记为负样本，但根据结构性约束条件应该为正样本的那些样本赋予“正”的标签，并添加到训练样本集中；而N-experts则将那些被分类器标记为正样本，但根据结构性约束条件应该为负样本的那些样本赋予“负”的标签，并添加到训练样本集当中；这也就意味着，P-experts增加了分类器的鲁棒性，而N-experts则增加了分类器的判别能力。
-
-每一个扫描窗口就表示一个图像片(image patch)，图像片的类别标签用(b)(c)中的彩色圆点来表示。检测模块对每个图像片的类别赋值过程是彼此独立的，因此，N个扫描窗口就存在个类别标签的组合。而(b)则显示了其中一种可能的类别标签形式，这种类别标签标明，待检测目标在一个视频帧中可能同时出现在好几个区域，并且，待检测目标在相邻视频帧之间的运动没有连续性（例如(b)中最前面的图像中右上角的红色圆点在后面的两个图像中均没有出现），显然，这种类别标签形式是错误的。相反，(c)所示的类别标签形式则显示，每个视频帧中，目标只可能出现在一个区域，并且，相邻视频帧之间检测到的目标区域是连续了，构成了一个目标的运动轨迹。这种性质，我们称之为“结构性”的。PN学习的关键就是找到这种结构性的数据，从而来判别检测模块所产生的错误标签。
-
-上述例子表明：P-experts寻找视频序列中的时域上的结构性特征，并且假设目标是沿着轨迹线移动的，即，相邻帧之间的移动很小，且存在一定的相关性。P-experts记录目标在上一帧中的位置，并根据帧与帧之间的跟踪算法（这里采用的是LK光流法）来预测目标在当前帧中的位置。如果检测模块将跟踪算法预测到的目标在当前帧中的位置标记为负标签，那么P-experts就产生一个正的训练样本；N-experts寻找视频序列中的空间域上的结构性特征，并且假设目标在一个视频帧中只可能出现在一个位置。N-experts对检测模块在当前帧中的所有输出结果以及跟踪模块的输出结果进行分析，并找到具有最大可能性的那个区域。当前帧中所有目标可能出现的区域当中，如果某个区域同最大可能性区域之间没有重叠，就将其认定为负样本。另外，具有最大可能性的那个区域，被用于重新初始化跟踪模块。
+PN Learning的步骤主要分为三个部分：一是根据检测器给出的结果进行评估，二是使用P-expert和N-expert对检测器中分类错误的结果进行估计，三是根据上述计算的结果，更新检测器中的分类模块。P-Expert主要针对时间连贯性进行探索，其假设对象的位置移动应该是一条连贯的曲线。其能够利用跟踪器来估计目标出现在当前帧的位置。如果探测器将当前位置标记为负的（即错误负样本误差），则P-Expert产生一个正样本。N-Expert主要针对空间连贯性进行探索。其假设对象在相同帧里只出现在一个位置。其分析探测器对当前图像帧的所有相应，以及追踪器的相应，并选择其中最具可信度的一个。学习过程中最为重要的一点就是P-expert具备判别错误分类为正样本数据的能力，以及N-expert具备判别错误分类为负样本数据的能力。这个分类和提取错误的过程随着图像序列的变化实时更新，以此满足目标跟踪的需要。该算法的有效性参见文献\ref{kalal2010pn}。
 
 综上所述，基于上述三种模块的设计，TLD方法的算法实现伪代码如算法\ref{alg:tld_all}所示。
 \begin{algorithm2e}[ht]
@@ -273,7 +310,55 @@ PN学习包含四个部分：（1）一个待学习的分类器；（2）训练�
 	\label{alg:tld_all}
 \end{algorithm2e}
 
+由于对目标编码具有一定的随机性，因此可以使用蒙特卡罗方案对TLD框架和不同无人机降落数据集进行测试。图\ref{fig:chp04_24_random_semi_random_monte_carlo}所示是Random Pair编码方法和Semi-random Pair编码方法在中型无人机中的一组数据集中的比较。其中蓝色曲线和橙色曲线分别描述在每一帧算法识别无人机中心的误差，浅蓝色和浅橙色阴影为$1\sigma$的误差带。如图所示，在使用Semi-random Pair编码方法之后，系统的识别准确度有所提高，平均提高精度为$1.04\ pixel$。在进行1000次蒙特卡罗测试之后，如图中系统的误差带所示，两种编码方法的稳定性较好。
 
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp04/chp04_24_random_semi_random_monte_carlo.pdf}
+	\caption{Random Pair与Semi-random Pair的跟踪精度比较}
+	\label{fig:chp04_24_random_semi_random_monte_carlo}
+\end{figure}
+
+为了验证TLD方法对不同类型数据集的跟踪精度和跟踪速度进行比较，同样对数据集进行1000次蒙特卡罗测试，测试结果如图\ref{fig:chp04_25_small_middle_CDE_monte_carlo}和图\ref{fig:chp04_26_small_middle_speed_monte_carlo}所示。在跟踪精度方面，由于远端在远端时，小型无人机的目标成像情况相对较小，因此在前50帧，小型无人机的跟踪精度明显优于中型无人机，随后，二者精度误差逐渐缩小。在跟踪速度方面，小型无人机的平均跟踪速度为$20.94\ fps$，中型无人机的跟踪速度为$16.83\ fps$。两类测试的中每一帧的$1\sigma$误差带变化均不大，TLD算法的稳定性较强。
+
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp04/chp04_25_small_middle_CDE_monte_carlo.pdf}
+	\caption{小型无人机和中心无人机的跟踪精度比较}
+	\label{fig:chp04_25_small_middle_CDE_monte_carlo}
+\end{figure}
+
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp04/chp04_26_small_middle_speed_monte_carlo.pdf}
+	\caption{小型无人机和中心无人机的跟踪速度比较}
+	\label{fig:chp04_26_small_middle_speed_monte_carlo}
+\end{figure}
+
+为了比较TLD方法、AdaBoost方法和Meanshift方法的性能差异，针对七组不同的数据集进行了实验测试。选用AdaBoost方法和Meanshift方法的原因是在以往的实验测试过程中，这两类算法均取得了较好跟踪精度，且实时性强。为保证测试的有效性，上述三类算法均使用C++实现，其综合实验结果如表\ref{lab:TLD_with_others}所示。其中每一组图像序列中的最优检测精度和最快跟踪速度用粗体表示。通过表中数据可以看到，TLD在精度和速度方面优于上述两种算法，但中心点的像素误差仍然为$5\ pixel$左右，对无人机空间位置的解算影响仍然较大。
+
+% Please add the following required packages to your document preamble:
+% \usepackage{multirow}
+% \usepackage{graphicx}
+\begin{table}[]
+	\centering
+	\caption{TLD方法与AdaBoost和Meanshift方法的比较}
+	\label{lab:TLD_with_others}
+	\resizebox{\textwidth}{!}{%
+		\begin{tabular}{ccccccc}
+			\hline
+			\multicolumn{1}{l}{\multirow{2}{*}{}}                               & \multirow{2}{*}{Sequence} & \multirow{2}{*}{Frames} & AdaBoost     & Meanshift     & TLD          & \begin{tabular}[c]{@{}c@{}}TLD with \\ Semi-Random Pair\end{tabular} \\ \cline{4-7} 
+			\multicolumn{1}{l}{}                                                &                           &                         & \multicolumn{4}{c}{Center Location Error(pixel) / Speed(fps)}                                                     \\ \hline
+			\multirow{4}{*}{\begin{tabular}[c]{@{}c@{}}小型尺寸\\ 无人机\end{tabular}} & 1                         & 355                     & 6.31 / 9.51  & 14.39 / 15.35 & \textbf{6.14} / 21.13 & 6.20 / \textbf{21.22}                                                         \\
+			& 2                         & 384                     & 7.47 / 10.81 & 14.25 / 15.11 & 6.37 / 20.91 & \textbf{6.31} / \textbf{21.19}                                                         \\
+			& 3                         & 340                     & 6.61 / 10.14 & 13.48 / 15.33 & 5.62 / \textbf{21.10} & \textbf{5.23} / 20.60                                                         \\
+			& 4                         & 338                     & 7.77 / 10.12 & 13.85 / 14.71 & 5.72 / \textbf{20.92} & \textbf{5.88} / 20.82                                                         \\ \hline
+			\multirow{3}{*}{\begin{tabular}[c]{@{}c@{}}中型尺寸\\ 无人机\end{tabular}} & 1                         & 137                     & 8.01 / 8.33  & 11.41 / 13.33 & 7.85 / \textbf{17.00} & \textbf{5.99} / 16.10                                                         \\
+			& 2                         & 159                     & 9.65 / 8.59  & 13.10 / 13.67 & 6.95 / 16.96 & \textbf{5.12} / \textbf{16.97}                                                         \\
+			& 3                         & 181                     & 8.33 / 8.01  & 11.13 / 13.03 & 6.93 / 17.37 & \textbf{5.39} / \textbf{17.77}                                                         \\ \hline
+		\end{tabular}%
+	}
+\end{table}
 
 \section{基于主动态轮廓线的目标跟踪研究}
 \subsection{主动轮廓方法介绍}
@@ -506,7 +591,7 @@ u^{n+1} (\mathbf{x}) = (((SI_h) \circ (IS_h)) u^{n+\frac{2}{3}})(\mathbf{x})
 \begin{figure}[ht]   
 	\centering
 	\includegraphics[width=0.8\textwidth]{figs/chp04/chp04_06_landing_data_1_left_Contour_Time.pdf}
-	\caption{使用主动轮廓方法对于中型无人机的时间消耗}
+	\caption{使用主动轮廓方法对于中型无人机识别的时间消耗}
 	\label{fig:chp04_06_landing_data_1_left_Contour_Time}
 \end{figure}
 
@@ -896,14 +981,14 @@ y_{t-1} = f\frac{y_t -f\phi}{- \psi  x_t + \phi y_t + f}
 \begin{align}
 \label{eq:prev_predict_curr}
 x_{t} = f\frac{x_{t-1} - f\psi }{x_{t-1}  \psi  - \phi y_{t-1} + f} \\
-y_{t} = f\frac{y_{t-1} -f\phi}{  x_{t-1} \psi - \phi y_{t-1} + f} \\
+y_{t} = f\frac{y_{t-1} -f\phi}{  x_{t-1} \psi - \phi y_{t-1} + f}
 \end{align}
 
 根据上述方法定义，在实际数据中可以得到进一步验证。图\ref{fig:chp04_17_predict_1}和图\ref{fig:chp04_18_predict_2}所示为选取两组转台方位角和俯仰角偏差较大的情况。其中上一帧目标坐标位置的真值用黄色点标记，根据上一帧坐标预测出的当前帧坐标用蓝色点标记。此外，当前帧坐标真值用绿色标记，通过当前帧真值反向预测上一帧目标位置的坐标用墨绿色标记。通过比较向前和向后预测的真值，可以验证之前的推算是正确。
 
 图\ref{fig:chp04_17_predict_1}左侧是中心无人机第一组降落数据集中第138帧的数据，右侧为第139帧的数据，通过直观比较左右两幅图像的地平线位置，并参考转台提供的数据可以判断出：转台在连续两帧中俯仰角的变化较大。同理，图\ref{fig:chp04_17_predict_1}所示是该组图像序列的第104帧和第105帧图像，通过比较两幅图像白色文字右侧的地面栏杆变化，并参考转台提供的数据可以判断出：转台在连续两帧中方位角变化较大。通过公式\ref{eq:prev_predict_curr}可以对该部分偏差进行有效修正，同时也可以通过公式\ref{eq:prev_predict_curr}来反向验证算法是否有效。这两组图像的具体数据结果如表所示。
 
-\begin{figure}[ht]
+\begin{figure}[t]
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp04/chp04_17_predict_1.pdf}
 	\caption{当转台出现方位角较大偏差时，目标位置的估计情况}
