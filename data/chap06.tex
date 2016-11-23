@@ -1,13 +1,4 @@
 \chapter{基于多传感器的无人机引导系统设计}
-\label{chap:main}
-本章将进入论文排版的正文, 按元素分主要包括：
-{\kai 字体段落，图片表格，公式定理，参考文献}这几部分。
-这个样例文件将包括模板中使用到的所有格式、模板中自定义命令到或者特有的东西，
-都将被一一介绍，希望大家在排版自己的学位论文前能细致的看一遍，记住样例的格式和
-方法，方便上手。
-\cite{ELIDRISSI94}
-
-\section{引言}
 
 \section{基于激光反射器的引导系统设计}
 
@@ -166,77 +157,125 @@ P_{k|k}=(1-K_k H_k)P_{k|k-1}
 
 \section{舰船运动估计模型}
  
-\begin{algorithm2e}
-	\SetAlgoLined
-	\SetKwInOut{Input}{Input}
-	\SetKwInOut{Output}{Output}
-	\Input{Initialized sequence $\hat{\psi}(k),\ \ k=1,2,..., N$}
- 	
-	\KwResult{$x(k)$}
-	%initialization\;
-	\While{$\Sigma |x_{error}| \le \alpha$ and $|x^{*(i)} - x^{*(i-1)} | \le \beta$}
-	{
-		Update UAV states \;
-		$p(k+1) \leftarrow$ Update($p(k)$)\;
-		$\dot{p}(k+1) \leftarrow$ Update($\dot{p}(k)$)\;
-		${\phi}(k+1) \leftarrow$ Update(${\phi}(k)$)\;
-		Solve SCP using CVXGEN Solver\;
-		\For{$j\leftarrow 1$ \KwTo $N-1$}{
-			Calculate $x_{error}$ \;
-		}
-		Update $\hat{\psi}(k)^{i+1} = \hat{\psi}(k)^{i} $\;
-		Update Trust Region, $\rho(k)^{i+1} = \gamma_{path}(k)^{i} \rho(k)^{i}$ \;
-		$i = i + 1$
-	}
-	\caption{侧风扰动下的最优轨迹求解}
-\end{algorithm2e}
-
-\begin{algorithm2e}[H]
-	\SetAlgoLined
-	\KwData{this text}
-	\KwResult{how to write algorithm with \LaTeX2e }
-	initialization\;
-	\While{not at end of this document}{
-		read current\;
-		\eIf{understand}{
-			go to next section\;
-			current section becomes this one\;
-		}{
-			go back to the beginning of current section\;
-		}
-
-	}
-	\caption{How to write algorithms}
-\end{algorithm2e}
-
-\begin{algorithm2e}
-	\SetKwData{Left}{left}\SetKwData{This}{this}\SetKwData{Up}{up}
-	\SetKwFunction{Union}{Union}\SetKwFunction{FindCompress}{FindCompress}
-	\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
-	\Input{A bitmap $Im$ of size $w\times l$}
-	\Output{A partition of the bitmap}
-	\BlankLine
-	\emph{special treatment of the first line}\;
-	\For{$i\leftarrow 2$ \KwTo $l$}{
-		\emph{special treatment of the first element of line $i$}\;
-		\For{$j\leftarrow 2$ \KwTo $w$}{\label{forins}
-			\Left$\leftarrow$ \FindCompress{$Im[i,j-1]$}\;
-			\Up$\leftarrow$ \FindCompress{$Im[i-1,]$}\;
-			\This$\leftarrow$ \FindCompress{$Im[i,j]$}\;
-			\If(\tcp*[h]{O(\Left,\This)==1}){\Left compatible with \This}{\label{lt}
-				\lIf{\Left $<$ \This}{\Union{\Left,\This}}
-				\lElse{\Union{\This,\Left}}
-			}
-			\If(\tcp*[f]{O(\Up,\This)==1}){\Up compatible with \This}{\label{ut}
-				\lIf{\Up $<$ \This}{\Union{\Up,\This}}
-				\tcp{\This is put under \Up to keep tree as flat as possible}\label{cmt}
-				\lElse{\Union{\This,\Up}}\tcp*[h]{\This linked to \Up}\label{lelse}
-			}
-		}
-		\lForEach{element $e$ of the line $i$}{\FindCompress{p}}
-	}
-	\caption{disjoint decomposition}\label{algo_disjdecomp}
- 	\caption{使用SCP方法求解侧风扰动下的最优轨迹}
- \end{algorithm2e}
  
+ 
+\section{无人机降落决策系统}
+一般而言，无人机的最终决断时间在接触甲板之前的1.5s至12.5s。定义下滑曲线的方位角误差为$\delta_h$，距离跑道中心线的误差为$\epsilon_h$，下滑曲线的俯仰角误差为$\delta_v$，距离期望下降曲线的高度差为$\epsilon_v$。无人机降落决策系统主要是根据无人机下降阶段的六个基本数据做出是否复飞的判断。这六个量分别为
+\begin{compactenum}
+	\item 跑道中心线的误差为$\epsilon_h$
+\item 距离期望下降曲线的高度差为$\epsilon_v$
+\item 无人机横滚角$\phi$
+\item 无人机俯仰角$\theta$
+\item 航母甲板下沉速率$\dot{h_c}$
+\item 航母甲板侧滑速率$v_s$
+\end{compactenum}
+根据上述六个不同的基本数据指标，无人机主要面临一些六种危险如下表所示。
+\begin{table}
+	\centering
+	\begin{tabular}{cccc}
+		\hline
+		风险名称   & 符号表达 & 相关变量 & 状态描述       \\ \hline
+		撞击甲板下方 & PRS  & $e\_v$ & 超过纵向最大负阈值  \\
+		未接触拦阻索 & PUL  & $e\_v$ & 超过纵向最大正阈值  \\
+		横向偏差大  & POL  & 无   & 超过横向最大正负阈值 \\
+		姿态偏差大  & PBA  & 无    & 着舰姿态偏差大    \\
+		硬着舰    & PHL  & 无   & 超过沉降最大阈值   \\
+		横向偏离跑道 & PRB  & 无    & 无          \\
+	\end{tabular}
+\end{table}
+其中$P_{RS}$定义为
+\begin{equation}
+P_{RS}=\frac{1}{\sigma_v\sqrt{2\pi}}\int_{-\infty}^{e_{v,low}}\exp(-\frac{(x-\bar{e}_v)^2}{2\sigma_v^2})dx \\
+=\frac{1}{2}(1+\text{erf}(\frac{e_{v, low}-\bar{e}_v}{\sigma_v\sqrt{2}}))
+\end{equation}
+其中误差函数定义为
+\begin{equation}
+\text{erf}(x)=\frac{2}{\sqrt{\pi}}\int_{0}^{x}e^{-t^2}dt
+\end{equation}
+假设六种情况发生的概率是相互独立的，由此定义无人机正常回收、复飞和失败的概率。
+\begin{align}
+P_{recover}=(1-P_{RS})(1-P_{UL})(1-P_{OL})(1-P_{BA})(1-P_{HL})(1-P_{RB}) \\
+P_{bolter}=(1-P_{RS})P_{UL}(1-P_{OL})(1-P_{BA})(1-P_{HL})(1-P_{RB}) \\
+P_{fail}=1-(1-P_{RS})(1-P_{OL})(1-P_{BA})(1-P_{HL})(1-P_{RB})
+\end{align}
+
+
+
+
+
+ 
+ 
+%\begin{algorithm2e}
+%	\SetAlgoLined
+%	\SetKwInOut{Input}{Input}
+%	\SetKwInOut{Output}{Output}
+%	\Input{Initialized sequence $\hat{\psi}(k),\ \ k=1,2,..., N$}
+% 	
+%	\KwResult{$x(k)$}
+%	%initialization\;
+%	\While{$\Sigma |x_{error}| \le \alpha$ and $|x^{*(i)} - x^{*(i-1)} | \le \beta$}
+%	{
+%		Update UAV states \;
+%		$p(k+1) \leftarrow$ Update($p(k)$)\;
+%		$\dot{p}(k+1) \leftarrow$ Update($\dot{p}(k)$)\;
+%		${\phi}(k+1) \leftarrow$ Update(${\phi}(k)$)\;
+%		Solve SCP using CVXGEN Solver\;
+%		\For{$j\leftarrow 1$ \KwTo $N-1$}{
+%			Calculate $x_{error}$ \;
+%		}
+%		Update $\hat{\psi}(k)^{i+1} = \hat{\psi}(k)^{i} $\;
+%		Update Trust Region, $\rho(k)^{i+1} = \gamma_{path}(k)^{i} \rho(k)^{i}$ \;
+%		$i = i + 1$
+%	}
+%	\caption{侧风扰动下的最优轨迹求解}
+%\end{algorithm2e}
+%
+%\begin{algorithm2e}[H]
+%	\SetAlgoLined
+%	\KwData{this text}
+%	\KwResult{how to write algorithm with \LaTeX2e }
+%	initialization\;
+%	\While{not at end of this document}{
+%		read current\;
+%		\eIf{understand}{
+%			go to next section\;
+%			current section becomes this one\;
+%		}{
+%			go back to the beginning of current section\;
+%		}
+%
+%	}
+%	\caption{How to write algorithms}
+%\end{algorithm2e}
+%
+%\begin{algorithm2e}
+%	\SetKwData{Left}{left}\SetKwData{This}{this}\SetKwData{Up}{up}
+%	\SetKwFunction{Union}{Union}\SetKwFunction{FindCompress}{FindCompress}
+%	\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+%	\Input{A bitmap $Im$ of size $w\times l$}
+%	\Output{A partition of the bitmap}
+%	\BlankLine
+%	\emph{special treatment of the first line}\;
+%	\For{$i\leftarrow 2$ \KwTo $l$}{
+%		\emph{special treatment of the first element of line $i$}\;
+%		\For{$j\leftarrow 2$ \KwTo $w$}{\label{forins}
+%			\Left$\leftarrow$ \FindCompress{$Im[i,j-1]$}\;
+%			\Up$\leftarrow$ \FindCompress{$Im[i-1,]$}\;
+%			\This$\leftarrow$ \FindCompress{$Im[i,j]$}\;
+%			\If(\tcp*[h]{O(\Left,\This)==1}){\Left compatible with \This}{\label{lt}
+%				\lIf{\Left $<$ \This}{\Union{\Left,\This}}
+%				\lElse{\Union{\This,\Left}}
+%			}
+%			\If(\tcp*[f]{O(\Up,\This)==1}){\Up compatible with \This}{\label{ut}
+%				\lIf{\Up $<$ \This}{\Union{\Up,\This}}
+%				\tcp{\This is put under \Up to keep tree as flat as possible}\label{cmt}
+%				\lElse{\Union{\This,\Up}}\tcp*[h]{\This linked to \Up}\label{lelse}
+%			}
+%		}
+%		\lForEach{element $e$ of the line $i$}{\FindCompress{p}}
+%	}
+%	\caption{disjoint decomposition}\label{algo_disjdecomp}
+% 	\caption{使用SCP方法求解侧风扰动下的最优轨迹}
+% \end{algorithm2e}
+% 
 
