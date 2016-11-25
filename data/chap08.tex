@@ -1,48 +1,305 @@
 \chapter{基于多传感器的无人机自主着舰系统}
 
-\subsection{引导设备选型}
-了实现全天候，高精度，复杂应用情况下的通用无人机自主起降引导系统，需要利用多种传感器，并对传感器信息进行融合，为无人机的自主起降提供可靠保障。
+\section{仿真实验环境构建}
+\subsection{基于Matlab/Simulink的控制系统仿真环境实现}
+Matlab软件于1980年由美国New Mexico大学的研究者Cleve Moler开发，其中Simulink是重要组件之一，该组件能够完成动态系统建模、仿真与综合分析等功能。为验证无人机底层控制和顶层控制算法，本文使用Simulink中的相关模块来完成仿真环境搭建。其中底层控制回路的仿真框图如图\ref{fig:chp08_07_matlab_control}所示，其中\texttt{Autopilot}模块主要完成底层控制，满足无人机的姿态控制需求。
 
-参考国内外同类系统设计，考虑通用性、维护性等方面的需求，本系统设计采用了多传感器融合，综合了远程搜索、中近距离精确导航、近距离精确定位的功能，保证能在多种气象条件下，系统安全可靠工作，为无人机的自主起降过程提供丰富精确的导航信息。按照不同的精度要求和成本控制，本系统分为三种不同的配置，以降低对单类型传感器性能指标的要求，提高系统的可靠性。具有快速展开、模块化、方便集成以及高效的多传感器融合的特点，具体需要实现以下功能指标：
-（1）能手动和自动切换控制云台，方便系统的标定和调试，可以实现云台快速和精准的指向，以跟踪目标。
-（2）能够适应雨雪阴天等各种复杂天气情况，能在可见光和近红外相机之间进行快速切换，方便调试和观察。
-（3）当无人机距离地面引导系统大于2km，进入环线飞行距离达到4km时，引导系统通过远红外相机或者UWB定位系统，能够方便的识别、跟踪以及对无人机目标姿态的监视。
-（4）地基引导系统能够实时得到并显示转台当前的位置和DGPS坐标值，能够使用户更加直观地判断系统的运行状态，对视觉引导的数据能够进行精度对比分析，当运行不稳定时能及时地通知用户加以修正。
-（5）能够完成无人机起飞和降落过程的引导。当无人机需要起飞时，云台自动等待无人机起飞；当无人机降落时，云台转动到降落引导窗口，等待无人机的降落。引导系统开始工作后，系统自动把引导系统得到的位置信息反馈给无人机，引导无人机起降。
-（6）引导系统的相对定位精度指标必须达到：水平方向≤0.5m，高度方向≤0.2m。
-（7）最大探测距离不低于4km（翼展5米无人机），最大探测距离不低于2km（翼展3米无人机）。
-（8）具备昼夜起降引导能力。
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.8\textwidth]{figs/chp08/chp08_07_matlab_control.pdf}	
+	\caption{Matlab/Simulink底层控制回路仿真}
+	\label{fig:chp08_07_matlab_control}
+\end{figure}
 
+路径规划与顶层控制回路的仿真框图如图\ref{fig:chp08_06_matlab_sitl}所示，其中\texttt{Path Planner}模块主要产生基于Dubins Path的降落曲线，\texttt{Path Manager}模块主要判断降落曲线中的离散航点是否达到，\texttt{Path Follower}模块主要使用NMPC和TECS方法完成对降落曲线的跟踪，将底层控制指令传递给\texttt{Pixhawk}模块。
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figs/chp08/chp08_06_matlab_sitl.pdf}	
+	\caption{Matlab/Simulink路径规划仿真}
+	\label{fig:chp08_06_matlab_sitl}
+\end{figure}
+
+本文在是基于美国杨百翰大学（Brigham Young University，BYU）的研究者Randy Beard于2012年出版的《Small Unmanned Aircraft: Theory and Practice》一书\cite{beard2012small}中提供的Matlab/Simulink仿真环境基础之上修改完成。主要根据本文提出的降落曲线生成和控制算法对原有程序中的相应模块进行修改或重新设计。
+
+\subsection{基于ROS和Gazebo的仿真环境实现}
+ROS是Willow Garage公司在2010年发布的专门用于机器人研究和开发的操作系统。该操作系统最早起源于斯坦福大学，主要针对PR2机器人的需求进行设计。随着近年来机器人研究领域的持续升温，ROS系统越来越受到学术界和工业界的重视。ROS最重要的特点是解决了代码复用和模块化开发的需求。此外，ROS并不是传统意义上的操作系统，它的主体运行环境为Linxu系统，但其能够提供类似传统操作系统的诸多功能，例如硬件层的抽象描述、底层驱动程序的管理、驱动模块的共用、消息传递机制、程序的发行与管理和支持多种开发语言等。ROS中最重要的概念是节点（Nodes），这些节点通过消息的发布（Publish）和订阅（Subscribe）机制完成程序之间对数据的传递。
+
+Gazebo仿真环境是独立于ROS系统的一套优秀的仿真软件。通过Gazebo仿真环境可以构建三维模型，能够定义物体的运动学和动力学参数，从而构建所需要的机器人单体、驱动模块、传感器模块和周边环境等。此外，Gazebo的插件（Plugin）开发完全开发，使用者可以根据自己的特殊需求修改和定制相应的仿真模块以满足实验要求。
+
+由于ROS与Gazebo之间的数据交互工作可以通过编写特定的插件满足，因此越来越多的机器人研究者使用上述两个软件开展程序和算法初期开发和仿真测试。其中最为有名的两个应用场景是：（1）从2012年至2015年，由美国国防先进研究项目局设置的机器人挑战赛（DARPA Robotics Challenge，DRC）\cite{gazebo_darpa}；（2）2016年度，由美国国家航空航天局设置的太空机器人挑战赛（NASA's Centennial Challenges: Space Robotics Challenge）\cite{gazebo_nasa}。由此，本文选择使用Gazebo与ROS的组合作为仿真环境的搭建。
+
+考虑到Gazebo环境中对水面模拟需要耗费大量运算资源，因此设计使用地面移动平台来模拟舰船的运动。地面移动机器人上配置左右引导系统，该引导单元由两个矩形关节组合而成，具备二自由度独立运动能力并搭载不同型号的传感器，如图\ref{fig:chp08_02_ugv_gazebo}所示。图中左侧是地面移动平台和机基线距离为$5 \m$时的配置情况，右侧是地面移动平台的控制界面。通过该界面或者通过端口\texttt{/polaris/cmd\_vel}即可对地面移动平台进行手动控制或自主轨迹控制，由此实现模拟舰船在海面的平稳运动。此外，通过在引导系统的输出引入噪声，以此实现在不同海况扰动下的模拟。其中可见光传感器和红外传感器的参数可以在文件\texttt{gazebo\_camera\_plugin.cpp}和\texttt{polaris\_description/models/model-1\_4\_with\_ptu.sdf}中修改。
+
+\begin{figure}[!t]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_02_ugv_gazebo.pdf}	
+	\caption{Gazebo仿真环境下的地面移动机器人和引导系统与地面移动机器人操作界面}
+	\label{fig:chp08_02_ugv_gazebo}
+\end{figure}
+
+对于无人机的模拟本文采用小型尺寸的无人机模型进行模拟，主要针对无人机的电机、副翼、襟翼、方向舵和升降舵进行设置。其中无人机机体模型和空气动力学参数根据第二章中的模型进行设计，具体参数详见文件\texttt{gazebo\_aerodynamics\_plugin.cpp}。在Gazebo环境中的无人机模型如图\ref{fig:chp08_04_gazebo_uav}所示，图中表示了无人机的基本控制机构，其中包含了副翼、襟翼、方向舵、升降舵和电机共五个控制量。
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figs/chp08/chp08_03_gazebo_landing_area.pdf}	
+	\caption{Gazebo仿真环境下的无人机飞行区域}
+	\label{fig:chp08_03_gazebo_landing_area}
+\end{figure}
+
+此外，为了更好的模拟飞行环境，本文替换了Gazebo原始环境中的地图，并引入风速扰动插件\texttt{gazebo\_wind\_plutin.cpp}来模拟飞行过程中的侧风扰动。图\ref{fig:chp08_04_gazebo_uav}所示为无人机在Gazebo中的仿真飞行场景。仿真环境中的主要节点名称和数据内容含义如图\ref{lab:ros_nodes_list}所示。
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figs/chp08/chp08_04_gazebo_uav.pdf}	
+	\caption{Gazebo仿真环境下的小型固定翼无人机示意图}
+	\label{fig:chp08_04_gazebo_uav}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[height=0.9\textheight]{figs/chp08/chp08_01_rosgraph.pdf}	
+	\caption{ROS仿真环境中全部节点关系示意图}
+	\label{fig:chp08_01_rosgraph}
+\end{figure}
+
+% Please add the following required packages to your document preamble:
+% \usepackage{multirow}
+% \usepackage{graphicx}
+\begin{table}[!ht]
+	\centering
+	\caption{ROS与Gazebo仿真环境中核心节点的名称和数据内容定义}
+	\label{lab:ros_nodes_list}
+	\resizebox{\textwidth}{!}{%
+		\begin{tabular}{clc}
+			\hline
+			& \multicolumn{1}{c}{\textbf{节点名称}} & \textbf{数据内容定义} \\ \hline
+			\multirow{5}{*}{\begin{tabular}[c]{@{}c@{}}\textbf{左侧引导}\\ \textbf{单元节点}\end{tabular}} & /blackfly\_left/camera\_info & 相机标定参数 \\
+			& /blackfly\_left/image\_raw & 相机原始图像 \\
+			& /blackfly\_left/image\_raw/compressed & 相机压缩图像 \\
+			& /left\_ptu/joint\_state & 转台当前姿态 \\
+			& /left\_ptu/joint\_state\_cmd & 转台控制指令 \\ \hline
+			\multirow{5}{*}{\begin{tabular}[c]{@{}c@{}}\textbf{右侧引导}\\ \textbf{单元节点}\end{tabular}} & /blackfly\_right/camera\_info & 相机标定参数 \\
+			& /blackfly\_right/image\_raw & 相机原始图像 \\
+			& /blackfly\_right/image\_raw/compressed & 相机压缩图像 \\
+			& /right\_ptu/joint\_state & 转台当前姿态 \\
+			& /right\_ptu/joint\_state\_cmd & 转台控制指令 \\ \hline
+			\multirow{8}{*}{\begin{tabular}[c]{@{}c@{}}\textbf{无人机传感器}\\ \textbf{和控制量}\\ \textbf{节点}\end{tabular}} & /techpod/air\_pressure & 空气压力 \\
+			& /techpod/air\_speed & 空速 \\
+			& /techpod/camera & 机载相机图像 \\
+			& /techpod/command/motor\_speed & 电机控制量 \\
+			& /techpod/imu & 机载IMU数据 \\
+			& /techpod/magnetic\_field & 机载磁罗盘数据 \\
+			& /techpod/rotors\_key\_telop & 四个舵面和电机控制量 \\
+			& /techpod/gps & 无人机GPS数据 \\ \hline
+			\multirow{7}{*}{\begin{tabular}[c]{@{}c@{}}\textbf{无人机}\\ \textbf{真实值}\\ \textbf{节点}\end{tabular}} & /techpod/gazebo/wind\_speed & 环境风扰动 \\
+			& /techpod/ground\_speed & 无人机地速 \\
+			& /techpod/ground\_truth/imu & 无人机IMU数据 \\
+			& /techpod/ground\_truth/odometry & 无人机里程计 \\
+			& /techpod/ground\_truth/pose & 无人机姿态 \\
+			& /techpod/ground\_truth/pose\_with\_covariance & 无人机姿态方差矩阵 \\
+			& /techpod/ground\_truth/position & 无人机载惯性系的坐标 \\ \hline
+			\multirow{3}{*}{\begin{tabular}[c]{@{}c@{}}\textbf{地面移动}\\ \textbf{平台节点}\end{tabular}} & /polaris/cmd\_vel & 地面移动平台控制量 \\
+			& /polaris/odom & 地面移动平台里程计 \\
+			& /polaris/ground\_truth/position & 地面移动平台在惯性系的位置 \\ \hline
+		\end{tabular}%
+	}
+\end{table}
+
+根据上述软件设计，即可完成无人机的软件在回路仿真。为了验证Pixhawk和Odroid XU4的工作性能，可以进一步将ROS和Gazebo的数据通过串口传递给Pixhawk和Odroid XU4，以此达到硬件在回路仿真测试的结果。两种仿真环境的构建框图如图\ref{fig:chp08_05_SITL_HITL}所示。其中软件在回路仿真的蓝色模块可以与硬件在回路仿真的蓝色模块相互替换，以此满足相应的仿真需求。
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_05_SITL_HITL.pdf}	
+	\caption{硬件在回路仿真和软件在回路仿真示意图}
+	\label{fig:chp08_05_SITL_HITL}
+\end{figure}
+
+上述综合系统是基于瑞士苏黎世联邦理工学院（Eidgenössische Technische Hochschule Zürich，ETH）自主控制研究实验室（Autonomous System Lab，ASL）开发的RotorS\cite{Furrer2016}仿真环境中进一步开发过程中得到，其中主要添加了地面移动平台和控制系统、车载多传感器引导系统和无人机控制模块等。改造后的程序发布在\texttt{https://github.com/weiweikong/rotors\_simulator}。
+
+
+
+\section{外场实验环境构建}
+为实现全天候，高精度，复杂应用情况下的通用无人机自主起降引导系统。具有快速展开、模块化、方便集成以及高效的多传感器融合的特点，具体需要实现以下功能指标：
+（1）能够对云台进行手动和自动控制的切换，以满足对系统标定、算法测试、快速对准等方面的需求。
+（2）能够适应能见度较差的天气情况，具备在可见光和近红外相机之间进行快速切换功能。
+（3）在无人机距离期望引导位置大于一公里时，能够通过红外相机和UWB能够使得转台准确跟踪目标。
+（4）引导系统的相对定位精度为：水平方向≤0.5m，高度方向≤0.2m。
+（5）最大探测距离不低于2km（翼展5米无人机），最大探测距离不低于1km（翼展3米无人机）。
 
 \subsection{转台选型}
-转台选用美国FLIR公司的双轴陀螺稳定转台，型号为PTU-D300，支持通过RS232串口发送指令，并能实时反馈转台状态，包括转台的偏转角（Pan）和俯仰角（Tilt）。转台的分辨率为 。两侧可以安装负载支架，支持多种安装模式，可以为多种传感器提供搭载平台。PTU-D300为步进电机驱动，能够满足闭环跟踪目标的需求。转台抗振动冲击较好，防护等级IP67，支持野外、舰船、车载等恶劣工作环境。具体参数可参考表 2表 2 PTU-D300转台参数。
+引导系统使用的二自由度转台选用美国FLIR公司的双轴陀螺稳定转台，型号为PTU-D300。该转台支持通过RS232串口发送指令，并能实时反馈转台状态，包括转台的方位角（Pan）和俯仰角（Tilt）。转台的分辨率为$0.006\degree$ 。该转台外形如图\ref{fig:chp08_08_PTU-D300E_large}所示。PTU-D300为步进电机驱动，能够满足闭环跟踪目标的需求。转台抗振动冲击较好，防护等级IP67，支持野外、舰船、车载等恶劣工作环境。具体参数可参考表\ref{lab:FLIR_D300}。该转台的两侧可以安装负载支架，支持多种安装模式，为多种传感器的安装提供搭载平台。
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.4\textwidth]{figs/chp08/chp08_08_PTU-D300E_large.pdf}	
+	\caption{FLIR D300转台}
+	\label{fig:chp08_08_PTU-D300E_large}
+\end{figure}
+% Please add the following required packages to your document preamble:
+% \usepackage{graphicx}
+\begin{table}[!ht]
+	\centering
+	\caption{FLIR D300转台性能指标}
+	\label{lab:FLIR_D300}
+	\begin{tabular}{cc}
+		\hline
+		& \textbf{性能指标}                                                                                                          \\ \hline
+		\textbf{运动性能} & \begin{tabular}[c]{@{}c@{}}航向角：$360\degree$连续旋转\\ 俯仰角：$-90\degree-30\degree$\end{tabular}                              \\
+		\textbf{转动速度} & $0.064\degree/s-50\degree/s$                                                                                           \\
+		\textbf{负载能力} & $18.1\ kg$                                                                                                             \\
+		\textbf{电源输入} & DC$12-30$ V                                                                                                            \\
+		\textbf{工作温度} & $-30\degree C-70\degree C$                                                                                             \\
+		\textbf{步进模式} & \begin{tabular}[c]{@{}c@{}}1/2 STEP: $0.020\degree$\\ 1/4 STEP: $0.012\degree$\\ 1/8 STEP: $0.006\degree$\end{tabular} \\ \hline
+	\end{tabular}
+\end{table}
 
-无人机的飞行速度为30m/s，当无人机距离引导系统200m时，转台最大转过的速度为4.3°/s。满足转台的速度范围。无人机降落过程中的水平方向转过的角度大概为10m，垂直方向转过的角度大概为50m，从开始降落到降落完成大概15s，以500为计算，转动过程中的角度速度大概为0.076°，也满足最低的转速要求。转台的精度为0.006425°，所以当无人机目标距离引导系统500m时，水平方向的误差为0.0561m，满足系统精度的误差。同时，转台上摆放的起降大概10kg，其中远红外8kg，其它的2kg，也能满足转台的性能要求。
-为防止在转台转动过程中底座发生晃动，在二维主动视觉系统的转台的底部设计了可调式三角稳定底座，机械结构如图 5所示，可以增加转台在转动过程中的稳定性。具有较强的负载能力和较好的调节精度，可以满足引导系统的工作要求。
+当无人机的飞行速度为$30\ m/s$，距离引导系统为$200\ m$时，转台所需要的转动速度为$4.3\ \degree/s$，该数值属于转台的正常工作范围。此外，无人机降落过程中，在不确定进场方向的情况下，转台方位角的工作范围能做使得引导系统具备全空域搜索能力。此外，为防止在转台转动过程中底座发生移动，为此在转台底部设计了可调式三角稳定底座，机械结构如图\ref{fig:chp08_10_ptu_with_sensor}所示。因此，该转台系统具有较强的负载能力和较好的调节精度，可以满足引导系统的工作要求。如图所示，可以根据需要对传感器进行配置。图中左侧的是可见光和红外光相机的组合，右侧为红外光相机、激光照射器和UWB雷达的组合方式。
+
+\begin{figure}[!t]
+	\centering
+	\includegraphics[width=0.8\textwidth]{figs/chp08/chp08_10_ptu_with_sensor.pdf}	
+	\caption{FLIR D300搭载不同传感器的配置方式和支撑系统}
+	\label{fig:chp08_10_ptu_with_sensor}
+\end{figure}
+
 
 \subsection{可见光相机}
-像机选择GigE接口的The Imaging Source彩色CCD高速工业像机DFK 23G445，坚固耐用，适合于野外环境。选用CS接口的100mm固定焦距的镜头，实物如图 6。该相机像素分辨率为640×480，像元尺寸为5.6 m。采集的图像通过千兆网口传送给图像处理计算机，传输距离较远，方便软件开发。摄像机安装100mm焦距镜头后的视场角是 ，深度方向距离为400m时，探测窗口大小约为13.5×10.1m；深度方向距离为800m时，探测窗口大小约为27×20.2m。对于3米翼展的无人机，在800米处的成像像素为71个，能够达到目标识别的需求。因此，为增加探测范围，利用转动平台与摄像机构成主动视觉系统来对无人机目标实时检测-跟踪。
+可见光相机的选型为Imaging Source公司的彩色CCD高速工业像机，型号为DFK 23G445，接口为GigE。该相机使用的CCD芯片为Sony ICX445AQA，其像素分辨率为$640\times480$，像元尺寸为$5.6\  \mu m$，最大帧频为$30\ fps$。该相机使用GigE接口，使得仅适用一根网线即可承担供电和数据传送的双重功能，能够满足远距离配置系统和图像信息高速传递的需求。
 
-\subsection{红外相机传感器}
-红外热像仪是利用红外探测器和光学成像物镜接受被测目标的红外辐射能量，将分布图形反映到红外探测器的光敏元件上，从而获得红外热像图，这种热像图与物体表面的热场分布相对应。通俗地讲红外热像仪就是将物体发出的不可见红外能量转变为可见的热图像，如图 7所示，主要的参数指标如下。
-本系统选用的浙江大力科技股份有限公司生产的红外热像仪CM6240FC，大气能见度大于10km，相对湿度小于$80\%$，目标与背景温差3K条件下，对3m×3m目标，探测距离不小于7km，识别距离不小于5km。对1.7m×0.5m目标(人)，探测距离不小于5km，识别距离不小于2.5km。
- 	最宽视场（40mm焦距）：13.75°× 11°；
- 	窄视场（240mm焦距）：2.3°× 1.8°；
- 	连续变焦，变焦过程中保持图像清晰；
- 	视场公差：$±5\%$
- 	
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.4\textwidth]{figs/chp08/chp08_11_imagingsource_camera.pdf}	
+	\caption{The Imaging Source 彩色相机}
+	\label{fig:chp08_11_imagingsource_camera}
+\end{figure}
+
+对于镜头的选择，本文选用$100\ mm$焦距镜头，该镜头后的视场角为$1.936\degree \times 1.452 \degree$。深度方向距离为$400\ m$时，探测窗口大小约为$13.5\times10.1\ m$；深度方向距离为$800\ m$时，探测窗口大小约为$27.0\times20.2\ m$。对于实验中使用的中型无人机而言，该无人机的翼展为$3\ m$，其在$800\ m$处的理论成像像素为$71\ pixel$。本文使用的目标识别算法能够对该距离的目标进行有效识别。
+
 \subsection{电台设备}	
-采用的是加拿大Microhard公司的Nano IP系列的IPn 920（图 8），具有尺寸小、低功耗、传输可靠、能远距离快速通信等优势。其工作频率为902-928MHz，具有 frequency hopping spread spectrum (FHSS) 、 1.2Mbps 的传输速率，digital transmission service (DTS)技术等。能够实现自动组网，有点对点（P2P）、点对多点（P2E）、任意点对任意点（E2E）多种组网模式，同时支持网络、2路串口通信，所以非常适合于无人机控制和命令链路的数据传输。
+由于需要将舰载引导系统的信息回传给无人机导航系统，因此需要选择合适的电台。本文选用的是加拿大Microhard公司的Nano IP系列的IPn 920，如图所示。该电台具有尺寸小、低功耗、传输可靠、能远距离快速通信等优势。其工作频率为$902-928\ MHz$，具有$1.2\ Mbps$的传输速率。此外该电台还具备自动组网，点对点（P2P）、点对多点（P2E）、任意点对任意点（E2E）等多种组网模式，同时支持网络、两路串口通信，上述指标能够满足无人机降落过程中的引导信息上传和无人机信息下传的需求。
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.5\textwidth]{figs/chp08/chp08_12_micohard_radio.pdf}	
+	\caption{Microhard公司的IPn 920电台}
+	\label{fig:chp08_12_micohard_radio}
+\end{figure}
+
+\subsection{无人机平台}
+
+对于小型固定翼无人机平台而言，本文选用经典的“天行者“平台，如图\ref{fig:chp08_13_small_sized_uav}所示。该平台的翼展为$1880\ mm$，有效载荷为$2\ kg$，平均飞行时间为$40 \min$，最大飞行速度为$90\ km/h$，最小飞行速度为$35\ km/h$。该飞机的机舱相对较小，但能够满足加装Pixhawk自驾仪和Odroid XU4开发版的需求。仿真环境中所模拟的无人机尺寸与该小型固定翼无人机平台参数基本相同，本文使用的小型固定翼无人机降落数据集由该平台产生。
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.6\textwidth]{figs/chp08/chp08_13_small_sized_uav.pdf}	
+	\caption{“天行者”小型固定翼无人机}
+	\label{fig:chp08_13_small_sized_uav}
+\end{figure}
+
+对于中型固定翼无人机平台，本文选用后置发动机的“开拓者”无人机平台。该平台选用前三点式双尾撑布局如图\ref{fig:chp08_14_middle_sized_uav}所示。“开拓者”无人机长$2200\ mm$，翼展$3000\ mm$，重量为$20\ kg$，巡航速度$120\ km/h$。最初，为提升视觉检测的可靠性，选用涂装为橙色的“开拓者”无人机，便于在复杂背景下检测跟踪目标。由于本文最终所采用的图像跟踪算法使用的是灰度图像，因此跟踪算法识别精度和跟踪速度对涂装颜色不敏感，同时，为了配合激光照射模块，在其机头处安装了反射棱镜作为合作目标。本文使用的中型固定翼无人机降落数据集由该平台产生。
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.8\textwidth]{figs/chp08/chp08_14_middle_sized_uav.pdf}	
+	\caption{“开拓者”中型固定翼无人机}
+	\label{fig:chp08_14_middle_sized_uav}
+\end{figure}
 
 
-\subsection{激光超射模块}
-使用波长为940nm的半导体激光器，功率为25w，发出连续照明用激光，具体参数见错误!未找到引用源。。在无人机平台前端安装全反射棱镜，使用无觇牌对中杆棱镜ADH11-S，它是仿Topcon角锥棱镜，正面加常数-30mm，背面加常数0mm。全反射棱镜保证了各个方向的光都会按照原方向反射回去，即从转台发射的940nm激光会按照原来方向回到原点。同时，在可见光相机前安装940nm窄带滤光片，使可见光相机只能收到940nm波长的光。
+\subsection{地面环境引导系统测试实验设计}
+根据上述设备选型，可以根据不同需求构建不同配置的引导系统。在2012年，首先通过普通安防转台和红外相机构建了第一版地基引导系统，如图\ref{fig:first_version_ptu}所示，该系统的基线长度为$0.25\ m$。由于转台的性能约束，该系统只能通过串口方式对俯仰角和横滚角进行控制，其两个方向的转动角度只能通过计算串口输出的控制指令得到，即通过开环的方式获得。该系统通过四旋翼无人机的飞行试验，初步验证了立体视觉系统与转台结合这一设计模式的可行性。该系统在户外对四旋翼目标进行引导降落的工作图如图\ref{fig:first_version_ptu_2}所示。
 
-本系统选用山东神戎电子股份有限公司生产的SHR-JLI1000激光照明器，该设备主要分为940mm激光的产生和940mm激光的发射两个部分，如图 9所示，（a）为激光器的产生部件，（b）为激光器的发射部件，激光器的发射部件可以调节激光出射的照明角度，通过调节这个角度可以对目标实现远距离和近距离的有效探测识别，激光器的发射部件同样可以和激光器的产生部件分开，可以方便的安装在需要的位置上。
+\begin{figure}[!t]
+	\begin{minipage}{0.5\textwidth}
+		\centering
+		\includegraphics[width=0.98\textwidth]{figs/chp08/chp08_09_original_ptu.pdf}	
+		\caption{第一版红外引导单元}
+		\label{fig:first_version_ptu}
+	\end{minipage}\hfill
+	\begin{minipage}{0.5\textwidth}
+		\centering
+		\includegraphics[width=0.98\textwidth]{figs/chp08/chp08_15_OldSystem.pdf}	
+		\caption{第一版引导系统工作图}
+		\label{fig:first_version_ptu_2}
+	\end{minipage}
+\end{figure}
 
-\subsection{超宽带测距设备}
-超宽带无线测距以其高距离的分辨力、强穿透力、低截获率以及很强的抗干扰能力在军事、商业等领域得到越来越多的关注。使用的UWB型号为Time Domain公司的PulsONP410，是P400s的升级版本，可通过加载定向天线增大探测距离（http://www.timedomain.com）。实物如图 11所示。
+为提升转台性能，增强对无人机目标的检测能力和检测距离，2013年起引导系统开始采用FLIR D300型号转台，立体视觉的基线长度也增加为$0.45\ m$，该系统的引导单元构成如图\ref{fig:chp08_18_ground_short_ptus}左侧图像所示。得益于基线长度的增加，与第一版系统相比，该系统的检测距离可以得到$400\ m$，通过红外相机图像和可见光相机图像的融合使用，能够对没有合作标识的无人机有较好的跟踪和识别效果。该系统一般放置于跑道中心线位置，其工作场景如图\ref{fig:chp08_18_ground_short_ptus}所示。
 
-P410的RF传输频率3.1 GHz 到5.3 GHz，中心频率位于4.3 GHz附近；具有两路用户可调天线端口；单个板子尺寸为7.6 x 8.0 x 1.6 cm；可进入睡眠模式，降低功耗；脉冲发射功率可调，可达10Hz以下。该设备探测距离2km以上，如果选用增强型的定向天线探测距离可以达到5km以上，增强型的定向天线如图12所示。加入定向天线后，UWB的探测波半角为20°，当远距离无人机进入探测窗口时，UWB可以探测到目标。UWB的精度为0.5m，当无人机距离目标500m、水平位置为10m，高度为30m时。水平方向的误差为0.01m，高度为0.03m，满足系统的精度要求。
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_18_ground_short_ptus.pdf}	
+	\caption{第二版引导系统工作图}
+	\label{fig:chp08_18_ground_short_ptus}
+\end{figure}
 
-UWB采用应答的方式接收数据，如图13所示，当地面引导系统把地面的请求发给无人机上的UWB时，无人机上的UWB响应地面请求发送数据，地面上的UWB接收这个信息转化为距离信息。该方式有效的解决了一对一的模式，有利于目标远距离的探测，保证了数据的稳定可靠性。传输频率3.1 GHz 到5.3 GHz，因此UWB不易被干扰。
+第二版系统的检测能力和距离虽然有所提升，但由于其放置位置不适用于实际需求场景，同时，基线长度仍然无法满足对中型无人机的远距离降落的引导需求指标。因此，本文考虑突破原因固定基线物理机构的约束，通过将两个独立的引导单元进行独立配置，使得引导的基线距离能够根据物理场地约束和无人机尺寸大小进行最优配置。在基线长度为$10\  m$时，地面引导系统的配置情况如图\ref{fig:chp08_17_ground_ptus}所示。上述三个版本引导系统的具体参数和配置情况如表\ref{lab:three_ground_ptu}所示。
+
+\begin{figure}[!t]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_17_ground_ptus.pdf}	
+	\caption{第三版引导系统工作图}
+	\label{fig:chp08_17_ground_ptus}
+\end{figure}
+
+\begin{table}[!t]
+	\centering
+	\caption{三版不同配置的地面引导系统}
+	\label{lab:three_ground_ptu}
+	\begin{tabular}{clll}
+		\hline
+		& \multicolumn{1}{c}{\textbf{布局模式}} & \multicolumn{1}{c}{\textbf{传感器系统}} & \multicolumn{1}{c}{\textbf{目标检测距离}} \\ \hline
+		\textbf{\begin{tabular}[c]{@{}c@{}}第一版\\ 引导系统\end{tabular}} & \begin{tabular}[c]{@{}l@{}}普通安防转台 $\times$ 1\\ 基线长度 $0.25\ m$\end{tabular} & 远红外相机 $\times$ 2 & \begin{tabular}[c]{@{}l@{}}对MD4-200四旋翼无人机\\ 的检测距离为$90\ m$\end{tabular} \\ \hline
+		\textbf{\begin{tabular}[c]{@{}c@{}}第二版\\ 引导系统\end{tabular}} & \begin{tabular}[c]{@{}l@{}}FLIR转台 $\times$ 1\\ 基线长度 $0.45\ m$\end{tabular} & \begin{tabular}[c]{@{}l@{}}远红外相机 $\times$ 2\\ 可见光相机 $\times$ 2\end{tabular} & \begin{tabular}[c]{@{}l@{}}对中型无人机的\\ 检测距离为$400\ m$\end{tabular} \\ \hline
+		\textbf{\begin{tabular}[c]{@{}c@{}}第三版\\ 引导系统\end{tabular}} & \begin{tabular}[c]{@{}l@{}}FLIR转台 $\times$ 2\\ 基线长度可自由配置，\\ 一般为$10\ m$\end{tabular} & \begin{tabular}[c]{@{}l@{}}远红外相机 $\times$ 2\\ 可见光相机 $\times$ 2\\ 激光照射器 $\times$ 1\\ UWB雷达 $\times$ 1\end{tabular} & \begin{tabular}[c]{@{}l@{}}对中型无人机的\\ 检测距离为$1000\ m$\end{tabular} \\ \hline
+	\end{tabular}
+\end{table}
+
+\subsection{水面环境引导系统测试实验设计}
+根据上一小节的介绍，引导系统在水面上的设计方案是基于第三版进一步改进和完善。由于缺少舰船作为载体，本文通过使用油桶和脚手架搭建简易浮体来模拟在水面的浮体运动。该系统的设计图如图\ref{fig:chp08_22_landing_diagram}所示。图中中部的为浮体上的木板，平台大小约为$12\ m\times 12\ m$，中间位置安装高度为$8\ m$，宽度为$10\ m$的无人机回收网，为了避免回收网对视觉系统的干扰，在回收网前端设置两个引导单元。该浮体自身并无动力，在水面实验时，需要通过右侧的牵引船只通过缆绳对浮体进行拖动。浮体和设备整体重量相对较重，在江面实验时，只对牵引船只的运动方向进行设定，对运动速度不做要求。
+
+\begin{figure}[!th]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_22_landing_diagram.pdf}	
+	\caption{水面实验验证设计图}
+	\label{fig:chp08_22_landing_diagram}
+\end{figure}
+
+基于实验设计图，该系统的实际配置情况如图\ref{fig:chp08_16_ship_ptus}所示。该系统相对于第三版地基系统主要进行了如下改进：（1）为采集浮体运动的真实数据，在左侧引导单元后方安装DGPS天线，本文假设通过该DGPS天线采集到的经纬高坐标，经第二章介绍的坐标系转换方法进行转换后，得到舰船惯性坐标系相对于系统坐标系的相对位置。（2）为了检测和估计浮体的运动情况，在左侧引导单元一侧的木板上设置了XSens传感器，如图中坐下角所示。（3）在实验准备过程中，由于浮体的金属结构较多，转台的连续运动产生了比较复杂的电磁干扰。因此在转台驱动机构部分和Xsens表明均使用锡箔纸进行多层包裹，以此来进行电磁干扰的初步隔离。
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_16_ship_ptus.pdf}	
+	\caption{引导系统在水面浮提的配置情况}
+	\label{fig:chp08_16_ship_ptus}
+\end{figure}
+
+
+\section{综合实验结果}
+\subsection{地面引导降落实验结果}
+
+
+
+
+
+
+\subsection{水面引导降落实验结果}
+在实际测试过程中，在岸边水域对小型无人机进行实验。此时，舰船
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_20_near_river_landing.pdf}	
+	\caption{靠近岸边水域无人机撞网回收过程图}
+	\label{fig:chp08_20_near_river_landing}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_21_river_landing.pdf}	
+	\caption{湘江水域无人机撞网回收过程图}
+	\label{fig:chp08_21_river_landing}
+\end{figure}
+
+
+\section{本章小结}
+本章主要介绍了综合实验仿真环境的构建和真实环境实验方案和测试结果。综合仿真实验环境主要依托Matlab/Simulink环境主要完成无人机底层控制回路和底层控制回路的算法验证。为了引入视觉等其他传感器，本文使用ROS和Gazebo共同搭建的软件在回路仿真系统和硬件在回路仿真系统对传感器层面的算法进行测试，并通过将底层算法在Pixhawk和Odroid XU4上的真实测试来验证算法的可靠性和稳定性。通过三版地基引导系统的迭代设计和引导降落实验验证以及舰基引导系统的引导测试，证明本文设计的基于多传感器的无人机自主着舰引导与控制系统的可行性和有效性。
