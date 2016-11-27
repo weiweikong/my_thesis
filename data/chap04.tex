@@ -2,15 +2,18 @@
 
 针对目标检测问题，很多学者提出了不同的解决方法，但目标实时监测问题中的所涉及的目标尺度变化、被遮挡和实时性等问题仍然没有得到有效解决。本章针对无人机自主降落过程中的目标跟踪问题进行进一步分析，并给出了满足实时性和精度需求的无人机目标跟踪算法。
 
-\section{目标跟踪问题的概述}
-One-shot Tracking问题的核心是目标位置的先验信息唯一，一般定义为图像序列第一帧$I_1$的位置信息$b_1$（Bounding Box），且该问题针对单一目标图像进行跟踪。这一概念于2006年由华人研究者李飞飞提出\cite{fei2006one}，并有CMT算法\cite{Nebehay2016}的作者Georg Nebehay将这一概念引入到目标跟踪领域。在算法的运行过程中，随着图像目标的连续运动，跟踪算法可以利用之前的图像纹理信息和位置信息作为新的先验信息对当前图像进行解算，其基本流程如算法\ref{al:one_shot_tracking}所示。
+\section{无人机引导降落目标跟踪问题分析}
+\subsection{One-shot目标跟踪问题}
+One-shot Tracking问题的核心是目标位置的先验信息唯一，一般定义为图像序列第一帧$I_1$的位置信息$b_1$（Bounding Box），且该问题针对单一目标图像进行跟踪。这一概念于2006年由华人研究者李飞飞提出\cite{fei2006one}，并有CMT算法\cite{Nebehay2016}的作者Georg Nebehay将这一概念引入到目标跟踪领域。在算法的运行过程中，随着图像目标的连续运动，跟踪算法可以利用之前的图像纹理信息和位置信息作为新的先验信息对当前图像进行解算。
 
 传统的实时跟踪方法的主要工作是在线对模型进行计算和更新，算法在运行过程中，基本不涉及和使用离线运算结果。这些跟踪算子（Tracker）主要通过数学公式来完成对跟踪目标特征的描述，这种数学公式对模型描述能力的好坏决定着整体算法性能的优劣。同时，由于传统方法的跟踪算子无法重复利用大量现有数据，其算法性能无法随着数据量的增加而得到持续性改善。这种方法适用于典型目标的跟踪，例如行人跟踪和人脸跟踪等。
 
-\begin{algorithm2e}[H]
+\subsection{无人机目标跟踪问题描述}
+考虑到无人机全局识别问题相对复杂，且本系统具备人机交互能力，因此本文涉及到的无人机降落过程中的跟踪问题划归为One-shot Tracking问题。在后续使用的目标跟踪数据集中，无人机第一帧所在的中心位置和矩形框通过手动标注得到，后续图像序列根据第一帧给出的信息进行进一步的迭代和解算，其基本流程如算法\ref{al:one_shot_tracking}所示。
+\begin{algorithm2e}[h]
 	\SetAlgoLined
-%	\KwData{this text}
-%	\KwResult{how to write algorithm with \LaTeX2e }
+	%	\KwData{this text}
+	%	\KwResult{how to write algorithm with \LaTeX2e }
 	\BlankLine
 	\SetKwInOut{Input}{Input}
 	\SetKwFunction{Track}{Track}
@@ -22,15 +25,14 @@ One-shot Tracking问题的核心是目标位置的先验信息唯一，一般定
 		$b_i\ \leftarrow$ \Track{$I_i$}\;
 		$b_i\ \leftarrow$ \Update($b_t$, $b_{t-1}$, ..., $b_1$) \;
 	}
-	\caption{One-shot Tracking 算法框架}
+	\caption{UAV One-shot Tracking 算法框架}
 	\label{al:one_shot_tracking}
 \end{algorithm2e}
-综上所述，本文涉及到的无人机降落过程中的跟踪问题划归为One-shot Tracking问题。在后续使用的目标跟踪数据集中，无人机第一帧所在的中心位置和矩形框通过手动标注得到，后续图像序列根据第一帧给出的信息进行进一步的迭代和解算。
 
-\section{形态学滤波方法进行图像预处理}
-
+\section{无人机跟踪问题图像预处理}
+\subsection{形态学滤波方法概述}
 形态学滤波（Morphological Filtering）方法是一组非线性图像运算算子。该系列算子主要包括腐蚀（Erode）、膨胀（Dilate）、开运算（Opening）和闭运算（Closing）四种基本运算。在此四种运算的基础之上，一般还可以拓展出边缘提取、凸包运算、连通区域标记等复杂运算。通常而言，由于上述算子主要通过像素之间位置，形态学处理的对象为二值图像。
-
+\subsection{形态学滤波方法的改进与实现}
 在有人机的感知规避领域，机载雷达是应用最为广泛的周边环境的感知器。除此之外，安装在机身各个位置的摄像头也是感知飞行器周边环境的重要传感器。一般而言，这些摄像头主要用于在空中识别周边的其他飞行器。由于民航飞行器的空间间隔一般较大，飞行器的成像尺寸一般较小，传统的预处理方法容易将这类小型目标当做噪声忽略。2011年，卡内基梅隆大学的三位学者使用形态学滤波方法对微小无人机检测的图像进行预处理\cite{dey2011cascaded}，这篇文章图像预处理和图像检测的研究背景与本文的背景类似。
 \begin{figure}[ht]   
 	\centering
@@ -782,12 +784,12 @@ C_t=\sum_{\mathbf{n}}u_t(\mathbf{n})u_t(\mathbf{n})^T
 \hat{U}_t=\mathcal{F}(P_tu_t)
 \end{align}
 
-使用压缩后的采样后，响应函数的输出变换为
+使用压缩采样后，响应函数的输出变换为
 \begin{equation}
 \mathbf{y}_t={\mathcal{F}^{-1}}(\frac{\sum_{i=1}^{\hat{d}}{\hat{A}^{*l}_{t-1}} \odot \hat{Z}^{l}_{t}}{\hat{B}_{t-1}+\lambda})
 \end{equation}
 
-为了测试DSST方法，选用小型无人机和中型无人机的两类数据集共七组进行测试。其中DSST方法中的参数除了上述定义之外，实验中使用的目标函数正则化参数$\lambda=0.01$, 学习速率$\mu=0.025$。图\ref{fig:chp04_11_small_uav_cle}和\ref{fig:chp04_12_small_uav_overlap}所示为小型无人机数据集的第一组结果。图\ref{fig:chp04_13_middle_uav_cle}和\ref{fig:chp04_14_middle_uav_overlap}所示为中型无人机数据集的第一组结果。对于小型无人机的结果可以发现，在长度为350帧的目标跟踪过程中，中心点出现过两次较大偏差，其主要原因是在相应的两帧，转台出现了抖动（通过查询响应帧的转台返回数据）。从整体情况来看，在小型无人机的纵向跟踪误差略大于横向误差，其主要原因是转台在俯仰方向的运动相对较大。
+为了测试DSST方法，选用小型无人机和中型无人机的两类数据集共七组进行测试。其中DSST方法中的参数除了上述定义之外，实验中使用的目标函数正则化参数$\lambda=0.01$, 学习速率$\mu=0.025$。图\ref{fig:chp04_11_small_uav_cle}和\ref{fig:chp04_12_small_uav_overlap}所示为小型无人机数据集的第一组结果。图\ref{fig:chp04_13_middle_uav_cle}和\ref{fig:chp04_14_middle_uav_overlap}所示为中型无人机数据集的第一组结果。对于小型无人机的结果可以发现，在长度为350帧的目标跟踪过程中，中心点出现过两次较大偏差，其主要原因是在相应的两帧，转台出现了抖动（通过查询对应帧的转台返回数据）。从整体情况来看，在小型无人机的纵向跟踪误差略大于横向误差，其主要原因是转台在俯仰方向的运动相对较大。
 \begin{figure}[ht]   
 	\centering
 	\includegraphics[width=0.8\textwidth]{figs/chp04/chp04_11_small_uav_cle.pdf}
@@ -818,7 +820,7 @@ C_t=\sum_{\mathbf{n}}u_t(\mathbf{n})u_t(\mathbf{n})^T
 
 使用DSST方法在七组不同数据集的测试结果如表\ref{lab:dsst_seven_results}所示，其中平均中心偏差的结果和误差带如图\ref{fig:chp04_15_seven_cle}所示，图\ref{fig:chp04_16_seven_speed}描述了无人机在七组不同数据集的跟踪速率。通过比较中型无人机和小型无人机可以得到以下结论：
 \begin{compactenum}
-	\item 小型无人机的中心点误差小于中型无人机。其主要原因是小型无人机的成像面积较小，在近端成像时，机头中心位置的成像最为明显。而中型无人机由于成像面积大，机身的整体图像信息对中心点的影响相对较大。
+	\item 该算法对小型无人机中心点的检测误差小于中型无人机的中线点检测误差。其主要原因是小型无人机的成像面积较小，在近端成像时，机头中心位置的成像最为明显。而中型无人机由于成像面积大，机身纹理信息对中心点检测的影响相对较大。
 	\item DSST方法的解算精读鲁棒性较强。实验中两种类型的数据集使用相同的DSST参数，七组数据的中心点误差均控制在5个像素以下。	
 	\item DSST方法的速度严重受制于目标图像尺寸。
 \end{compactenum}
@@ -856,9 +858,9 @@ C_t=\sum_{\mathbf{n}}u_t(\mathbf{n})u_t(\mathbf{n})^T
 
 \section{引入转台运动后的目标位置估计}
 \subsection{低通滤波器的设计}
-无人机的目标在像平面的投影通常是由多个像素点组成，上述目标识别算法主要通过求解所有像素点的几何平均位置来作为后续转台控制和无人机位置解算的输入。由于相机在成像过程中存在噪声扰动，所以图像识别之后的结果也会受到噪声的污染，因此本节设计一个低通滤波器对目标的位置和移动速度进行滤波。
+无人机目标在像平面的投影通常是由多个像素点组成，上述目标识别算法主要通过求解所有像素点的平均位置来作为后续转台控制和无人机位置解算的输入。由于相机在成像过程中存在噪声扰动，所以图像识别之后的结果也会受到噪声的污染，因此本节设计一个低通滤波器对目标的位置和移动速度进行滤波。
 
-一般情况，均认为系统的图像采样时间间隔基本相同。但通过实际测试实验发现系统采样时间抖动较大，其中一组降落过程中的图像采样时间间隔情况如图\ref{fig:chp04_01_delta_time_stamp}所示。图中的蓝色实线表明系统在最后18\ s左右的降落过程中，系统的采样出现较大的波动，其峰值甚至达到190\ ms。所以，在进行像平面位置估计等计算时，需要实时计算每一帧的采样时间间隔，以此来提升解算精度。
+在最初的系统设计中，认为系统的序列图像采样时间间隔基本相同。但通过实际测试实验发现系统采样时间抖动较大，其中一组降落过程中的图像采样时间间隔情况如图\ref{fig:chp04_01_delta_time_stamp}所示。图中的蓝色实线表明系统在最后18\ s左右的降落过程中，系统的采样出现较大的波动，其峰值甚至达到190\ ms。所以，在进行像平面位置估计等计算时，需要实时计算每一帧的采样时间间隔，以此来提高解算精度。
 
 \begin{figure}[ht]   
 	\centering
@@ -869,17 +871,19 @@ C_t=\sum_{\mathbf{n}}u_t(\mathbf{n})u_t(\mathbf{n})^T
 
 定义目标的在像平面的坐标为$\mathbf{p}_{uav} = (u, v)^T$，经过低通滤波器之后的像平面坐标为$\bar{\mathbf{p}}_{uav} = (\bar{u}, \bar{v})^T$，目标点的移动速度定义为$\dot{\mathbf{p}}_{uav} = (\dot{u},\dot{v})^T$。根据低通滤波器的定义，可以得到目标原始位置坐标和滤波之后坐标之间的关系
 \begin{align}
+\label{eq:ps1_equation}
 \mathbf{p}(s) = \frac{1}{\tau s+1}\bar{\mathbf{p}}
 \end{align}
 对上式微分可以得到速度与滤波之后坐标之间的关系
 \begin{align}
+\label{eq:ps2_equation}
 \dot{\mathbf{p}}(s) = \frac{s}{\tau s+1}\bar{\mathbf{p}}
 \end{align}
-由于采样是离散系统，因此将上式进行双线性变换（Bilinear Transform）\cite{franklin1998digital}，即将连续系统转换离散系统，通过下式进行变换
+由于程序的实现是离散系统，因此将上式进行双线性变换（Bilinear Transform）\cite{franklin1998digital}，即将连续系统转换离散系统。该变换可以通过下式实现
 \begin{align}
 s \mapsto \frac{2}{T_s}\frac{z-1}{z+1}
 \end{align}
-带入后可以得到
+将上式带入\ref{eq:ps1_equation}和\ref{{eq:ps2_equation}}后可以得到
 \begin{align}
 \mathbf{p}[z] &= \frac{1}{\frac{2}{T_s}\frac{z-1}{z+1}}\bar{\mathbf{p}} \\
 &= \frac{\frac{T_s}{2\tau+T_s}(z+1)}{z-\frac{2\tau-T_s}{2\tau+T_s}}\bar{\mathbf{p}}
@@ -897,11 +901,11 @@ s \mapsto \frac{2}{T_s}\frac{z-1}{z+1}
 \begin{align}
 \dot{\mathbf{p}}[n] = \frac{2\tau-T_s}{2\tau+T_s}\dot{\mathbf{p}}[n-1]+ \frac{2}{2\tau+T_s}(\bar{\mathbf{p}}[n-1] - \bar{\mathbf{p}}[n-1] )
 \end{align}
-其中$\mathbf{p}[0] = \bar{\mathbf{p}}[0]$和$\dot{\mathbf{p}}[0] = 0$，$\tau$是滤波的阶段频率，$T_s$是每次采样时间间隔。
+其中$\mathbf{p}[0] = \bar{\mathbf{p}}[0]$和$\dot{\mathbf{p}}[0] = 0$，$\tau$是滤波的截断频率，$T_s$是每次采样时间间隔。
 
 
 \subsection{引入转台信息后的位置估计}
-由于受到采样间隔时间和转台系统误差的影响，转台在俯仰角和方位角的返回值同样存在较大偏差。左右两侧转台在一组降落过程中的末状态角度读取结果和偏差计算如图\ref{fig:chp04_02_pan_tilt_status}所示。其中，图中的蓝色虚线为通过串口读取到的转台实际角度，橙色实线为相邻两次采样之间转台的变化量。通过曲线的趋势可以看到，由于采样时间的波动，转台俯仰角和方位角的变化率整体平稳，在$12\ s$到$16\ s$之间，两个转台的俯仰角和横滚角都出现了较大的几次波动，这几次波动与图\ref{fig:chp04_01_delta_time_stamp}响应时刻的采样间隔变大相吻合。同时，突然出现的较大延时，还会对转台控制系统和目标在位置中的估计带来较大影响，因此不能仅仅依赖目标在图像中的位置来中下一帧的位置进行估计，而是需要通过读取转台的角度信息来对原有模型进行修正。
+由于受到采样间隔时间和转台系统误差的影响，转台在俯仰角和方位角的返回值同样存在较大偏差。左右两侧转台在一组降落过程中的末状态角度读取结果和偏差计算如图\ref{fig:chp04_02_pan_tilt_status}所示。其中，图中的蓝色虚线为通过串口读取到的转台实际角度，橙色实线为相邻两次采样之间转台的变化量。通过曲线的趋势可以看到，由于采样时间的波动，转台俯仰角和方位角的变化率整体平稳，在$12\ s$到$16\ s$之间，两个转台的俯仰角和横滚角都出现几次较大的波动，这几次波动与图\ref{fig:chp04_01_delta_time_stamp}响应时刻的采样间隔变大相吻合。同时，突然出现的较大延时，还会对转台控制系统和目标在位置中的估计带来较大影响，因此不能仅仅依赖目标在图像中的位置来中下一帧的位置进行估计，而是需要通过读取转台的角度信息来对原有模型进行修正。
 \begin{figure}[ht]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp04/chp04_02_pan_tilt_status.pdf}
@@ -913,7 +917,7 @@ s \mapsto \frac{2}{T_s}\frac{z-1}{z+1}
 \begin{equation}
 P_r = T_c P_c
 \end{equation}
-其中$T_c$是一个$4 \times 4$转换矩阵，将相机坐标系的一点转换为引导坐标系的一点。考虑到转台的转动情况定义当前时刻转换矩阵为$T_c(t)$，在相机坐标系的坐标为$P_c(t)$ 上一时刻的转换矩阵为$T_c(t-1)$，在相机坐标系的坐标为$P_c(t-1)$。在目标点相对于引导坐标系不变的情况下，该点的坐标系可以表示为
+其中$T_c$是一个$4 \times 4$转换矩阵，将相机坐标系的一点转换为引导坐标系的一点。考虑到时序关系，定义当前时刻转换矩阵为$T_c(t)$，在相机坐标系的坐标为$P_c(t)$ 上一时刻的转换矩阵为$T_c(t-1)$，在相机坐标系的坐标为$P_c(t-1)$。在目标点相对于引导坐标系不变的情况下，该点的坐标系可以表示为
 \begin{equation}
 P_r = T_c(t) P_c(t) =T_c(t-1) P_c(t-1)
 \end{equation}
@@ -945,7 +949,7 @@ P_c(t-1) =T_c(t)^{-1}R_Y(\psi)R_X(\phi)T_c(t) P_c(t)
 &\cos \phi \approx \cos \psi \approx 1 \\
 &\sin \phi \approx \phi \\
 &\cos \psi \approx \psi \\
-&\sin \phi \approx \sin \psi \approx 0 \\
+&\sin \phi \approx \sin \psi \approx 0
 \end{align}
 
 如果初始状态，系统存在水平方向的偏差角度$\theta$，则此时的转换矩阵为
@@ -969,7 +973,7 @@ x = f \frac{X}{Z}
 则像素的向后递推公式为
 \begin{align}
 x_{t-1} = f\frac{x_t+\psi \sin \theta y_t + f\psi \cos \theta}{- \psi \cos \theta x_t + \phi y_t + f} \\
-y_{t-1} = f\frac{-\psi \sin \theta x_t +y_t -f\phi}{- \psi \cos \theta x_t + \phi y_t + f} \\
+y_{t-1} = f\frac{-\psi \sin \theta x_t +y_t -f\phi}{- \psi \cos \theta x_t + \phi y_t + f}
 \end{align}
 当系统的初始偏差不存在时，向后地推公式可以表达为
 \begin{align}
@@ -984,7 +988,7 @@ x_{t} = f\frac{x_{t-1} - f\psi }{x_{t-1}  \psi  - \phi y_{t-1} + f} \\
 y_{t} = f\frac{y_{t-1} -f\phi}{  x_{t-1} \psi - \phi y_{t-1} + f}
 \end{align}
 
-根据上述方法定义，在实际数据中可以得到进一步验证。图\ref{fig:chp04_17_predict_1}和图\ref{fig:chp04_18_predict_2}所示为选取两组转台方位角和俯仰角偏差较大的情况。其中上一帧目标坐标位置的真值用黄色点标记，根据上一帧坐标预测出的当前帧坐标用蓝色点标记。此外，当前帧坐标真值用绿色标记，通过当前帧真值反向预测上一帧目标位置的坐标用墨绿色标记。通过比较向前和向后预测的真值，可以验证之前的推算是正确。
+根据上述方法定义，在实际数据中可以得到进一步验证。图\ref{fig:chp04_17_predict_1}和图\ref{fig:chp04_18_predict_2}所示为选取两组转台方位角和俯仰角偏差较大的情况。其中上一帧目标坐标位置的真值用黄色点标记，根据上一帧坐标预测出的当前帧坐标用蓝色点标记。此外，当前帧坐标真值用绿色标记，通过当前帧真值反向预测上一帧目标位置的坐标用墨绿色标记。通过比较向前和向后预测的真值，可以验证之前的推算是否正确。
 
 图\ref{fig:chp04_17_predict_1}左侧是中心无人机第一组降落数据集中第138帧的数据，右侧为第139帧的数据，通过直观比较左右两幅图像的地平线位置，并参考转台提供的数据可以判断出：转台在连续两帧中俯仰角的变化较大。同理，图\ref{fig:chp04_17_predict_1}所示是该组图像序列的第104帧和第105帧图像，通过比较两幅图像白色文字右侧的地面栏杆变化，并参考转台提供的数据可以判断出：转台在连续两帧中方位角变化较大。通过公式\ref{eq:prev_predict_curr}可以对该部分偏差进行有效修正，同时也可以通过公式\ref{eq:prev_predict_curr}来反向验证算法是否有效。这两组图像的具体数据结果如表所示。
 

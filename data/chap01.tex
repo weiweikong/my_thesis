@@ -335,7 +335,12 @@ H. Jin Kim等人\cite{kim2013fully}，针对小型固定翼无人机一种基于
 
 （3）设计并实现基于非线性模型预测控制（NMPC）和总能量控制（TESC）的无人机着舰控制系统。由于无人机机载设备运算能力的约束，本文设计了内环控制器和外环控制器来实现无人机的自主降落。其中内环控制器主要由PI和PID控制器组成，主要完成对无人机姿态的控制；外环控制器主要由非线性模型预测控制器（NMPC）和总能量控制器（TESC）组成，针对基于Dubins Path生成的降落曲线进行跟踪。
 
-（4）设计并实现针对无人机舰载着陆问题的仿真系统和实验验证系统。本文基于机器人操作系统（Robot Operation System，ROS）和Gazebo仿真环境构建了无人机舰载着陆软件在回路仿真系统（SITL）和硬件在回路仿真系统（HIL）。该仿真环境能够满足上述算法的验证需求。通过选择二自由度转台和响应的传感器，在地面机场和水面实现无人机的自主引导和降落。
+（4）设计并实现无人机舰载着舰系统仿真环境并进行户外实验验证。本文基于机器人操作系统（Robot Operation System，ROS）和Gazebo仿真环境构建了无人机舰载着陆软件在回路仿真系统（SITL）和硬件在回路仿真系统（HIL）。该仿真环境能够满足上述算法的验证需求。通过二自由度转台与多传感器的组合配置，实现在地面机场和水面环境对小型和中型固定翼无人机的引导和自主降落。
 
-本文各个章节的结构图如图所示。
-
+本文各个章节的结构图如图\ref{fig:chp01_10_thesis_structure}所示。
+\begin{figure}[!h]   
+	\centering	
+	\includegraphics[width=\textwidth]{figs/chp01/chp01_10_thesis_structure.pdf}
+	\caption{本文的组织结构图}
+	\label{fig:chp01_10_thesis_structure}
+\end{figure}

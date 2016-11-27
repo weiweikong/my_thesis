@@ -2,17 +2,156 @@
 
 \section{短基线无人机视觉引导系统}
 \subsection{相机成像模型}
+本文使用的相机模型为小孔成像模型（Pin-hole Camera Model）。已知目标点$M$的三维空间坐标为$(x,y,z)$，则该坐标与像平面坐标$(u,v)$以及相机焦距$f$之间的关系用其次坐标的形式表达为
+\begin{equation}
+\lambda\left[ {\begin{array}{*{20}{c}}
+	u \\ 
+	v \\ 
+	f 
+	\end{array}} \right] =\left[ {\begin{array}{*{20}{c}}
+	x \\ 
+	y \\ 
+	z 
+	\end{array}} \right]
+\end{equation}
+其中$\lambda$是尺度因子。如果转换为欧拉坐标系，则可以得到
+\begin{equation}
+\left[ {\begin{array}{*{20}{c}}
+	u \\ 
+	v 
+	\end{array}} \right] =\frac{f}{z} \left[ {\begin{array}{*{20}{c}}
+	x \\ 
+	y   
+	\end{array}} \right]
+\end{equation}
+则在已知焦距$f$和像平面尺寸$(w_u,w_v)$时，相机水平方向视场角$\alpha_{FOV}$的计算方法为
+\begin{equation}
+\tan{\frac{\alpha_{FOV}}{2}}=\frac{w_u}{f}
+\end{equation}
+相机竖直方向视场角$\beta_{FOV}$的计算方法为
+\begin{equation}
+\tan{\frac{\beta_{FOV}}{2}}=\frac{w_v}{f}
+\end{equation}
+在求解视场角时，焦距$f$和像平面$(w_u,w_v)$使用的量纲需要统一（像素点或毫米等）。
 
-\subsection{立体视觉成像原理}
+上述理论模型虽然过于简单，但可以对一些物理量进行初步的估算。已知镜头焦距为$f$，物体的长和高为$W$和$H$，物体到像平面的距离为$L$，物体在像平面的成像尺寸为$w$何$h$，则上述物理量之间的关系为
+\begin{align}
+f=\frac{wL}{W} \\
+f=\frac{hL}{H}
+\end{align}
+上述公式通常用于对相机镜头选型和理论观测距离的估算。
+
+实际情况中，由于理想光轴不穿过像平面几何中心点、镜头尺寸制作精度等原因，相机的模型一般不符合标准的小孔成像模型，因此需要通过对相机标定（Camera Calibration）的方法，得到内参数和外参数的矩阵表达，从而进一步对像平面上的每个$(u,v)$点进行修正。本文使用ROS中的\texttt{camera\_calibration}\cite{ros_camera_calibration}程序来完成对相机的标定工作。其中最重要的参数是相机的焦距尺寸和主点位置，该程序得到的具体矩阵参数含义可参见文档\cite{ros_camera_message}。
+
+\subsection{传统立体视觉成像原理}
+如图\ref{fig:chp03_vision_20_basic_stereo}所示，在光轴平行的情况下，目标$M$在左右两侧像平面的成像的坐标为$(u_l, v_l)$和$(u_r, v_r)$，这里的像平面坐标是经过对标定矩阵对原始坐标修正之后得到的。此时，可以得到目标点与成像坐标之间的关系
+\begin{equation}
+\left[ {\begin{array}{*{20}{c}}
+	x \\ 
+	y \\ 
+	z 
+	\end{array}} \right] =\frac{b}{d} \left[ {\begin{array}{*{20}{c}}
+	u_l \\ 
+	u_r \\ 
+	f 
+	\end{array}} \right]
+\end{equation}
+其中$b$是基线长度，即两个相机之间的距离，$d$是目标在左右相机成像之后的像素值差，即$d=u_l-u_r$。
+
+上述理论模型是基于左右侧相机光轴平行且两个相机焦距相同的情况下的理想立体成像模型，这与实际应用准在偏差，因此需要进一步修正该模型。图\ref{fig:chp03_vision_20_basic_stereo}所示即为两个相机像平面光轴不平行且焦距不同情况。
 
 
+通过几何关系可以得到以下四个基本公式
+\begin{align}
+&\tan \omega_l = \frac{u_l}{f_l} \\
+&\tan \omega_r = \frac{u_r}{f_r} \\
+&\tan(\omega_l+\alpha_l) = \frac{z}{x}  \\
+&\tan(\omega_r+\alpha_r) = \frac{z}{b-x}
+\end{align}
+根据比例关系，可以得到对目标点的坐标求解
+\begin{align}
+&x = \frac{b\cot(\omega_l+\alpha_l)}{\cot(\omega_l+\alpha_l) + \cot(\omega_r+\alpha_r)} \\
+&y = v_l \frac{z \cos\omega_l}{f_l \sin (\omega_l + \alpha_l)} \\
+&z = \frac{b}{\cot(\omega_l+\alpha_l) + \cot(\omega_r+\alpha_r)}
+\end{align}
+其中，$y$还困成用右侧的数值表达
+\begin{equation}
+y = v_r \frac{z \cos\omega_r}{f_r \sin (\omega_r + \alpha_r)} \\
+\end{equation}
+如果光轴平行，即$\alpha_l = \alpha_r = 90\degree$，则得到与上一节相同的物理模型。
 
-% 开题报告
-在 2012 年，首先设计了基于远红外相机的短基线引导装置，如图3.10(a)所示。该方法能够在 100 米左右的高度捕获 MD4-200 无人机，并完成其引导降落过程。但是，该方案由于受到基线的限制，探测距离无法进一步增强。此外，由于远红外相机的成像特性，在没有云层的情况下，所使用的 Meanshift 方法可以有效检测无人机；在有云层时，跟踪算法常常受到干扰，系统鲁棒性不强。在 2013年，通过理论推算，设计了基线长度约 10 米的引导系统，如图3.17(b)所示。尽管该系统的探测距离得到显著提升，但其标定工作变得异常繁琐，不利于系统的展开和维护。在 2014 年，设计了基于多传感器的引导控制单元，如图3.18所示，该引导控制单元综合了上述两种方法的优势，在试验中取得了较好的结果，如表3.3所示。
+对上述公式进行求导，即可进一步分析光轴不平行对目标点空间位置解算的影响。其中以对$x$求解的公式对为例。
+
+为简化计算，将公式化简为
+\begin{equation}
+x = \frac{{Bg({u_l})}}{{g({u_l}) + C}}
+\end{equation}
+则对上式关于$x_1$的偏导得到
+\begin{equation}
+\frac{{\partial x}}{{\partial {u_l}}} = B\frac{{g'(g + C) - gg'}}{{{{(g + C)}^2}}} = B\frac{{g'C}}{{{{(g + C)}^2}}}
+\end{equation}
+带入原式中的角度变量可以得到
+\begin{align}
+\frac{{\partial x}}{{\partial {u_l}}} &= B\frac{{\frac{{\partial \cot ({\omega _l} + {\alpha _l})}}{{\partial {u_l}}}\cot ({\omega _r} + {\alpha _r})}}{{{{(\cot ({\omega _l} + {\alpha _l}) + \cot ({\omega _r} + {\alpha _r}))}^2}}} \\ 
+&= B\cot ({\omega _r} + {\alpha _r}){(\frac{Z}{B})^2}\frac{{\partial \cot ({\omega _l} + {\alpha _l})}}{{\partial {u_l}}} \\ 
+&= \frac{{{Z^2}}}{B}\cot ({\omega _r} + {\alpha _r})\frac{{\partial \cot ({\omega _l} + {\alpha _l})}}{{\partial {u_l}}} \\ 
+&=  - \frac{{{Z^2}}}{{Bf_l}}\frac{{\cot ({\omega _r} + {\alpha _r})}}{{{{\sin }^2}({\omega _l} + {\alpha _l})}}{\cos ^2}{\omega _l} \\ 
+\end{align}
+由此可以得到各个分量的微分公式
+\begin{equation}
+\left\{ \begin{gathered}
+\frac{{\partial x}}{{\partial {u_l}}} =  - \frac{{{z^2}}}{{b{f_l}}}\frac{{\cot ({\omega _r} + {\alpha _r})}}{{{{\sin }^2}({\omega _l} + {\alpha _l})}}{\cos ^2}{\omega _l} \hfill \\
+\frac{{\partial x}}{{\partial {u_r}}} =  - \frac{{{z^2}}}{{b{f_r}}}\frac{{\cot ({\omega _l} + {\alpha _l})}}{{{{\sin }^2}({\omega _r} + {\alpha _r})}}{\cos ^2}{\omega _r} \hfill \\ 
+\end{gathered}  \right.
+\end{equation}
+
+\begin{equation}
+\left\{ \begin{gathered}
+\frac{{\partial y}}{{\partial {u_l}}} = \frac{{yz}}{{b{f_l}}}\frac{{{{\cos }^2}({\omega _r})}}{{{{\sin }^2}({\omega _l} + {\alpha _l})}} \hfill \\
+\frac{{\partial y}}{{\partial {u_r}}} = \frac{{yz}}{{b{f_r}}}\frac{{{{\cos }^2}({\omega _l})}}{{{{\sin }^2}({\omega _r} + {\alpha _r})}} \hfill \\ 
+\end{gathered}  \right.
+\end{equation}
+
+\begin{equation}
+\left\{ \begin{gathered}
+\frac{{\delta y}}{{\delta {v_l}}} = \frac{z}{{{f_l}}}\frac{{\cos ({\omega _r})}}{{\sin ({\omega _l} + {\alpha _l})}} \hfill \\
+\frac{{\delta y}}{{\delta {v_r}}} = \frac{z}{{{f_r}}}\frac{{\cos ({\omega _l})}}{{\sin ({\omega _r} + {\alpha _r})}} \hfill \\ 
+\end{gathered}  \right.
+\end{equation}
+
+
+\begin{equation}
+\left\{ \begin{gathered}
+\frac{{\partial z}}{{\partial {u_l}}} = \frac{{{z^2}}}{{b{f_l}}}\frac{{{{\cos }^2}({\omega _l})}}{{{{\sin }^2}({\omega _l} + {\alpha _l})}} \hfill \\
+\frac{{\partial z}}{{\partial {u_r}}} = \frac{{{z^2}}}{{b{f_r}}}\frac{{{{\cos }^2}({\omega _r})}}{{{{\sin }^2}({\omega _r} + {\alpha _r})}} \hfill \\ 
+\end{gathered}  \right.
+\end{equation}
+此时，如果定义在像平面的横轴方向的像素误差为$\delta u_l$和$\delta u_r$，纵轴的像素误差为$\delta v_l$和$\delta v_r$，则可以得到目标点测量误差的影响
+\begin{align}
+&\Delta x = \sqrt{(\frac{\partial x}{\partial u_l} \delta u_l)^2+(\frac{\partial x}{\partial u_r} \delta u_r)^2} \\
+&\Delta x = \sqrt{(\frac{\partial y}{\partial u_l} \delta u_l)^2+(\frac{\partial y}{\partial u_r} \delta u_r)^2+(\frac{\partial y}{\partial v_l} \delta v_l)^2+(\frac{\partial y}{\partial v_r} \delta v_r)^2}\\
+&\Delta z = \sqrt{(\frac{\partial z}{\partial u_l} \delta u_l)^2+(\frac{\partial z}{\partial u_r} \delta u_r)^2}
+\end{align}
+通过上式可以看到，目标点的解算误差与像平面成像误差成非线性关系。
+
+\begin{figure}[!tb]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp03_stereo/chp03_vision_20_basic_stereo.pdf}	
+	\caption{短基线立体视觉成像示意图}
+	\label{fig:chp03_vision_20_basic_stereo}
+\end{figure}
+
+基于上述分析，在 2012 年，本文首先设计了基于红外相机的短基线引导装置。该方法能够在 100 米左右的高度捕获 MD4-200 无人机，并完成其引导降落过程。但该方案由于受到基线的限制，探测距离无法进一步增强。此外，由于远红外相机的成像特性，在没有云层的情况下，所使用的 Meanshift 方法可以有效检测无人机；在有云层时，跟踪算法常常受到干扰，系统鲁棒性不强。
 
 \section{长基线无人机视觉引导系统}
 由于立体视觉引导系统的目标检测距离受到基线影响的限制，因此考虑将相机安装在独立的二自由度转台，并将这两个独立单元分布放置在跑道两侧。
 
+\begin{figure}[!tb]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp03_stereo/chp03_vision_21_theory_stereo.pdf}	
+	\caption{短基线立体视觉系统误差分析}
+	\label{fig:chp03_vision_21_theory_stereo}
+\end{figure}
 
 
 \subsection{长基线立体视觉成像原理}
@@ -79,7 +218,7 @@
 \end{aligned} \right.
 \label{eq:M_Positon_Equation}
 \end{equation}
-带入$h=D/(\tan \psi_l + \tan (-\psi_r)$到上式可得
+带入$h=D/(\tan \psi_l + \tan (-\psi_r))$到上式可得
 \begin{equation}
 \left \{
 \begin{aligned}
@@ -420,7 +559,7 @@ t_r=D \frac{\displaystyle a_l(a_la_r + b_lb_r + c_lc_r)  - a_r (a_l^2 + b_l^2 + 
 \end{figure}
 
 
-在不同扰动误差情况下，中心位置误差的大小如表\ref{label:chp03_stereo_1}和\ref{label:chp03_stereo_2}所示。表中误差表明，在最后$500\ m$的降落过程中，在扰动较小的情况下，系统能够提供横向偏差和高度的有效导航信息；在远距离（$4\ km$）解算时，系统的整体误差较大。因此，对于中小型无人机而言，需要将下降航线的捕获点设计在$1000\ m$左右的位置，以便引导系统能够提供较好的初始引导信息。
+在不同扰动误差情况下，中心位置误差的大小如表\ref{label:chp03_stereo_1}和\ref{label:chp03_stereo_2}所示。表中误差表明，在最后$500\ m$的降落过程中，在扰动较小的情况下，系统能够提供横向偏差和高度的有效导航信息；在远距离（约$4\ km$）解算时，系统的整体误差较大。因此，对于中小型无人机而言，需要将下降航线的捕获点设计在$1000\ m$左右的位置，以便引导系统能够提供较好的初始引导信息。
 \begin{table}[htb]
 	\centering
 	\caption{探测距离为$4000\ m$时，扰动为$1\%$时误差列表}
@@ -510,7 +649,7 @@ u_{\psi,l} = k_{\psi,l}\Delta\psi
 \subsection{DGPS标定方法基本原理}
 根据第二章定义的着舰系统坐标系之间的关系，在理想情况下，$\mathcal{F}_{path,l}$坐标系的原点位于跑道中线的延长线上，其坐标轴$\mathbf{i}^{path,l}$、$\mathbf{j}^{path,l}$和$\mathbf{k}^{path,l}$分别与引导坐标系的$\mathbf{j}^{O,c}$， $\mathbf{i}^{O,c}$和$\mathbf{k}^{O,c}$平行。但实际情况下，上述平行关系很难保证，两个坐标系的关系通常存在转动关系，因此$\mathcal{F}_{path,l}$与$\mathcal{O}_c$直接的位置关系不能通过简单的平移进行计算得到。两个坐标系之间的转换关系，主要通过DGPS外部标定方法完成\cite{liao2009automatic}。该方法通过将DGPS传感器放置在远端多个位置，（如图\ref{fig:chp03_vision_17_multi_dgps}所示），通过调节左右两侧转台的位置，使得光心对准DGPS的接收天线（如图\ref{fig:chp03_vision_16_dgps_calibration}所示），得到相应的转角关系。这里假设白色的DGPS天线的几何中线点作为标定点的真实位置。
 
-\begin{figure}[htb]
+\begin{figure}[!th]
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp03_stereo/chp03_vision_17_multi_dgps.pdf}	
 	\caption{多个DGPS靶标标定示意图}
@@ -591,7 +730,7 @@ T_c^p=\left[ {\begin{array}{*{20}{c}}
 注意在标定过程中，尽可能保持DGPS横向（$\mathbf{i}^{O,c}$轴向）移动的连续性，使得转台始终向一侧转动。由于转动机械机构的误差，转台出现连续向左和向右的运动，容易将误差放大。
 
 \subsection{DGPS标定方法实验验证}
-配置左右视觉单元的基线距离为$10\ m$，实验总共采集20组DGPS靶标数据，其中使用前10组数据进行参数的求解，使用后10组数据来验证上述标定方法的准确性。这些点选取的一般位于距离标定单元$100\ m$左右的距离，尽可能覆盖转台$45\degree$范围的夹角，标定区域的示意图如\ref{fig:chp03_vision_18_dgps_calibration_diagram}所示。其中一组标定数据集的系统标定参数如表\ref{label:dgps_calibration}所示。
+配置左右视觉单元的基线距离为$10\ m$，实验总共采集20组DGPS靶标数据，其中使用前10组数据进行参数的求解，使用后10组数据来验证上述标定方法的准确性。这些点选取的一般位于距离标定单元$100\ m$左右，尽可能覆盖转台方位角$-25\degree-25\degree$的范围，该标定区域的示意图如\ref{fig:chp03_vision_18_dgps_calibration_diagram}所示。其中一组标定数据集的系统标定参数如表\ref{label:dgps_calibration}所示。
 
 \begin{figure}[htb]
 	\centering
