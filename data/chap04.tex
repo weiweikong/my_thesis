@@ -291,7 +291,7 @@ f_i=\left\{ \begin{array}{ll}
 
 这里的学习机制被称为PN Learning。其中P指代Positive Constraint，也称之为P-expert或者；N指代Negative Constraint，也称之为N-expert。
 
-PN Learning的步骤主要分为三个部分：一是根据检测器给出的结果进行评估，二是使用P-expert和N-expert对检测器中分类错误的结果进行估计，三是根据上述计算的结果，更新检测器中的分类模块。P-Expert主要针对时间连贯性进行探索，其假设对象的位置移动应该是一条连贯的曲线。其能够利用跟踪器来估计目标出现在当前帧的位置。如果探测器将当前位置标记为负的（即错误负样本误差），则P-Expert产生一个正样本。N-Expert主要针对空间连贯性进行探索。其假设对象在相同帧里只出现在一个位置。其分析探测器对当前图像帧的所有相应，以及追踪器的相应，并选择其中最具可信度的一个。学习过程中最为重要的一点就是P-expert具备判别错误分类为正样本数据的能力，以及N-expert具备判别错误分类为负样本数据的能力。这个分类和提取错误的过程随着图像序列的变化实时更新，以此满足目标跟踪的需要。该算法的有效性参见文献\ref{kalal2010pn}。
+PN Learning的步骤主要分为三个部分：一是根据检测器给出的结果进行评估，二是使用P-expert和N-expert对检测器中分类错误的结果进行估计，三是根据上述计算的结果，更新检测器中的分类模块。P-Expert主要针对时间连贯性进行探索，其假设对象的位置移动应该是一条连贯的曲线。其能够利用跟踪器来估计目标出现在当前帧的位置。如果探测器将当前位置标记为负的（即错误负样本误差），则P-Expert产生一个正样本。N-Expert主要针对空间连贯性进行探索。其假设对象在相同帧里只出现在一个位置。其分析探测器对当前图像帧的所有相应，以及追踪器的相应，并选择其中最具可信度的一个。学习过程中最为重要的一点就是P-expert具备判别错误分类为正样本数据的能力，以及N-expert具备判别错误分类为负样本数据的能力。这个分类和提取错误的过程随着图像序列的变化实时更新，以此满足目标跟踪的需要。该算法的有效性参见文献\cite{kalal2010}。
 
 综上所述，基于上述三种模块的设计，TLD方法的伪代码如算法\ref{alg:tld_all}所示。
 \begin{algorithm2e}[ht]
@@ -891,7 +891,7 @@ C_t=\sum_{\mathbf{n}}u_t(\mathbf{n})u_t(\mathbf{n})^T
 \begin{align}
 s \mapsto \frac{2}{T_s}\frac{z-1}{z+1}
 \end{align}
-将上式带入\ref{eq:ps1_equation}和\ref{{eq:ps2_equation}}后可以得到
+将上式带入\ref{eq:ps1_equation}和\ref{eq:ps2_equation}后可以得到
 \begin{align}
 \mathbf{p}[z] &= \frac{1}{\frac{2}{T_s}\frac{z-1}{z+1}}\bar{\mathbf{p}} \\
 &= \frac{\frac{T_s}{2\tau+T_s}(z+1)}{z-\frac{2\tau-T_s}{2\tau+T_s}}\bar{\mathbf{p}}

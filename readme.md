@@ -1,3 +1,3 @@
-My Thesis
+Latex template for writing NUDT master/doctorial thesis
 
-kongww.nudt@gmail.com 
+contact : liubenyuan ## gmail ** COM

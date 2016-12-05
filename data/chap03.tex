@@ -607,6 +607,7 @@ t_r=D \frac{\displaystyle a_l(a_la_r + b_lb_r + c_lc_r)  - a_r (a_l^2 + b_l^2 + 
 \end{figure}
 
 \section{立体视觉系统转台控制策略}
+\subsection{转台控制量}
 为使得转台能够实现对目标的有效跟踪，需要建立合适的反馈回路。由于转台的控制量是俯仰角和方位角的增量，因此需要根据当前目标在图像中的成像位置与图像中心位置的偏差解算出合适的控制量。
 
 根据图\ref{fig:chp03_vision_02_image_plane}所示，可以得到$\phi_{cl}$和$\psi_{cl}$的解算公式为
@@ -632,13 +633,17 @@ f = \frac{w_u}{2}cot\frac{\alpha_{FOV_{pan}}}{2}
 \psi &=f(u, u_0, w_u, \alpha_{FOV_{pan}}) \\
 &=atan(u-u_0, \frac{w_u}{2}cot\frac{\alpha_{FOV_{pan}}}{2})
 \end{align}
-其中$w_u$和$w_v$是像平面的大小，$\alpha_{FOV_{pan}}$和$\alpha_{FOV_{tilt}}$是相机的横纵两个方向的视场角。由此，定义目标在像平面的初始坐标为$(u_1, v_1)$，期望坐标为$(u_2, v_2)$，可以进一步得到转台的控制量
+其中$w_u$和$w_v$是像平面的大小，$\alpha_{FOV_{pan}}$和$\alpha_{FOV_{tilt}}$是相机的横纵两个方向的视场角。
+
+由此，定义目标在像平面的初始坐标为$(u_1, v_1)$，期望坐标为$(u_2, v_2)$，可以进一步得到转台的控制量
 \begin{equation}
 \Delta\phi=f(v_1,v_0,w_v, \alpha_{FOV_{tilt}})-f(v_2,v_0, w_v, \alpha_{FOV_{tilt}})
 \end{equation}
 \begin{equation}
 \Delta\psi=f(u_1,u_0,w_u, \alpha_{FOV_{pan}})-f(u_2,u_0, w_u, \alpha_{FOV_{pan}})
 \end{equation}
+
+\subsection{比例控制策略}
 当目标距离较远时，转台的转动一般较小，因此设计简单的比例控制器对目标进行控制，转台的控制指令$u_{\phi,l}$和$u_{\psi,l}$可以定义为
 \begin{align}
 u_{\phi,l} = k_{\phi,l}\Delta\phi\\

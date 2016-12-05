@@ -277,6 +277,7 @@ k = \lfloor \frac{1}{2 \pi R_{min}} (\frac{|z_d - z_s|}{\tan \bar{\gamma}} - L_{
 % \end{algorithm2e}
 
 \section{舰船与无人机协同速度控制策略}
+\subsection{协同速度控制策略}
 假设舰船的初始速度为零，无人机从舰船后方窗口进入下降轨迹。在初始加速阶段，认为无人机的速度保持不变，舰船的加速度保持不变，由此可以得到如下表达
 \begin{align}
 V_{Ship} = V_{UAV} - \sqrt{2 \cdot a_{Ship} \cdot (x_{Ship} - x_{UAV})}
@@ -308,7 +309,10 @@ V_{k_{des}} = V_{k_{land}} + k \cdot (x_{Ship} - x_{UAV})
 V_{k_{land}} &= V_{A_{land}} + \overline{V_k - V_A} \\
 &= V_{A_{land}} + V_\omega
 \end{align}
-其中$V_\omega$是描述无人机空速和地速的差，$V_\omega$的获得通过一个低通滤波器，其截断频率为$0.2\ \text{Hz}$ 得到。由此可以得到无人机地速控制指令为
+其中$V_\omega$是描述无人机空速和地速的差，$V_\omega$的获得通过一个低通滤波器，其截断频率为$0.2\ \text{Hz}$ 得到。
+
+\subsection{地速和下降速率计算}
+根据上述推导，可以得到无人机地速控制指令为
 \begin{align}
 V_{A_{des}} =( V_{A_{land}} + k \cdot (U_{Ship} - U_{UAV})) + V_\omega - V_k + V_A
 \end{align}

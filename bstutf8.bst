@@ -1956,7 +1956,7 @@ FUNCTION {phdthesis} {
   format.book.title "title"  output.warn
   format.address.school.year output
   format.note                output
-
+  
   fin.entry
 }
 

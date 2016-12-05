@@ -84,7 +84,7 @@
 
 \newcommand{\installttf}{
     %%%% Windows Thesis Fonts
-    \setmainfont{Times New Roman PS Std}
+    \setmainfont{Times New Roman}
     \setsansfont{Arial}
     \setmonofont{Courier New}
     %%%% Using Office Family Fonts
@@ -100,7 +100,7 @@
 
 \newcommand{\installotf}{
     %%%% Windows Thesis Fonts
-    \setmainfont{Times New Roman PS Std}
+    \setmainfont{Times New Roman}
     \setsansfont{Arial}
     \setmonofont{Courier New}
     %%%% Using Adobe Family Fonts
