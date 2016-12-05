@@ -5,7 +5,7 @@
 %Ref: Automatic Ship Landing System for Fixed-Wing UAV
 
 \subsection{基于直线的降落曲线规划}
-基于连续离散点的路径规划最为直观，路径只需要将需要到达的点直接，产生相应的离散点即可构成。因为这种方法在多点直接的连线是折线，通过求解曲线位置的正切值可以发现，这种方法实际上无法用于无人机的路径规划。定义任意一个航迹点所在直线表达为
+基于连续离散点的路径规划最为直观，路径只需要将需要到达的点通过生成直线来连接，并在直线中产生相应的离散点即生成期望轨迹。定义任意一个航迹点所在直线表达为
 \begin{align}
 &x(\bar{\lambda}) =\bar{\lambda} a_x + b_x \\
 &y(\bar{\lambda}) =  \bar{\lambda} a_y +b_y
@@ -19,7 +19,7 @@
 \begin{equation}
 \psi_{path}=\text{atan2}(a_y, a_x)
 \end{equation}
-在依次给定每一段的航迹点$P_{start}$和$P_{final}$之后，通过上式即刻求得这段航迹的正切角度。在给定六个下降曲线的航迹点（距离期望着舰点的距离和高度）后，通过直线生成轨迹的方法，可以得到五段连续航线，如图\ref{fig:chp07_01_straight_line_plot_and_tangent}上半部分所示。这五段曲线的正切值的连续表达如图中下半部分所示。通过正切曲线可以看到，在航线之间的转换点，正切值出现明显突变。如果按此路径飞行，无人机的执行机构在航线转换点往往需要运动到极限位置，且容易引起系统的振荡和发散。注意，图\ref{fig:chp07_01_straight_line_plot_and_tangent}横坐标表达的是无人机的期望飞行轨迹，而不是该轨迹在惯性坐标系$\mathbf{i}^{i}$轴和$\mathbf{k}^{i}$轴所构成平面的投影长度。
+在依次给定每一段的航迹点$P_{start}$和$P_{final}$之后，通过上式即刻求得这段航迹的正切角度。在给定六个下降曲线的航迹点（距离期望着舰点的距离和高度）后，通过直线生成轨迹的方法，可以得到五段连续航线，如图\ref{fig:chp07_01_straight_line_plot_and_tangent}上半部分所示。这五段曲线的正切值的连续表达如图中下半部分所示。通过正切曲线可以看到，在航线之间的转换点，正切值出现明显突变。如果按此路径飞行，无人机的执行机构在航线转换点往往需要运动到极限位置，且容易引起系统的振荡和发散。因此该方法实际上无法用于无人机的路径规划和轨迹跟踪。注意，图\ref{fig:chp07_01_straight_line_plot_and_tangent}横坐标表达的是无人机的期望飞行轨迹，而不是该轨迹在惯性坐标系$\mathbf{i}^{i}$轴和$\mathbf{k}^{i}$轴所构成平面的投影长度。
 
 \begin{figure}[ht]   
 	\centering
@@ -33,9 +33,9 @@
 \subsection{基于Dubins曲线的下降阶段轨迹设计}
 除直接在航迹点之间用直线连接生成轨迹之外，另一种常见轨迹生成方法是基于Dubins在1957年提出的Dubins Path\cite{dubins1957curves}，该曲线最初主要是解决Dubins Car最短轨迹规划问题。该问题的前提假设是汽车只能向前运动。由于该假设与无人机的运动特性相符合，因此Dubins Path在无人机轨迹规划领域得到广泛应用。此外，Dubins也在文献\cite{dubins1957curves}中证明：在给定初始点位置和方向以及终止点位置和方向的情况下，Dubins Path生成的曲线是最短路径，且该路径规划由两个曲率最大的弧线和一条直线共三部分组成。
 
-对于无人机下降过程中的轨迹而言，可以利用Dubin Path的设计方法，对上一节设计的航迹直线段进行修正，用曲线替换折线，从而得到理想的航迹切换曲线。一般而言，通过在两个航迹直接设定虚拟圆，使得无人机在到达目标点之前，根据当前的空速方向和下一个目标点与当前目标点连线的夹角，根据Dubins方法构造一个虚拟圆。无人机只需要在靠近下一个目标点之前，按虚拟圆的弧线进行飞行，即可实现平滑转弯。该虚拟圆能够保证与目标航点的前后两条直线航迹线相切。由于Dubins曲线设计方法考虑到运动学基本约束，一般为转弯曲率和运动速率，因此该方法生成的轨迹能够满足无人机降落曲线设计需求。
+对于无人机下降过程中的轨迹而言，可以利用Dubin Path的设计方法，对上一节设计的航迹直线段进行修正，用曲线替换折线，从而得到理想的航迹切换曲线。一般而言，通过在两个航迹直接设定虚拟圆，使得无人机在到达目标点之前，根据当前的空速方向和下一个目标点与当前目标点连线的夹角，Dubins方法通常构造一个虚拟圆。无人机只需要在靠近下一个目标点之前，按虚拟圆的弧线进行飞行，即可实现平滑转弯。该虚拟圆能够保证与目标航点的前后两条直线航迹线相切。由于Dubins曲线设计方法考虑到运动学基本约束，一般为转弯曲率和运动速率，因此该方法生成的轨迹能够满足无人机降落曲线设计需求。
 
-由于当前无人机位置和虚拟圆圆心位置的不同，Dubins的曲线生成一般有四种可能性。定义初始航点虚拟圆为$\mathbf{O}_{cs}(X_{cs},Y_{cs})$，结束航点虚拟圆为$\mathbf{O}_{cf}(X_{cf}, Y_{cf})$，两个虚拟圆圆心的求解公式如下
+由于当前无人机位置和虚拟圆圆心位置的不同，Dubins的曲线生成一般有四种可能性，即RSR，RSL，LSR和LSL，具体内容可参考文献\cite{tsourdos2010cooperative}。本文选用RSR类型对问题进行描述，定义初始航点虚拟圆为$\mathbf{O}_{cs}(X_{cs},Y_{cs})$，结束航点虚拟圆为$\mathbf{O}_{cf}(X_{cf}, Y_{cf})$，两个虚拟圆圆心的求解公式如下
 \begin{align}
 &X_{cs} = X_s - R_s \cos (\psi_s \pm \frac{2}{\pi}) \\
 &Y_{cs} = X_s - R_s \sin (\psi_f \pm \frac{2}{\pi}) \\
@@ -47,7 +47,7 @@
 &\alpha_{path} = \text{arcsin}( \frac{R_f-R_s}{|c|}) \\
 &\beta_{path} = \text{arctan} (\frac{Y_{cf}-Y_{cs}}{X_{cf}-X_{cs}})
 \end{align}
-其中，$|c|= \parallel \mathbf{O}_{cs} - \mathbf{O}_{cf} \parallel $表示两个虚拟圆圆心之间的距离。Dubins曲线的设计根据虚拟圆的位置不同，一般有四种可能，图\ref{fig:chp07_02_dubins_RSR}所示为降落曲线下降阶段使用的$\text{RSR}$情况，即初始圆原点$\mathbf{O}_{cs}$位于初始速度$p_s$的右侧，结束圆点$\mathbf{O}_{cf}$位于结束期望速度$p_f$的右侧。
+其中，$|c|= \parallel \mathbf{O}_{cs} - \mathbf{O}_{cf} \parallel $表示两个虚拟圆圆心之间的距离。图\ref{fig:chp07_02_dubins_RSR}所示为降落曲线下降阶段使用的$\text{RSR}$情况，即初始圆原点$\mathbf{O}_{cs}$位于初始速度$p_s$的右侧，结束圆点$\mathbf{O}_{cf}$位于结束期望速度$p_f$的右侧。
 \begin{figure}[ht]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp07/chp07_02_dubins_RSR.pdf}
@@ -85,7 +85,7 @@
 \mathbf{WP}_4 &= \mathbf{WP}_3+ (a3 \ 0 \ 0\ \chi_4^{path})^T \\
 \mathbf{WP}_5 &= \mathbf{WP}_4 + (\frac{H_{detect}}{\tan{\gamma_2}}\ 0 \ {-H_{detect}}\ \chi_5^{path})^T \\
 \mathbf{WP}_6 &= \mathbf{WP}_5 + (a5\ 0 \ H_{detect}\ \chi_6^{path})^T 
-\end{align}s
+\end{align}
 
 由此，只需要给定期望着舰点高度$H_{td}$、着陆前末状态检查长度$a3$、降落位置攻角$\gamma_1$、下滑角$\gamma_2$和无人机检测高度$H_{detect}$，即可得到这六个航迹点在降落轨迹局部坐标系的坐标。假设望着舰点$H_{td} = 3 m$，$\gamma_1=4 \degree$，$\gamma_2=8\degree$，$a_3 = 200\ m$和$H_{detect} = 50 m$，假设此时降落曲线局部坐标系的$\mathbf{i}^{path,l}$轴和$\mathbf{j}^{path,l}$轴方向分别于系统惯性系的$\mathbf{i}^{i}$和$\mathbf{j}^i$平行，六个航迹点的期望航迹航向角均为$-180\degree$，可以得到六个航点在系统坐标系的具体位置如表\ref{lab:uav_landing_six_points}所示。
 
@@ -312,7 +312,7 @@ V_{k_{land}} &= V_{A_{land}} + \overline{V_k - V_A} \\
 \begin{align}
 V_{A_{des}} =( V_{A_{land}} + k \cdot (U_{Ship} - U_{UAV})) + V_\omega - V_k + V_A
 \end{align}
-无人机数值方向跟踪方法为
+无人机竖直方向跟踪方法为
 \begin{align}
 &\chi_{UAV} = \chi_{ll} + k_1 \cdot (y_{Ship} - y_{UAV}) +k_2 \frac{1}{s} (y_{Ship} - y_{UAV}) + k_3 (v_{Ship} - v_{UAV}) \\
 &\chi_{Ship} = \chi_{ll} + k_4 \cdot (y_{Ship} - y_{UAV}) +  k_5 (v_{Ship} - v_{UAV})
@@ -435,7 +435,7 @@ q_{turn} = \sin\phi \cos\theta\tan \phi \frac{g}{V_k}
 \section{MPC控制方法}
 
 \subsection{侧风扰动情况下的轨迹规划方法}
-由于L1引导控制方法实质上类似于比例-微分控制器（PD Controller），如果考虑在四级海况情况下风速的影响，无人机实际上很难正确跟踪上一节生成的Dubins曲线。因此，可以引入侧方的扰动，进一步将问题用优化的方法进行求解。该方法实质上是一种模型预测控制（Model Predictive Control，MPC）。无人机的优化目标为从初始位置到达终止位置的所需时间$T$最短，其数学表达为 
+在许多开源飞行控制器中，对于轨迹的跟踪通常采用L1引导控制方法，该方法实质上类似于比例-微分控制器（PD Controller）。但如果考虑在不同海况情况下的风速的影响，无人机实际上很难正确跟踪上一节生成的Dubins曲线。因此，可以通过引入水平方向的扰动，进一步分析问题，并使用最优化的方法进行求解。该方法实质上是一种模型预测控制（Model Predictive Control，MPC）。无人机的优化目标为从初始位置到达终止位置的所需时间$T$最短，其数学表达为 
 \begin{align}
 	\textsf{minimize}\ \ T \label{eq:gust_dubins_1} \\
 	\textsf{subject to}\  \ &\dot{\mathbf{p}}(t) = {V}_a(\cos \psi(t)\ \ \sin \psi(t))^T + \mathbf{\omega}  \nonumber \\

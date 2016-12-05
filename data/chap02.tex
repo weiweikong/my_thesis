@@ -1,6 +1,12 @@
 \chapter{无人机着舰环境数学建模}
-\label{chap:main}
-无人机着舰的过程设计到无人机系统和舰船系统两大部分，因此为了研究这两部分直接的关系，必须对降落过程进行适当的数学模型\cite{beardsmall}，以利于对无人机控制和引导系统进行数学仿真和物理实验。
+\section{引言}
+无人机着舰的过程主要设计到无人机系统和舰船系统两大部分。因此为了研究这两部分之间的关系，必须对两大系统涉及到的坐标系进行适当的数学描，并选用合适的动力学和运动学模型，以便对无人机引导和控制进行数学仿真和物理实验。由于与无人机着舰过程相关的文献通常将两个系统进行独立设计，因此不适用于本文设计的舰基引导系统。本章针对上述需求，建立相关坐标系（如图\ref{fig:chp02_11_all_axis}所示），并根据实际需求选用合适的无人机运动学和动力学模型述\cite{beardsmall}。
+\begin{figure}[htb]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp02/chp02_11_all_axis.pdf}
+	\caption{本文涉及到的相关坐标系}
+	\label{fig:chp02_11_all_axis}
+\end{figure}
 
 \section{无人机系统坐标系定义}
 
@@ -349,7 +355,7 @@ n = \frac{1}{2} \rho V_a^2 S b C_n (\beta, p, r, \delta_a, \delta_r)
 \end{equation}
 其中航迹角$\gamma$定义为地速$\mathbf{V}_g$与惯性系北向$\mathbf{i}^i$与动向$\mathbf{j}^i$所构成的地平面的夹角，航迹偏航角$\chi$定义为地速$\mathbf{V}_g$在地面投影与正北方向的夹角。
 
-由于无人机受到的升力为$F_{lift}$，在无人机进行协同转向（Coordinated Turn）时，根据力学关系可以得到横向和纵向公式
+由于无人机受到的升力为$F_{lift}$，在无人机进行协调转弯（Coordinated Turn）时，根据力学关系可以得到横向和纵向公式
 \begin{align}
 &F_{lift} \sin \phi \cos (\chi - \psi) = \mathsf{m} \frac{v^2}{R}  \\
 &F_{lift } \cos \phi = \mathsf{m} g \cos \gamma
@@ -504,13 +510,8 @@ t_{Sh,i}^c\\
 
 
 \section{本章小结}
-本章根据无人机着舰过程中的需求，系统定义了无人机和舰船两大类坐标系，并根据各自系统的数学推算需要，定义了引导坐标系、下滑轨迹坐标系、风向坐标系等。上述小节对相关重点坐标系的符号定义和对相互转换关系进行推导。图\ref{fig:chp02_11_all_axis}所示为各个坐标系之间的转换关系。
+本章根据无人机着舰过程中的需求，系统定义了无人机和舰船两大类坐标系，并根据各自系统的数学推算需要，定义了引导坐标系、下滑轨迹坐标系、风向坐标系等。上述小节对相关重点坐标系的符号定义和对相互转换关系进行推导。
 
-\begin{figure}[htb]   
-	\centering
-	\includegraphics[width=\textwidth]{figs/chp02/chp02_11_all_axis.pdf}
-	\caption{本文涉及到的相关坐标系}
-	\label{fig:chp02_11_all_axis}
-\end{figure}
+
 
 

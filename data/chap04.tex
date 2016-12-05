@@ -1,5 +1,5 @@
 \chapter{基于视觉传感器的无人机跟踪方法研究}
-
+\section{引言}
 针对目标检测问题，很多学者提出了不同的解决方法，但目标实时监测问题中的所涉及的目标尺度变化、被遮挡和实时性等问题仍然没有得到有效解决。本章针对无人机自主降落过程中的目标跟踪问题进行进一步分析，并给出了满足实时性和精度需求的无人机目标跟踪算法。
 
 \section{无人机引导降落目标跟踪问题分析}
@@ -19,7 +19,7 @@ One-shot Tracking问题的核心是目标位置的先验信息唯一，一般定
 	\SetKwFunction{Track}{Track}
 	\SetKwFunction{Update}{Update}
 	\SetKwFunction{Initialization}{Initialization}
-	\Input{Image sequence $I_1, ..., I_T$ with bounding box $b_1$}
+	\Input{Image sequence $I_1, ..., I_T$ with bounding box envolved UAV $b_1$}
 	\Initialization($I_1$, $b_1$)\;
 	\For{$i=2$ \KwTo $T$}{
 		$b_i\ \leftarrow$ \Track{$I_i$}\;
@@ -28,6 +28,14 @@ One-shot Tracking问题的核心是目标位置的先验信息唯一，一般定
 	\caption{UAV One-shot Tracking 算法框架}
 	\label{al:one_shot_tracking}
 \end{algorithm2e}
+视觉跟踪系统的整体工作框图如图\ref{fig:chp04_19_tracking_diagram}所示。
+\begin{figure}[ht]   
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp04/chp04_19_tracking_diagram.pdf}
+	\caption{视觉跟踪系统框架}
+	\label{fig:chp04_19_tracking_diagram}
+\end{figure}
+
 
 \section{无人机跟踪问题图像预处理}
 \subsection{形态学滤波方法概述}
@@ -148,7 +156,7 @@ NCC(P_1, P_2) = \frac{1}{n-1}\sum_{x=1}^{n}\frac{(P_1-\mu_1)(P_2-\mu_2)}{\sigma_
 	$\text{med}_{NCC} \leftarrow$\MedianFlow($\{\eta_i\}$) \;
 	$\{\bar{\mathbf{p}}_i\} \leftarrow  \{\mathbf{p}(t)_i,\mathbf{p}(t)'_i|\text{med}_{FB} \le \epsilon_i, \text{med}_{NCC} \ge \eta_i \}$\;
 	$b(t+1) \leftarrow$\Transform($b(t),\{\bar{\mathbf{p}}_i\}$)\;
-	\caption{TLD框架中的Tracking算法}
+	\caption{TLD框架中的Tracking环节}
 	\label{alg:tld_tracking}
 \end{algorithm2e}
 
@@ -235,7 +243,7 @@ P(f_1, f_2, ..., f_N|C_k)=\prod\limits_{i=1}^{N}P(f_i|C_k)
 \begin{equation}
 \arg\max_kP(C_k)\prod\limits_{i=1}^{N}P(f_i|C_k)
 \end{equation}
-但是在实际问题的求解过程中，每个特征的独立性假设过于严格，不符合实际情况。2007年的CVPR的一篇文章中使用Semi-Navie Bayes方法进行进行改进\ref{ozuysal2007fast}，通过对特征进行分组，将特征之间的独立性假设弱化为特征组与特征组之间的独立性假设，即组间内部特征存在相互依赖。假设所有的特征可以分为$L$个组别，每个组别中包含$S$个特征，每个组别被称为Ferns，每一个特征组的表达为
+但是在实际问题的求解过程中，每个特征的独立性假设过于严格，不符合实际情况。2007年的CVPR的一篇文章中使用Semi-Navie Bayes方法进行改进\ref{ozuysal2007fast}，通过对特征进行分组，将特征之间的独立性假设弱化为特征组与特征组之间的独立性假设，即组间内部特征存在相互依赖。假设所有的特征可以分为$L$个组别，每个组别中包含$S$个特征，每个组别被称为Ferns，每一个特征组的表达为
 \begin{equation}
 \mathbf{F}_l=\{f_{l,1}, f_{l,2},..., f_{l,S}\}
 \end{equation}
@@ -285,7 +293,7 @@ f_i=\left\{ \begin{array}{ll}
 
 PN Learning的步骤主要分为三个部分：一是根据检测器给出的结果进行评估，二是使用P-expert和N-expert对检测器中分类错误的结果进行估计，三是根据上述计算的结果，更新检测器中的分类模块。P-Expert主要针对时间连贯性进行探索，其假设对象的位置移动应该是一条连贯的曲线。其能够利用跟踪器来估计目标出现在当前帧的位置。如果探测器将当前位置标记为负的（即错误负样本误差），则P-Expert产生一个正样本。N-Expert主要针对空间连贯性进行探索。其假设对象在相同帧里只出现在一个位置。其分析探测器对当前图像帧的所有相应，以及追踪器的相应，并选择其中最具可信度的一个。学习过程中最为重要的一点就是P-expert具备判别错误分类为正样本数据的能力，以及N-expert具备判别错误分类为负样本数据的能力。这个分类和提取错误的过程随着图像序列的变化实时更新，以此满足目标跟踪的需要。该算法的有效性参见文献\ref{kalal2010pn}。
 
-综上所述，基于上述三种模块的设计，TLD方法的算法实现伪代码如算法\ref{alg:tld_all}所示。
+综上所述，基于上述三种模块的设计，TLD方法的伪代码如算法\ref{alg:tld_all}所示。
 \begin{algorithm2e}[ht]
 	\SetAlgoLined
 	%	\KwData{this text}
@@ -308,7 +316,7 @@ PN Learning的步骤主要分为三个部分：一是根据检测器给出的结
 			\Learn($I_t,b_t,r_t$)
 		}
 	}	
-	\caption{TLD框架的算法实现}
+	\caption{TLD方法的算法流程}
 	\label{alg:tld_all}
 \end{algorithm2e}
 
@@ -326,14 +334,14 @@ PN Learning的步骤主要分为三个部分：一是根据检测器给出的结
 \begin{figure}[ht]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp04/chp04_25_small_middle_CDE_monte_carlo.pdf}
-	\caption{小型无人机和中心无人机的跟踪精度比较}
+	\caption{小型无人机和中型无人机的跟踪精度比较}
 	\label{fig:chp04_25_small_middle_CDE_monte_carlo}
 \end{figure}
 
 \begin{figure}[ht]   
 	\centering
 	\includegraphics[width=\textwidth]{figs/chp04/chp04_26_small_middle_speed_monte_carlo.pdf}
-	\caption{小型无人机和中心无人机的跟踪速度比较}
+	\caption{小型无人机和中型无人机的跟踪速度比较}
 	\label{fig:chp04_26_small_middle_speed_monte_carlo}
 \end{figure}
 
@@ -364,7 +372,7 @@ PN Learning的步骤主要分为三个部分：一是根据检测器给出的结
 
 \section{基于主动态轮廓线的目标跟踪研究}
 \subsection{主动轮廓方法介绍}
-TLD方法在识别无人机目标的输出是一个矩形框，为了使用上一章的位置解算方法，需要分布在左右相机的像平面进一步计算出一个像素点。通常为了计算方便，该像素点的计算均为矩形框的几何中心。由于无人机成像的特殊性，矩形框的几何中心对应的像素点往往并不是机头的位置，因此通常给解算带来一定的误差。本节使用主动轮廓的方法，在TLD方法输出矩形框之后，进一步向内收敛，以获取更为准确的位置信息，如图\ref{fig:chp04_07_active_contour_demo}所示。其中，左侧图像的绿色矩形为手动标记的真实目标位置，红色矩形为TLD方法识别之后的矩形框；右侧图像中的红色曲线是基于左侧图像中红色矩形框使用主动轮廓向内收敛之后的结果。图中的信息可以看到，相比没有收敛的矩形框，主动轮廓更加贴近无人机目标。
+TLD方法在识别无人机目标后的输出是一个矩形框，为了使用上一章的位置解算方法，需要分布在左右相机的像平面进一步计算出一个像素点。通常为了计算方便，该像素点的计算均为矩形框的几何中心。由于无人机成像的特殊性，矩形框的几何中心对应的像素点往往并不是机头的位置，因此通常给解算带来一定的误差。本节使用主动轮廓的方法，在TLD方法输出矩形框之后，进一步向内收敛，以获取更为准确的位置信息，如图\ref{fig:chp04_07_active_contour_demo}所示。其中，左侧图像的绿色矩形为手动标记的真实目标位置，红色矩形为TLD方法识别之后的矩形框；右侧图像中的红色曲线是基于左侧图像中红色矩形框使用主动轮廓向内收敛之后的结果。图中的信息可以看到，相比没有收敛的矩形框，主动轮廓更加贴近无人机目标。
 
 \begin{figure}[ht]   
 	\centering
@@ -599,7 +607,7 @@ u^{n+1} (\mathbf{x}) = (((SI_h) \circ (IS_h)) u^{n+\frac{2}{3}})(\mathbf{x})
 
 
 \section{基于互相关滤波方法的目标跟踪研究}
-上一节的主动轮廓方法虽然在TLD的结果基础上进一步修正了目标期望中心位置，但由于无人机目标在不同位置成像的多样性，中心位置的确定仍然存在不稳定的情况。因此，本节探讨使用相关滤波的方法来进一步研究目标中心位置的确定。
+上一节的主动轮廓方法虽然在TLD的结果基础上进一步修正了目标期望中心位置，但由于无人机目标在不同位置成像的多样性，中心位置的确定仍然存在不稳定的情况。因此，本节探讨使用相关滤波的方法来进一步研究目标中心位置的确定，同时通过对目标横纵方向尺度的分析，进一步提高矩形框的标注精度。
 
 %1.1 Hann Window
 %The Hann function is typically used as a window function in digital signal processing to select a subset of a series of samples in order to perform a Fourier transform or other calculations.
@@ -987,8 +995,7 @@ y_{t-1} = f\frac{y_t -f\phi}{- \psi  x_t + \phi y_t + f}
 x_{t} = f\frac{x_{t-1} - f\psi }{x_{t-1}  \psi  - \phi y_{t-1} + f} \\
 y_{t} = f\frac{y_{t-1} -f\phi}{  x_{t-1} \psi - \phi y_{t-1} + f}
 \end{align}
-
-根据上述方法定义，在实际数据中可以得到进一步验证。图\ref{fig:chp04_17_predict_1}和图\ref{fig:chp04_18_predict_2}所示为选取两组转台方位角和俯仰角偏差较大的情况。其中上一帧目标坐标位置的真值用黄色点标记，根据上一帧坐标预测出的当前帧坐标用蓝色点标记。此外，当前帧坐标真值用绿色标记，通过当前帧真值反向预测上一帧目标位置的坐标用墨绿色标记。通过比较向前和向后预测的真值，可以验证之前的推算是否正确。
+上述方法可以在实际数据中可以得到进一步验证。图\ref{fig:chp04_17_predict_1}和图\ref{fig:chp04_18_predict_2}所示为选取两组转台方位角和俯仰角偏差较大的情况。其中上一帧目标坐标位置的真值用黄色点标记，根据上一帧坐标预测出的当前帧坐标用蓝色点标记。此外，当前帧坐标真值用绿色标记，通过当前帧真值反向预测上一帧目标位置的坐标用墨绿色标记。通过比较向前和向后预测的真值，可以验证之前的推算是否正确。
 
 图\ref{fig:chp04_17_predict_1}左侧是中心无人机第一组降落数据集中第138帧的数据，右侧为第139帧的数据，通过直观比较左右两幅图像的地平线位置，并参考转台提供的数据可以判断出：转台在连续两帧中俯仰角的变化较大。同理，图\ref{fig:chp04_17_predict_1}所示是该组图像序列的第104帧和第105帧图像，通过比较两幅图像白色文字右侧的地面栏杆变化，并参考转台提供的数据可以判断出：转台在连续两帧中方位角变化较大。通过公式\ref{eq:prev_predict_curr}可以对该部分偏差进行有效修正，同时也可以通过公式\ref{eq:prev_predict_curr}来反向验证算法是否有效。这两组图像的具体数据结果如表所示。
 
@@ -1022,12 +1029,4 @@ y_{t} = f\frac{y_{t-1} -f\phi}{  x_{t-1} \psi - \phi y_{t-1} + f}
 \end{table}
 
 \section{本章小结}
-本章首先将无人机降落过程中的目标跟踪问题划归为One-shot Tracking问题，即通过目标识别方法或人工选取来得到跟踪目标的初始位置。其次，根据无人机降落过程中的成像特性，选用形态学滤波方法对左右视觉传感器采集到的图像进行预处理。随后，通过改进TLD方法、主动轮廓线方法和相关滤波三种方法，来尽可能的实现对无人机目标的实时跟踪和中心点位置估计。最后，通过引入转台的方位角和俯仰角信息对无人机目标的位置进行进一步修正，并基于修正后的位置使用上述三种目标识别方法，最终能够提升对中心点位置估计的稳定性和可靠性，系统的整体工作示意图如图\ref{fig:chp04_19_tracking_diagram}所示。
-
-
-\begin{figure}[ht]   
-	\centering
-	\includegraphics[width=\textwidth]{figs/chp04/chp04_19_tracking_diagram.pdf}
-	\caption{当转台出现俯仰角较大偏差时，目标位置的估计情况}
-	\label{fig:chp04_19_tracking_diagram}
-\end{figure}
+本章首先将无人机降落过程中的目标跟踪问题划归为One-shot Tracking问题，即通过目标识别方法或人工选取来得到跟踪目标的初始位置。其次，根据无人机降落过程中的成像特性，选用形态学滤波方法对左右视觉传感器采集到的图像进行预处理。随后，通过改进TLD方法、主动轮廓线方法和相关滤波三种方法，来尽可能的实现对无人机目标的实时跟踪和中心点位置估计。最后，通过引入转台的方位角和俯仰角信息对无人机目标的位置进行进一步修正，并基于修正后的位置使用上述三种目标识别方法，最终能够提升对中心点位置估计的稳定性和可靠性。
