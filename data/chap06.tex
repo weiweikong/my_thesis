@@ -87,7 +87,7 @@
 \mathbf{WP}_6 &= \mathbf{WP}_5 + (a5\ 0 \ H_{detect}\ \chi_6^{path})^T 
 \end{align}
 
-由此，只需要给定期望着舰点高度$H_{td}$、着陆前末状态检查长度$a3$、降落位置攻角$\gamma_1$、下滑角$\gamma_2$和无人机检测高度$H_{detect}$，即可得到这六个航迹点在降落轨迹局部坐标系的坐标。假设望着舰点$H_{td} = 3 m$，$\gamma_1=4 \degree$，$\gamma_2=8\degree$，$a_3 = 200\ m$和$H_{detect} = 50 m$，假设此时降落曲线局部坐标系的$\mathbf{i}^{path,l}$轴和$\mathbf{j}^{path,l}$轴方向分别于系统惯性系的$\mathbf{i}^{i}$和$\mathbf{j}^i$平行，六个航迹点的期望航迹航向角均为$-180\degree$，可以得到六个航点在系统坐标系的具体位置如表\ref{lab:uav_landing_six_points}所示。
+由此，只需要给定期望着舰点高度$H_{td}$、着陆前末状态检查长度$a3$、降落位置攻角$\gamma_1$、下滑角$\gamma_2$和无人机检测高度$H_{detect}$，即可得到这六个航迹点在降落轨迹局部坐标系的坐标。假设期望着舰点$H_{td} = 3 m$，$\gamma_1=4 \degree$，$\gamma_2=8\degree$，$a_3 = 200\ m$和$H_{detect} = 50 m$，假设此时降落曲线局部坐标系的$\mathbf{i}^{path,l}$轴和$\mathbf{j}^{path,l}$轴方向分别于系统惯性系的$\mathbf{i}^{i}$和$\mathbf{j}^i$平行，六个航迹点的期望航迹航向角均为$-180\degree$，可以得到六个航点在系统坐标系的具体位置如表\ref{lab:uav_landing_six_points}所示。
 
 \begin{table}[ht]
 	\centering
@@ -284,7 +284,7 @@ V_{Ship} = V_{UAV} - \sqrt{2 \cdot a_{Ship} \cdot (x_{Ship} - x_{UAV})}
 \end{align}
 其中无人机的速度为$V_{UAV}$，舰船的加速度为$a_{Ship}$。
 
-由于地面移动机器人的初始速率$V_{Ship}=0$，将上式进行变换后，得到无人机与地面移动平台的相对位置为
+由于地面移动平台的初始速率$V_{Ship}=0$，将上式进行变换后，得到无人机与地面移动平台的相对位置为
 \begin{align}
 x_{Ship}-x_{UAV} = \frac{V_{UAV}^2}{2 \cdot a_{Ship}}
 \end{align}
@@ -406,7 +406,7 @@ mV\dot{V} + mg\dot{h} =(T-D)\cdot V
 \end{align}
 上式中的控制方法主要通过比例-积分（PI）方法实现，其中比例部分并没有与期望下滑角之差进行比较。由此可以得到，TECS的输出为期望俯仰角$\theta_{des}$和无量纲的期望推力$T_{des}/\mathsf{m}g$。
 
-内环控制器主要解决无人机对于TECS的两个输出了的控制。对于期望俯仰角的控制主要通过无人机的升降舵来实现
+内环控制器主要解决无人机对于TECS的两个输出量的控制。对于期望俯仰角的控制主要通过无人机的升降舵来实现
 \begin{align}
 \delta_e = -(K_\theta+\frac{K_{i\theta}}{s})(\theta_{des}-\theta)-K_q(q_{turn}-q)
 \end{align}
@@ -581,7 +581,7 @@ SCP方法主要是通过迭代更新$\hat{\psi}(k)$来计算局部最优轨迹�
 
 \subsection{基于横向控制的模型预测控制策略}
 
-上一节介绍的方法虽然能够通过模型预测控制的方法给出了在侧风扰动情况下的控制量求解方法，但由于无人机底层控制的控制回路的实时性要求高，上述方法约$20\ Hz$的控制频率往往不能满足无人机姿态的控制需要。因此，需要考虑将底层控制与顶层控制独立设计的控制框架。无人机的控制器设计主要采用级联控制的设计思路（Casade Control），其中内环控制主要为底层控制（Low-level Control），外环控制是基于模型的轨迹跟踪控制器。该设计思路的具体实现如图\ref{fig:chp07_15_control_diagram}所示。
+上一节介绍的方法虽然能够通过模型预测控制的方法给出了在侧风扰动情况下的控制量求解方法，但由于无人机底层控制回路的实时性要求高，上述方法约$20\ Hz$的控制频率往往不能满足无人机姿态的控制需要。因此，需要考虑将底层控制与顶层控制独立设计的控制框架。无人机的控制器设计主要采用级联控制的设计思路（Casade Control），其中内环控制主要为底层控制（Low-level Control），外环控制是基于模型的轨迹跟踪控制器。该设计思路的具体实现如图\ref{fig:chp07_15_control_diagram}所示。
 
 \begin{figure}[ht]   
 	\centering
@@ -687,8 +687,10 @@ e_{\chi} = \chi_d-\chi
 \end{compactenum}
 
 根据上述六个不同的基本数据指标，无人机主要面临的六种危险如下表所示。
-\begin{table}
+
+\begin{table}[ht]
 	\centering
+	\caption{无人机降落过程中的主要危险}
 	\begin{tabular}{cccc}
 		\hline
 		\textbf{风险名称} & \textbf{符号表达} & \textbf{相关变量} & \textbf{状态描述}       \\ \hline
@@ -700,6 +702,7 @@ e_{\chi} = \chi_d-\chi
 		横向偏离跑道 & PRB  & 无    & 无          \\  \hline
 	\end{tabular}
 \end{table}
+
 其中$P_{RS}$定义为
 \begin{equation}
 	P_{RS}=\frac{1}{\sigma_v\sqrt{2\pi}}\int_{-\infty}^{e_{v,low}}\exp(-\frac{(x-\bar{e}_v)^2}{2\sigma_v^2})dx \\
