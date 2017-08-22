@@ -77,7 +77,7 @@
 \RequirePackage{CJKnumb}
 \RequirePackage{indentfirst}
 \RequirePackage[numbers,sort&compress,square]{natbib}
-\RequirePackage[colorlinks=true,linkcolor=blue,citecolor=red,pdfborder=0 1 1]{hyperref}
+\RequirePackage[colorlinks=true,linkcolor=black,citecolor=black,urlcolor=black,pdfborder=0 1 1]{hyperref}
 \defaultfontfeatures{Mapping=tex-text}
 \xeCJKsetcharclass{"0}{"2E7F}{0}
 \xeCJKsetcharclass{"2E80}{"FFFF}{1}

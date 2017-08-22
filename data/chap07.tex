@@ -1,680 +1,386 @@
-\chapter{无人机飞行制导与控制系统设计}
-针对目标监测问题，很多学者提出了不同的解决方法，但目标实时监测问题中的所涉及的目标尺度变化、被遮挡和实时性等问题仍然没有得到有效解决。
- 
-\section{无人机降落轨迹设计方法}
-%Ref: Automatic Ship Landing System for Fixed-Wing UAV
+\chapter{基于多传感器的无人机自主着舰系统实验验证}
 
-\subsection{基于直线的降落曲线规划}
-基于连续离散点的路径规划最为直观，路径只需要将需要到达的点通过生成直线来连接，并在直线中产生相应的离散点即生成期望轨迹。定义任意一个航迹点所在直线表达为
-\begin{align}
-&x(\bar{\lambda}) =\bar{\lambda} a_x + b_x \\
-&y(\bar{\lambda}) =  \bar{\lambda} a_y +b_y
-\end{align}
-其中$\bar{\lambda} \in [0, 1]$，在这段航迹的初始点$P_{start}(x_s, y_s)$时，$\bar{\lambda} = 0$；在这段航迹的结束点$P_{final}(x_f,y_f)$是，$\bar{\lambda} = 1$。由此，初始点和结束点的表达形式如下
-\begin{align}
-&P_{start} = [x(0)\ y(0)]^T=[b_x\ b_y]^T \\
-&P_{final} = [x(1)\ y(1)]^T=[a_x+b_x\ a_y+b_y]^T
-\end{align}
-此时定义这段航迹相对于直线的正切角为
-\begin{equation}
-\psi_{path}=\text{atan2}(a_y, a_x)
-\end{equation}
-在依次给定每一段的航迹点$P_{start}$和$P_{final}$之后，通过上式即刻求得这段航迹的正切角度。在给定六个下降曲线的航迹点（距离期望着舰点的距离和高度）后，通过直线生成轨迹的方法，可以得到五段连续航线，如图\ref{fig:chp07_01_straight_line_plot_and_tangent}上半部分所示。这五段曲线的正切值的连续表达如图中下半部分所示。通过正切曲线可以看到，在航线之间的转换点，正切值出现明显突变。如果按此路径飞行，无人机的执行机构在航线转换点往往需要运动到极限位置，且容易引起系统的振荡和发散。因此该方法实际上无法用于无人机的路径规划和轨迹跟踪。注意，图\ref{fig:chp07_01_straight_line_plot_and_tangent}横坐标表达的是无人机的期望飞行轨迹，而不是该轨迹在惯性坐标系$\mathbf{i}^{i}$轴和$\mathbf{k}^{i}$轴所构成平面的投影长度。
+\section{仿真验证环境构建}
+\subsection{基于Matlab/Simulink的控制系统仿真环境实现}
+Matlab软件于1980年由美国New Mexico大学的研究者Cleve Moler开发，其中Simulink是重要组件之一，该组件能够完成动态系统建模、仿真与综合分析等功能。为验证无人机底层控制和顶层控制算法，本文使用Simulink中的相关模块来完成仿真环境搭建。其中底层控制回路的仿真框图如图\ref{fig:chp08_07_matlab_control}所示，其中\texttt{Autopilot}模块主要完成底层控制，满足无人机的姿态控制需求。
 
-\begin{figure}[ht]   
+\begin{figure}[!ht]
 	\centering
-	\includegraphics[width=\textwidth]{figs/chp07/chp07_01_straight_line_plot_and_tangent.pdf}
-	\caption{基于直线的下降曲线规划示意图}
-	\label{fig:chp07_01_straight_line_plot_and_tangent}
-\end{figure}
-由于基于直线连接的降落曲线的每一个航迹点之间不满足一阶微分可导的约束，因此纵向飞行控制器无法使得无人机无法按该期望轨迹飞行。曲线的连续性需要曲线的方程符合二阶处处可微的条件。但在实际飞行过程中，无人机飞行环境的复杂性以及无人机纵向控制器的控制量通常为下降速率，因此在设计下降曲线时可以弱化曲线的二阶处处可微的条件。
-
-
-\subsection{基于Dubins曲线的下降阶段轨迹设计}
-除直接在航迹点之间用直线连接生成轨迹之外，另一种常见轨迹生成方法是基于Dubins在1957年提出的Dubins Path\cite{dubins1957curves}，该曲线最初主要是解决Dubins Car最短轨迹规划问题。该问题的前提假设是汽车只能向前运动。由于该假设与无人机的运动特性相符合，因此Dubins Path在无人机轨迹规划领域得到广泛应用。此外，Dubins也在文献\cite{dubins1957curves}中证明：在给定初始点位置和方向以及终止点位置和方向的情况下，Dubins Path生成的曲线是最短路径，且该路径规划由两个曲率最大的弧线和一条直线共三部分组成。
-
-对于无人机下降过程中的轨迹而言，可以利用Dubin Path的设计方法，对上一节设计的航迹直线段进行修正，用曲线替换折线，从而得到理想的航迹切换曲线。一般而言，通过在两个航迹直接设定虚拟圆，使得无人机在到达目标点之前，根据当前的空速方向和下一个目标点与当前目标点连线的夹角，Dubins方法通常构造一个虚拟圆。无人机只需要在靠近下一个目标点之前，按虚拟圆的弧线进行飞行，即可实现平滑转弯。该虚拟圆能够保证与目标航点的前后两条直线航迹线相切。由于Dubins曲线设计方法考虑到运动学基本约束，一般为转弯曲率和运动速率，因此该方法生成的轨迹能够满足无人机降落曲线设计需求。
-
-由于当前无人机位置和虚拟圆圆心位置的不同，Dubins的曲线生成一般有四种可能性，即RSR，RSL，LSR和LSL，具体内容可参考文献\cite{tsourdos2010cooperative}。本文选用RSR类型对问题进行描述，定义初始航点虚拟圆为$\mathbf{O}_{cs}(X_{cs},Y_{cs})$，结束航点虚拟圆为$\mathbf{O}_{cf}(X_{cf}, Y_{cf})$，两个虚拟圆圆心的求解公式如下
-\begin{align}
-&X_{cs} = X_s - R_s \cos (\psi_s \pm \frac{2}{\pi}) \\
-&Y_{cs} = X_s - R_s \sin (\psi_f \pm \frac{2}{\pi}) \\
-&X_{cf} = X_f - R_f \cos (\psi_f \pm \frac{2}{\pi}) \\
-&Y_{cf} = X_f - R_f \sin (\psi_f \pm \frac{2}{\pi})
-\end{align}
-其中$R_s$和$R_f$是初始航点虚拟圆和结束航点虚拟圆的半径，$\psi_s$和$\psi_f$描述初始航点和虚拟航点在系统坐标系下的航向角。由此可以进一步得到两个圆心之间的夹角关系$\alpha_{path}$和圆心之间的连线与系统惯性坐标系之间的夹角$\beta_{path}$，
-\begin{align}
-&\alpha_{path} = \text{arcsin}( \frac{R_f-R_s}{|c|}) \\
-&\beta_{path} = \text{arctan} (\frac{Y_{cf}-Y_{cs}}{X_{cf}-X_{cs}})
-\end{align}
-其中，$|c|= \parallel \mathbf{O}_{cs} - \mathbf{O}_{cf} \parallel $表示两个虚拟圆圆心之间的距离。图\ref{fig:chp07_02_dubins_RSR}所示为降落曲线下降阶段使用的$\text{RSR}$情况，即初始圆原点$\mathbf{O}_{cs}$位于初始速度$p_s$的右侧，结束圆点$\mathbf{O}_{cf}$位于结束期望速度$p_f$的右侧。
-\begin{figure}[ht]   
-	\centering
-	\includegraphics[width=\textwidth]{figs/chp07/chp07_02_dubins_RSR.pdf}
-	\caption{RSR类型的Dubins曲线示意图}
-	\label{fig:chp07_02_dubins_RSR}
+	\includegraphics[width=0.8\textwidth]{figs/chp08/chp08_07_matlab_control.pdf}	
+	\caption{Matlab/Simulink底层控制回路仿真}
+	\label{fig:chp08_07_matlab_control}
 \end{figure}
 
-考虑到无人机降落的危险性，并在降落过程中提高地面引导系统对无人机的识别，在固定点降落曲线设计过程中，本文主要设计六个基准点，下降曲线示意图如图\ref{fig:chp07_03_waypoints}所示。这六个航点和各个线段的基本定义与符号表达为：
-\begin{compactenum}
-	\item 第一航点（Way Point 1）位于回收网或期望着舰点的前方，该航点与第三航点（Way Point 3）之间的连接线穿过回收网的中间位置或者期望着舰点，该位置定义为第二航点（Way Point 2），这段航线与$\mathbf{i}^{path,l}$之间的夹角为$\gamma_1$。该角度定义为无人机触网或与期望着舰点所在平面的攻角，即无人机经过最后一航点时，无人机机体坐标系的$\mathbf{i}^{b}$轴并不与地面水平，无人机的攻角并不为零。一般定义第二航点的高度用$H_{td}$表达。
-	\item 第三航点（Way Point 3）和第四航点（Way Point 4）之间设定一段平飞过程。一般而言，系统会在这个阶段对无人机状态和舰船状态进行最后检查，如果不满足系统的降落条件，则会将无人机的下降飞行模式切换为复飞模式。第三航点和第四航点之间的距离可以根据需求进行设定。
-	\item 第四航点（Way Point 4）和第五航点（Way Point 5）构成下滑轨迹，其夹角定义为$\gamma_2$，描述无人机下降阶段下滑角度。一般可以将$\gamma_1$和$\gamma_2$中设定为相同的角度。
-	\item 第六航点（Way Point 6）的高度与第五航点（Way Point 5）高度相同，距离进一步向远端延伸。这一航点为下降曲线的初始点，也是上一节进近曲线的结束点。该高度的设定还需要考虑引导系统的检测距离。检测距离的高度用$H_{detect}$表示。
-	\item $a_1$、$a_2$、$a_3$、$a_4$和$a_5$分别为各航点在北向和南向所在平面的投影直接的距离。
-\end{compactenum}
+路径规划与顶层控制回路的仿真框图如图\ref{fig:chp08_06_matlab_sitl}所示，其中\texttt{Path Planner}模块主要产生基于Dubins Path的降落曲线，\texttt{Path Manager}模块主要判断降落曲线中的离散航点是否达到，\texttt{Path Follower}模块主要使用NMPC和TECS方法完成对降落曲线的跟踪，将底层控制指令传递给\texttt{Pixhawk}模块。
 
-\begin{figure}[ht]   
+\begin{figure}[!ht]
 	\centering
-	\includegraphics[width=\textwidth]{figs/chp07/chp07_03_waypoints.pdf}
-	\caption{六点下降轨迹设计示意图}
-	\label{fig:chp07_03_waypoints}
+	\includegraphics[width=0.7\textwidth]{figs/chp08/chp08_06_matlab_sitl.pdf}	
+	\caption{Matlab/Simulink路径规划仿真}
+	\label{fig:chp08_06_matlab_sitl}
 \end{figure}
 
+本文在是基于美国杨百翰大学（Brigham Young University，BYU）的研究者Randy Beard于2012年出版的《Small Unmanned Aircraft: Theory and Practice》一书\cite{beard2012small}中提供的Matlab/Simulink仿真环境基础之上修改完成。主要根据本文提出的降落曲线生成和控制算法对原有程序中的相应模块进行修改或重新设计。
 
+\subsection{基于ROS和Gazebo的仿真环境实现}
+ROS是Willow Garage公司在2010年发布的专门用于机器人研究和开发的操作系统。该操作系统最早起源于斯坦福大学，主要针对PR2机器人的需求进行设计。随着近年来机器人研究领域的持续升温，ROS系统越来越受到学术界和工业界的重视。ROS最重要的特点是解决了代码复用和模块化开发的需求。此外，ROS并不是传统意义上的操作系统，它的主体运行环境为Linxu系统，但其能够提供类似传统操作系统的诸多功能，例如硬件层的抽象描述、底层驱动程序的管理、驱动模块的共用、消息传递机制、程序的发行与管理和支持多种开发语言等。ROS中最重要的概念是节点（Nodes），这些节点通过消息的发布（Publish）和订阅（Subscribe）机制完成程序之间对数据的传递。
 
-根据上述各航点的定义，首先定义在系统坐标系的航点表达方式
-\begin{align}
-\mathbf{WP}_n = (x_n^{path}\ y_n^{path} \ z_n^{path}\ \chi_n^{path})^T
-\end{align}
-其中$x_n^{path}, y_n^{path}, z_n^{path} \in \mathbb{R}^3$表示该航点的坐标，$\chi_n^{path}$表示无人机经过该航迹点的期望航迹航向角，$n$表示第$n$个航迹点，系统的第一个航迹点一般位于期望着舰位置之后，记为$\mathbf{WP}_1$，此后的航迹点从降落位置开始反向推算。由此，上述六个航点的数学表达为
-\begin{align}
-\mathbf{WP}_1 &= (-\frac{H_{td}}{\tan{\gamma_1}}\ 0 \ 0\ \chi_1^{path})^T \\
-\mathbf{WP}_2 &= (0\ 0 \ -H_{td}\ \chi_2^{path})^T \\
-\mathbf{WP}_3 &= \mathbf{WP}_2 + (\frac{H_{td}}{\tan{\gamma_1}}\ 0 \ {-H_{td}}\ \chi_3^{path})^T\\
-\mathbf{WP}_4 &= \mathbf{WP}_3+ (a3 \ 0 \ 0\ \chi_4^{path})^T \\
-\mathbf{WP}_5 &= \mathbf{WP}_4 + (\frac{H_{detect}}{\tan{\gamma_2}}\ 0 \ {-H_{detect}}\ \chi_5^{path})^T \\
-\mathbf{WP}_6 &= \mathbf{WP}_5 + (a5\ 0 \ H_{detect}\ \chi_6^{path})^T 
-\end{align}
+Gazebo仿真环境是独立于ROS系统的一套优秀的仿真软件。通过Gazebo仿真环境可以构建三维模型，能够定义物体的运动学和动力学参数，从而构建所需要的机器人单体、驱动模块、传感器模块和周边环境等。此外，Gazebo的插件（Plugin）开发完全开发，使用者可以根据自己的特殊需求修改和定制相应的仿真模块以满足实验要求。
 
-由此，只需要给定期望着舰点高度$H_{td}$、着陆前末状态检查长度$a3$、降落位置攻角$\gamma_1$、下滑角$\gamma_2$和无人机检测高度$H_{detect}$，即可得到这六个航迹点在降落轨迹局部坐标系的坐标。假设望着舰点$H_{td} = 3 m$，$\gamma_1=4 \degree$，$\gamma_2=8\degree$，$a_3 = 200\ m$和$H_{detect} = 50 m$，假设此时降落曲线局部坐标系的$\mathbf{i}^{path,l}$轴和$\mathbf{j}^{path,l}$轴方向分别于系统惯性系的$\mathbf{i}^{i}$和$\mathbf{j}^i$平行，六个航迹点的期望航迹航向角均为$-180\degree$，可以得到六个航点在系统坐标系的具体位置如表\ref{lab:uav_landing_six_points}所示。
+由于ROS与Gazebo之间的数据交互工作可以通过编写特定的插件满足，因此越来越多的机器人研究者使用上述两个软件开展程序和算法初期开发和仿真测试。其中最为有名的两个应用场景是：（1）从2012年至2015年，由美国国防先进研究项目局设置的机器人挑战赛（DARPA Robotics Challenge，DRC）\cite{gazebo_darpa}；（2）2016年度，由美国国家航空航天局设置的太空机器人挑战赛（NASA's Centennial Challenges: Space Robotics Challenge）\cite{gazebo_nasa}。由此，本文选择使用Gazebo与ROS的组合作为仿真环境的搭建。
 
-\begin{table}[ht]
+考虑到Gazebo环境中对水面模拟需要耗费大量运算资源，因此设计使用地面移动平台来模拟舰船的运动。地面移动机器人上配置左右引导系统，该引导单元由两个矩形关节组合而成，具备二自由度独立运动能力并搭载不同型号的传感器，如图\ref{fig:chp08_02_ugv_gazebo}所示。图中左侧是地面移动平台和机基线距离为$5 \m$时的配置情况，右侧是地面移动平台的控制界面。通过该界面或者通过端口\texttt{/polaris/cmd\_vel}即可对地面移动平台进行手动控制或自主轨迹控制，由此实现模拟舰船在海面的平稳运动。此外，通过在引导系统的输出引入噪声，以此实现在不同海况扰动下的模拟。其中可见光传感器和红外传感器的参数可以在文件\texttt{gazebo\_camera\_plugin.cpp}和\texttt{polaris\_description/models/model-1\_4\_with\_ptu.sdf}中修改。
+
+\begin{figure}[!t]
 	\centering
-	\caption{无人机下降曲线航点位置设定}
-	\label{lab:uav_landing_six_points}
-	\begin{tabular}{crrr}
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_02_ugv_gazebo.pdf}	
+	\caption{Gazebo仿真环境下的地面移动机器人和引导系统与地面移动机器人操作界面}
+	\label{fig:chp08_02_ugv_gazebo}
+\end{figure}
+
+对于无人机的模拟本文采用小型尺寸的无人机模型进行模拟，主要针对无人机的电机、副翼、襟翼、方向舵和升降舵进行设置。其中无人机机体模型和空气动力学参数根据第二章中的模型进行设计，具体参数详见文件\texttt{gazebo\_aerodynamics\_plugin.cpp}。在Gazebo环境中的无人机模型如图\ref{fig:chp08_04_gazebo_uav}所示，图中表示了无人机的基本控制机构，其中包含了副翼、襟翼、方向舵、升降舵和电机共五个控制量。
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figs/chp08/chp08_03_gazebo_landing_area.pdf}	
+	\caption{Gazebo仿真环境下的无人机飞行区域}
+	\label{fig:chp08_03_gazebo_landing_area}
+\end{figure}
+
+此外，为了更好的模拟飞行环境，本文替换了Gazebo原始环境中的地图，并引入风速扰动插件\texttt{gazebo\_wind\_plutin.cpp}来模拟飞行过程中的侧风扰动。图\ref{fig:chp08_04_gazebo_uav}所示为无人机在Gazebo中的仿真飞行场景。仿真环境中的主要节点名称和数据内容含义如图\ref{lab:ros_nodes_list}所示。
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figs/chp08/chp08_04_gazebo_uav.pdf}	
+	\caption{Gazebo仿真环境下的小型固定翼无人机示意图}
+	\label{fig:chp08_04_gazebo_uav}
+\end{figure}
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[height=0.9\textheight]{figs/chp08/chp08_01_rosgraph.pdf}	
+	\caption{ROS仿真环境中全部节点关系示意图}
+	\label{fig:chp08_01_rosgraph}
+\end{figure}
+
+% Please add the following required packages to your document preamble:
+% \usepackage{multirow}
+% \usepackage{graphicx}
+\begin{table}[!ht]
+	\centering
+	\caption{ROS与Gazebo仿真环境中核心节点的名称和数据内容定义}
+	\label{lab:ros_nodes_list}
+	\resizebox{\textwidth}{!}{%
+		\begin{tabular}{clc}
+			\hline
+			& \multicolumn{1}{c}{\textbf{节点名称}} & \textbf{数据内容定义} \\ \hline
+			\multirow{5}{*}{\begin{tabular}[c]{@{}c@{}}\textbf{左侧引导}\\ \textbf{单元节点}\end{tabular}} & /blackfly\_left/camera\_info & 相机标定参数 \\
+			& /blackfly\_left/image\_raw & 相机原始图像 \\
+			& /blackfly\_left/image\_raw/compressed & 相机压缩图像 \\
+			& /left\_ptu/joint\_state & 转台当前姿态 \\
+			& /left\_ptu/joint\_state\_cmd & 转台控制指令 \\ \hline
+			\multirow{5}{*}{\begin{tabular}[c]{@{}c@{}}\textbf{右侧引导}\\ \textbf{单元节点}\end{tabular}} & /blackfly\_right/camera\_info & 相机标定参数 \\
+			& /blackfly\_right/image\_raw & 相机原始图像 \\
+			& /blackfly\_right/image\_raw/compressed & 相机压缩图像 \\
+			& /right\_ptu/joint\_state & 转台当前姿态 \\
+			& /right\_ptu/joint\_state\_cmd & 转台控制指令 \\ \hline
+			\multirow{8}{*}{\begin{tabular}[c]{@{}c@{}}\textbf{无人机传感器}\\ \textbf{和控制量}\\ \textbf{节点}\end{tabular}} & /techpod/air\_pressure & 空气压力 \\
+			& /techpod/air\_speed & 空速 \\
+			& /techpod/camera & 机载相机图像 \\
+			& /techpod/command/motor\_speed & 电机控制量 \\
+			& /techpod/imu & 机载IMU数据 \\
+			& /techpod/magnetic\_field & 机载磁罗盘数据 \\
+			& /techpod/rotors\_key\_telop & 四个舵面和电机控制量 \\
+			& /techpod/gps & 无人机GPS数据 \\ \hline
+			\multirow{7}{*}{\begin{tabular}[c]{@{}c@{}}\textbf{无人机}\\ \textbf{真实值}\\ \textbf{节点}\end{tabular}} & /techpod/gazebo/wind\_speed & 环境风扰动 \\
+			& /techpod/ground\_speed & 无人机地速 \\
+			& /techpod/ground\_truth/imu & 无人机IMU数据 \\
+			& /techpod/ground\_truth/odometry & 无人机里程计 \\
+			& /techpod/ground\_truth/pose & 无人机姿态 \\
+			& /techpod/ground\_truth/pose\_with\_covariance & 无人机姿态方差矩阵 \\
+			& /techpod/ground\_truth/position & 无人机载惯性系的坐标 \\ \hline
+			\multirow{3}{*}{\begin{tabular}[c]{@{}c@{}}\textbf{地面移动}\\ \textbf{平台节点}\end{tabular}} & /polaris/cmd\_vel & 地面移动平台控制量 \\
+			& /polaris/odom & 地面移动平台里程计 \\
+			& /polaris/ground\_truth/position & 地面移动平台在惯性系的位置 \\ \hline
+		\end{tabular}%
+	}
+\end{table}
+
+根据上述软件设计，即可完成无人机的软件在回路仿真。为了验证Pixhawk和Odroid XU4的工作性能，可以进一步将ROS和Gazebo的数据通过串口传递给Pixhawk和Odroid XU4，以此达到硬件在回路仿真测试的结果。两种仿真环境的构建框图如图\ref{fig:chp08_05_SITL_HITL}所示。其中软件在回路仿真的蓝色模块可以与硬件在回路仿真的蓝色模块相互替换，以此满足相应的仿真需求。
+
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_05_SITL_HITL.pdf}	
+	\caption{硬件在回路仿真和软件在回路仿真示意图}
+	\label{fig:chp08_05_SITL_HITL}
+\end{figure}
+
+上述综合系统是基于瑞士苏黎世联邦理工学院（Eidgenössische Technische Hochschule Zürich，ETH）自主控制研究实验室（Autonomous System Lab，ASL）开发的RotorS\cite{Furrer2016}仿真环境中进一步开发过程中得到，其中主要添加了地面移动平台和控制系统、车载多传感器引导系统和无人机控制模块等。改造后的程序发布在\texttt{https://github.com/weiweikong/rotors\_simulator}。
+
+
+
+\section{外场实验环境构建}
+为实现全天候，高精度，复杂应用情况下的通用无人机自主起降引导系统。具有快速展开、模块化、方便集成以及高效的多传感器融合的特点，具体需要实现以下功能指标：
+（1）能够对云台进行手动和自动控制的切换，以满足对系统标定、算法测试、快速对准等方面的需求。
+（2）能够适应能见度较差的天气情况，具备在可见光和近红外相机之间进行快速切换功能。
+（3）在无人机距离期望引导位置大于一公里时，能够通过红外相机和UWB能够使得转台准确跟踪目标。
+（4）引导系统的相对定位精度为：水平方向≤0.5m，高度方向≤0.2m。
+（5）最大探测距离不低于2km（翼展5米无人机），最大探测距离不低于1km（翼展3米无人机）。
+
+\subsection{转台选型}
+引导系统使用的二自由度转台选用美国FLIR公司的双轴陀螺稳定转台，型号为PTU-D300。该转台支持通过RS232串口发送指令，并能实时反馈转台状态，包括转台的方位角（Pan）和俯仰角（Tilt）。转台的分辨率为$0.006\degree$ 。该转台外形如图\ref{fig:chp08_08_PTU-D300E_large}所示。PTU-D300为步进电机驱动，能够满足闭环跟踪目标的需求。转台抗振动冲击较好，防护等级IP67，支持野外、舰船、车载等恶劣工作环境。具体参数可参考表\ref{lab:FLIR_D300}。该转台的两侧可以安装负载支架，支持多种安装模式，为多种传感器的安装提供搭载平台。
+\begin{figure}[!ht]
+	\centering
+	\includegraphics[width=0.4\textwidth]{figs/chp08/chp08_08_PTU-D300E_large.pdf}	
+	\caption{FLIR D300转台}
+	\label{fig:chp08_08_PTU-D300E_large}
+\end{figure}
+% Please add the following required packages to your document preamble:
+% \usepackage{graphicx}
+\begin{table}[!ht]
+	\centering
+	\caption{FLIR D300转台性能指标}
+	\label{lab:FLIR_D300}
+	\begin{tabular}{cc}
 		\hline
-		& \multicolumn{1}{c}{X(m)} & \multicolumn{1}{c}{Y(m)} & \multicolumn{1}{c}{Z(m)} \\ \hline
-		航点1 & 42.0 & 0.0 & 0.0 \\
-		航点2 & 0.0 & 0.0 & -6.0 \\
-		航点3 & 2.9 & 0.0 & -6.0 \\
-		航点4 & 42.0 & 0.0 & -6.0 \\
-		航点5 & 89.7 & 0.0 & -50.0 \\
-		航点6 & 98.7 & 0.0 & -50.0 \\ \hline
+		& \textbf{性能指标}                                                                                                          \\ \hline
+		\textbf{运动性能} & \begin{tabular}[c]{@{}c@{}}航向角：$360\degree$连续旋转\\ 俯仰角：$-90\degree-30\degree$\end{tabular}                              \\
+		\textbf{转动速度} & $0.064\degree/s-50\degree/s$                                                                                           \\
+		\textbf{负载能力} & $18.1\ kg$                                                                                                             \\
+		\textbf{电源输入} & DC$12-30$ V                                                                                                            \\
+		\textbf{工作温度} & $-30\degree C-70\degree C$                                                                                             \\
+		\textbf{步进模式} & \begin{tabular}[c]{@{}c@{}}1/2 STEP: $0.020\degree$\\ 1/4 STEP: $0.012\degree$\\ 1/8 STEP: $0.006\degree$\end{tabular} \\ \hline
 	\end{tabular}
 \end{table}
-根据Dubins方法，可以将第三、第四和第五航迹点位置通过曲线进行平滑，得到期望的降落曲线下降阶段的期望轨迹，如图\ref{fig:chp07_04_landing_path_longitudinal_dubin}所示。
-\begin{figure}[ht]   
+
+当无人机的飞行速度为$30\ m/s$，距离引导系统为$200\ m$时，转台所需要的转动速度为$4.3\ \degree/s$，该数值属于转台的正常工作范围。此外，无人机降落过程中，在不确定进场方向的情况下，转台方位角的工作范围能做使得引导系统具备全空域搜索能力。此外，为防止在转台转动过程中底座发生移动，为此在转台底部设计了可调式三角稳定底座，机械结构如图\ref{fig:chp08_10_ptu_with_sensor}所示。因此，该转台系统具有较强的负载能力和较好的调节精度，可以满足引导系统的工作要求。如图所示，可以根据需要对传感器进行配置。图中左侧的是可见光和红外光相机的组合，右侧为红外光相机、激光照射器和UWB雷达的组合方式。
+
+\begin{figure}[!t]
 	\centering
-	\includegraphics[width=\textwidth]{figs/chp07/chp07_04_landing_path_longitudinal_dubin.pdf}
-	\caption{基于Dubins方法设计的下降轨迹示意图}
-	\label{fig:chp07_04_landing_path_longitudinal_dubin}
+	\includegraphics[width=0.8\textwidth]{figs/chp08/chp08_10_ptu_with_sensor.pdf}	
+	\caption{FLIR D300搭载不同传感器的配置方式和支撑系统}
+	\label{fig:chp08_10_ptu_with_sensor}
 \end{figure}
-其中蓝色点代表设计的六个不同位置的下降曲线航点；蓝色直线是航点之间的直线下降轨迹；紫色曲线是通过Dubins方法设计之后，平滑之后的下降轨迹；紫色三角和紫色方形标记表示Dubins方法生成的虚拟圆部分弧线段的起始位置和终止位置；红色五角星表示系统的期望着舰位置。
 
 
-此外，通过使用Dubins方法进行轨迹设计，将曲线段引入到原始航点的初始位置和终止位置，使得轨迹处处一阶可导，无人机的下降速率不会出现突变，容易实现对无人机的稳定控制。这种方法的另一个优点是只需要设置最大曲率边界一个变量，即可生成相应的曲线。上述六个航点在不同位置的下降速率如图\ref{fig:chp07_05_landing_path_longitudinal_dubin_derivative}所示。
-\begin{figure}[ht]   
+\subsection{可见光相机}
+可见光相机的选型为Imaging Source公司的彩色CCD高速工业像机，型号为DFK 23G445，接口为GigE。该相机使用的CCD芯片为Sony ICX445AQA，其像素分辨率为$640\times480$，像元尺寸为$5.6\  \mu m$，最大帧频为$30\ fps$。该相机使用GigE接口，使得仅适用一根网线即可承担供电和数据传送的双重功能，能够满足远距离配置系统和图像信息高速传递的需求。
+
+\begin{figure}[!ht]
 	\centering
-	\includegraphics[width=\textwidth]{figs/chp07/chp07_05_landing_path_longitudinal_dubin_derivative.pdf}
-	\caption{下降轨迹速率}
-	\label{fig:chp07_05_landing_path_longitudinal_dubin_derivative}
+	\includegraphics[width=0.4\textwidth]{figs/chp08/chp08_11_imagingsource_camera.pdf}	
+	\caption{The Imaging Source 彩色相机}
+	\label{fig:chp08_11_imagingsource_camera}
 \end{figure}
-由上图可以看到，通过设计下降曲线，可以估计不同位置无人机的下降速率，如果下降速率超过无人机的性能范围，可以将下滑角度进一步调整，以满足不同型号无人机的需求。
 
-\subsection{基于Dubins曲线的进近阶段轨迹设计}
-在进入上一节设计的下降轨迹之前，无人机需要从远端飞行到引导系统检测窗口。根据上一节的定义，该检测窗口的航迹点坐标就是第六个航迹点$\mathbf{WP}_6$，本节使用$P_f$符号进行标记。定义当前无人机在系统惯性坐标系下的位置为$P_s$。
+对于镜头的选择，本文选用$100\ mm$焦距镜头，该镜头后的视场角为$1.936\degree \times 1.452 \degree$。深度方向距离为$400\ m$时，探测窗口大小约为$13.5\times10.1\ m$；深度方向距离为$800\ m$时，探测窗口大小约为$27.0\times20.2\ m$。对于实验中使用的中型无人机而言，该无人机的翼展为$3\ m$，其在$800\ m$处的理论成像像素为$71\ pixel$。本文使用的目标识别算法能够对该距离的目标进行有效识别。
 
-根据Dubins方法，一般适用于二维平面的航迹点规划，由于无人机当前位置与检测窗口的高度存在一定的偏差，所以传统的Dubins方法不适用。本文考虑将该问题分为横向曲线设计和纵向曲线设计两部分。
+\subsection{电台设备}	
+由于需要将舰载引导系统的信息回传给无人机导航系统，因此需要选择合适的电台。本文选用的是加拿大Microhard公司的Nano IP系列的IPn 920，如图所示。该电台具有尺寸小、低功耗、传输可靠、能远距离快速通信等优势。其工作频率为$902-928\ MHz$，具有$1.2\ Mbps$的传输速率。此外该电台还具备自动组网，点对点（P2P）、点对多点（P2E）、任意点对任意点（E2E）等多种组网模式，同时支持网络、两路串口通信，上述指标能够满足无人机降落过程中的引导信息上传和无人机信息下传的需求。
 
-横向曲线设计忽略起始航点的高度差，将问题转化为传统的Dubins轨迹设计问题。定义离开初始航点虚拟圆的角度为$\psi_s$，进入结束航点虚拟圆的角度为$\psi_f$。
-\begin{equation}
-\psi_s = \left\{ \begin{array}{ll}
-\text{atan}(Y_s - Y_{cs}, X_s-X_{cs}) ,&\mbox{if}\ P_s =P_{s,exit} \\
-\text{atan}(Y_{f,entry} - Y_{cf}, X_{f,entry}-X_{cf}) ,&\mbox{ otherwise}
-\end{array} \right.
-\end{equation}
-
-\begin{equation}
-\psi_f = \left\{ \begin{array}{ll}
-\text{atan}(Y_{s,exit} - Y_{cs}, X_{s,exit}  -X_{cs}) ,& \text{if}\ P_f = P_{f,entry}\\
-\text{atan}(Y_{f} - Y_{cf}, X_{f}-X_{cf}) ,&\mbox{ otherwise}
-\end{array} \right.
-\end{equation}
-
-在已知上述两个角度后，可以求得无人机航向角所需要旋转的最大角度
-\begin{equation}
-\psi_{max} = \left\{ \begin{array}{ll}
--|\psi_f-\psi_s|, & \text{if counter clockwise,}\ \psi_f - \psi_s \le 0\\  
--(2\pi-|\psi_f - \psi_s|),& \text{if counter clockwise,}\ \psi_f -  \psi_s > 0\\
-|\psi_f-\psi_s|, & \text{if clockwise,}\ \psi_f - \psi_s \ge 0\\
-(2\pi - |\psi_f - \psi_s|) ,& \text{if clockwise,}\ \psi_f - \psi_s < 0\\
-\end{array} 
-\right.
-\end{equation}
-求解无人机最大旋转角度的目的是为了计算切割曲线的角度步长$S_{angle}$和航迹点总步长数$N$。在定义最小离散航点的距离$S_{min}$之后，角度步长和航迹点总步长数量的计算公式如下
-\begin{align}
-S_{angle} = \text{sign} (\psi_{max}) \frac{S_{min}}{R} \\
-N = \lceil \frac{|\psi_{max}|}{|S_{angle}|} \rceil+1
-\end{align}
-由上面两个步长，可以求解出在曲线位置和直线位置的离散航迹点序列。每一个航迹点的航向角序列为
-\begin{equation}
-\psi(\bar{\lambda}) = \left\{ \begin{array}{ll}
-\psi_{max}, &  \bar{\lambda}=N-1\\
-\bar{\lambda}S_{angle}, &\mbox{ otherwise}
-\end{array} \right.
-\end{equation}
-其中$\bar{\lambda} = 1, ..., N-1$是一个连续序列。基于航向角离散序列，可以将每一个离散航迹点重新定义
-\begin{equation}
-\mathbf{WP}_{i} = \left\{ \begin{array}{ll}
-(X_{cs}\ Y_{cs}\  0)^T +R_s (\cos (\psi_s+\psi(\bar{\lambda}))\ \sin(\psi_s+\psi(\bar{\lambda}) \ 0)^T& \text{if}\ 1< i \le N_s\\
-(X_{cs}\ Y_{cs}\ 0)^T + R_f(\cos(\psi_s+\psi(\bar{\lambda})\ \sin(\psi_s+\psi(\bar{\lambda}) \ 0)^T, & \text{if}\ N_s< i \le N_f
-\end{array} \right.
-\end{equation}
-其中$i \in [1, ..., N_s+N_f]$。根据上述公式求解得到的Dubins轨迹如图\ref{fig:chp07_06_dubins_approach_path}所示。
-\begin{figure}[ht]   
+\begin{figure}[!ht]
 	\centering
-	\includegraphics[width=\textwidth]{figs/chp07/chp07_06_dubins_approach_path.pdf}
-	\caption{二维平面Dubins曲线规划结果示意图}
-	\label{fig:chp07_06_dubins_approach_path}
+	\includegraphics[width=0.5\textwidth]{figs/chp08/chp08_12_micohard_radio.pdf}	
+	\caption{Microhard公司的IPn 920电台}
+	\label{fig:chp08_12_micohard_radio}
 \end{figure}
 
-在得到每个航点前两项后，需要根据飞机下降的情况计算每个航点对应的高度。高度下降的表达可以通过下滑角来描述，每一个航点的下滑角根据航点个数进行均匀分配。
-\begin{equation}
-z_i^{path} = \sqrt{(x_i^{path}-x_{i-1}^{path})^2+(y_i^{path}-y_{i-1}^{path})^2} \tan (\gamma_{d,i})
-\end{equation}
-其中$\gamma_{d,i}$定义为
-\begin{equation}
-\gamma_{d,i} = \text{atan}(z_{d}-z_i^{path}, \  \sqrt{(x_i^{path}-x_{i-1}^{path})^2+(y_i^{path}-y_{i-1}^{path})^2})
-\end{equation}
-其中$z_d$是上一节中第六航点的高度。图\ref{fig:chp07_07_dubins_approach_without_sprial}所示为将高度生成之后的进近段曲线与下降曲线合成的结果。
-\begin{figure}[ht]   
+\subsection{无人机平台}
+
+对于小型固定翼无人机平台而言，本文选用经典的“天行者“平台，如图\ref{fig:chp08_13_small_sized_uav}所示。该平台的翼展为$1880\ mm$，有效载荷为$2\ kg$，平均飞行时间为$40 \min$，最大飞行速度为$90\ km/h$，最小飞行速度为$35\ km/h$。该飞机的机舱相对较小，但能够满足加装Pixhawk自驾仪和Odroid XU4开发版的需求。仿真环境中所模拟的无人机尺寸与该小型固定翼无人机平台参数基本相同，本文使用的小型固定翼无人机降落数据集由该平台产生。
+
+\begin{figure}[!ht]
 	\centering
-	\includegraphics[width=\textwidth]{figs/chp07/chp07_07_dubins_approach_without_sprial.pdf}
-	\caption{无等距螺旋线的无人机降落曲线示意图}
-	\label{fig:chp07_07_dubins_approach_without_sprial}
+	\includegraphics[width=0.6\textwidth]{figs/chp08/chp08_13_small_sized_uav.pdf}	
+	\caption{“天行者”小型固定翼无人机}
+	\label{fig:chp08_13_small_sized_uav}
 \end{figure}
-在无人机初始位置与下降曲线初始位置的高度差过大时，上述算法的下滑角$\gamma_{d,i}$可能会超过最大下滑角阈值$\gamma_{max}$，所以在经过二维平面设计的Dubins曲线之后，仍然无法到达$P_f$点期望的高度位置。由此，考虑引入等距螺旋曲线来引导无人机在$P_f$附近盘旋，知道无人机逐渐下降到合适高度后，切入下降阶段航线。等距螺旋曲线每个点的下滑角不超过最大下滑角阈值、螺旋线的旋转半径与结束航点虚拟圆大小相同、旋转方向也与该虚拟圆轨迹保持相同。根据第二章的定义，下滑角最大约束为$\bar{\gamma}$，可以得到高度差的范围
-\begin{equation}
-(L_{dubins} + 2\pi k R_{min})) \tan \bar{\gamma} \le |z_d - z_s|\le (L_{dubins} + 2\pi(k+1)R_{min})) \tan \bar{\gamma}
-\end{equation}
-其中$L_{dubins}$是无人机在沿最小虚拟圆$R_{min}$飞行时所经过的轨迹长度。通过上式，可以求解出无人机需要经过等距螺旋线下降到期望高度所需要旋转周期数
-\begin{equation}
-k = \lfloor \frac{1}{2 \pi R_{min}} (\frac{|z_d - z_s|}{\tan \bar{\gamma}} - L_{dubins}) \rfloor
-\end{equation}
-引入螺旋下降曲线之后的完整下降轨迹如图\ref{fig:chp07_08_dubins_approach_with_sprial}所示。
-\begin{figure}[ht]   
+
+对于中型固定翼无人机平台，本文选用后置发动机的“开拓者”无人机平台。该平台选用前三点式双尾撑布局如图\ref{fig:chp08_14_middle_sized_uav}所示。“开拓者”无人机长$2200\ mm$，翼展$3000\ mm$，重量为$20\ kg$，巡航速度$120\ km/h$。最初，为提升视觉检测的可靠性，选用涂装为橙色的“开拓者”无人机，便于在复杂背景下检测跟踪目标。由于本文最终所采用的图像跟踪算法使用的是灰度图像，因此跟踪算法识别精度和跟踪速度对涂装颜色不敏感，同时，为了配合激光照射模块，在其机头处安装了反射棱镜作为合作目标。本文使用的中型固定翼无人机降落数据集由该平台产生。
+
+\begin{figure}[!ht]
 	\centering
-	\includegraphics[width=\textwidth]{figs/chp07/chp07_08_dubins_approach_with_sprial.pdf}
-	\caption{引入等距螺旋线的无人机降落曲线示意图}
-	\label{fig:chp07_08_dubins_approach_with_sprial}
+	\includegraphics[width=0.8\textwidth]{figs/chp08/chp08_14_middle_sized_uav.pdf}	
+	\caption{“开拓者”中型固定翼无人机}
+	\label{fig:chp08_14_middle_sized_uav}
 \end{figure}
 
 
 
-\subsection{航迹点坐标变换}
-为了便于计算和设计，上面两节设计的下降轨迹航迹点均是在降落轨迹局部坐标系得到。因此，需要通过旋转矩阵，将降落轨迹局部坐标系的航迹点转换到系统坐标系中，一般而言，降落轨迹局部坐标系的$\mathbf{i}^{path,l}$和$\mathbf{j}^{path,l}$构成的平面与系统坐标系$\mathbf{i}^{i}$和$\mathbf{j}^{i}$组成的平面平行。定义沿系统坐标系$\mathbf{k}^{i}$轴旋转$\psi_{path,l}$得到降落轨迹局部坐标系。由此，系统坐标系中的航迹点$\mathbf{WP}_n$与降落轨迹局部坐标系的航迹点$\mathbf{WP}_n^{path,l}$之间的转换关系为
-\begin{align}
-\mathbf{WP}_n^{path,l} = \mathbf{R}_i^{path,l}(\psi_{path}) \mathbf{WP}_n
-\end{align}
-其中$ \mathbf{R}_i^{path,l}(\psi_{path}) $ 是标准的旋转矩阵
-\begin{align}
-\mathcal{R}_i^{path,l}(\psi_{path}) = \begin{bmatrix} \cos \psi_{path}  & \sin \psi_{path}  &  0      \\  - \sin \psi_{path} & \cos \psi_{path}   &0 \\  0   & 0 &1  \end{bmatrix}
-\end{align}
-​
-%
-%\section{基于L1方法的导航控制策略}
-%\subsection{基于直线情况}
 
 
-%\begin{algorithm2e}[ht]
-%	\SetAlgoLined
-%	\KwData{this text}
-%	\KwResult{how to write algorithm with \LaTeX2e }
-%	initialization\;
-%	\While{not at end of this document}{
-%		read current\;
-%		\eIf{understand}{
-%			go to next section\;
-%			current section becomes this one\;
-%		}{
-%			go back to the beginning of current section\;
-%		}
-%
-%	}
-%	\caption{How to write algorithms}
-%\end{algorithm2e}
-%
-%\begin{algorithm2e}{ht}
-%	\SetKwData{Left}{left}\SetKwData{This}{this}\SetKwData{Up}{up}
-%	\SetKwFunction{Union}{Union}\SetKwFunction{FindCompress}{FindCompress}
-%	\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
-%	\Input{A bitmap $Im$ of size $w\times l$}
-%	\Output{A partition of the bitmap}
-%	\BlankLine
-%	\emph{special treatment of the first line}\;
-%	\For{$i\leftarrow 2$ \KwTo $l$}{
-%		\emph{special treatment of the first element of line $i$}\;
-%		\For{$j\leftarrow 2$ \KwTo $w$}{\label{forins}
-%			\Left$\leftarrow$ \FindCompress{$Im[i,j-1]$}\;
-%			\Up$\leftarrow$ \FindCompress{$Im[i-1,]$}\;
-%			\This$\leftarrow$ \FindCompress{$Im[i,j]$}\;
-%			\If(\tcp*[h]{O(\Left,\This)==1}){\Left compatible with \This}{\label{lt}
-%				\lIf{\Left $<$ \This}{\Union{\Left,\This}}
-%				\lElse{\Union{\This,\Left}}
-%			}
-%			\If(\tcp*[f]{O(\Up,\This)==1}){\Up compatible with \This}{\label{ut}
-%				\lIf{\Up $<$ \This}{\Union{\Up,\This}}
-%				\tcp{\This is put under \Up to keep tree as flat as possible}\label{cmt}
-%				\lElse{\Union{\This,\Up}}\tcp*[h]{\This linked to \Up}\label{lelse}
-%			}
-%		}
-%		\lForEach{element $e$ of the line $i$}{\FindCompress{p}}
-%	}
-%	\caption{disjoint decomposition}\label{algo_disjdecomp}
-% 	\caption{使用SCP方法求解侧风扰动下的最优轨迹}
-% \end{algorithm2e}
+\section{综合实验结果分析}
+\subsection{地面环境引导系统测试实验设计}
+根据上述设备选型，可以根据不同需求构建不同配置的引导系统。在2012年，首先通过普通安防转台和红外相机构建了第一版地基引导系统，如图\ref{fig:first_version_ptu}所示，该系统的基线长度为$0.25\ m$。由于转台的性能约束，该系统只能通过串口方式对俯仰角和横滚角进行控制，其两个方向的转动角度只能通过计算串口输出的控制指令得到，即通过开环的方式获得。该系统通过四旋翼无人机的飞行试验，初步验证了立体视觉系统与转台结合这一设计模式的可行性。该系统在户外对四旋翼目标进行引导降落的工作图如图\ref{fig:first_version_ptu_2}所示。
 
-\section{舰船与无人机协同速度控制策略}
-\subsection{协同速度控制策略}
-假设舰船的初始速度为零，无人机从舰船后方窗口进入下降轨迹。在初始加速阶段，认为无人机的速度保持不变，舰船的加速度保持不变，由此可以得到如下表达
-\begin{align}
-V_{Ship} = V_{UAV} - \sqrt{2 \cdot a_{Ship} \cdot (x_{Ship} - x_{UAV})}
-\end{align}
-其中无人机的速度为$V_{UAV}$，舰船的加速度为$a_{Ship}$。
+\begin{figure}[!t]
+	\begin{minipage}{0.5\textwidth}
+		\centering
+		\includegraphics[width=0.98\textwidth]{figs/chp08/chp08_09_original_ptu.pdf}	
+		\caption{第一版红外引导单元}
+		\label{fig:first_version_ptu}
+	\end{minipage}\hfill
+	\begin{minipage}{0.5\textwidth}
+		\centering
+		\includegraphics[width=0.98\textwidth]{figs/chp08/chp08_15_OldSystem.pdf}	
+		\caption{第一版引导系统工作图}
+		\label{fig:first_version_ptu_2}
+	\end{minipage}
+\end{figure}
 
-由于地面移动机器人的初始速率$V_{Ship}=0$，将上式进行变换后，得到无人机与地面移动平台的相对位置为
-\begin{align}
-x_{Ship}-x_{UAV} = \frac{V_{UAV}^2}{2 \cdot a_{Ship}}
-\end{align}
-无人机降落过程中的速度一般为$19\ m/s$，地面运动平台加速度一般为最大加速度的一半，大约为$0.95\ m^2/s$，因此可以得到相对位置为$190\ m$。
+为提升转台性能，增强对无人机目标的检测能力和检测距离，2013年起引导系统开始采用FLIR D300型号转台，立体视觉的基线长度也增加为$0.45\ m$，该系统的引导单元构成如图\ref{fig:chp08_18_ground_short_ptus}左侧图像所示。得益于基线长度的增加，与第一版系统相比，该系统的检测距离可以得到$400\ m$，通过红外相机图像和可见光相机图像的融合使用，能够对没有合作标识的无人机有较好的跟踪和识别效果。该系统一般放置于跑道中心线位置，其工作场景如图\ref{fig:chp08_18_ground_short_ptus}所示。
 
-无人机在降落过程中需要将控制空速的指令转换为控制地速的指令，由此可以减少降落过程中空气扰动的影响，位置相对稳定的地速，完成对地面移动平台的跟踪。
-\begin{align}
-V_{A_{des}} = (V_{k_{des}} -V_k) + V_A
-\end{align}
-其中$V_{k_{des}}$是期望地速（Ground Speed），空速误差$e_{V_A}$定义为
-\begin{align}
-e_{V_{A}} &= V_{A_{des}}-V_A \\
-&= V_{k_{des}} - V_k \\
-&= e_{V_k}
-\end{align}
-通过协同控制器的设计思路，考虑无人机与舰船之间位置的影响，无人机期望地速的表达方式为
-\begin{align}
-V_{k_{des}} = V_{k_{land}} + k \cdot (x_{Ship} - x_{UAV})
-\end{align}
-其中$V_{k_{land}}$是无人机地速控制指令，可以通过下述公式表达
-\begin{align}
-V_{k_{land}} &= V_{A_{land}} + \overline{V_k - V_A} \\
-&= V_{A_{land}} + V_\omega
-\end{align}
-其中$V_\omega$是描述无人机空速和地速的差，$V_\omega$的获得通过一个低通滤波器，其截断频率为$0.2\ \text{Hz}$ 得到。
-
-\subsection{地速和下降速率计算}
-根据上述推导，可以得到无人机地速控制指令为
-\begin{align}
-V_{A_{des}} =( V_{A_{land}} + k \cdot (U_{Ship} - U_{UAV})) + V_\omega - V_k + V_A
-\end{align}
-无人机竖直方向跟踪方法为
-\begin{align}
-&\chi_{UAV} = \chi_{ll} + k_1 \cdot (y_{Ship} - y_{UAV}) +k_2 \frac{1}{s} (y_{Ship} - y_{UAV}) + k_3 (v_{Ship} - v_{UAV}) \\
-&\chi_{Ship} = \chi_{ll} + k_4 \cdot (y_{Ship} - y_{UAV}) +  k_5 (v_{Ship} - v_{UAV})
-\end{align}
-
-纵向控制方法中下降速率的计算为
-\begin{align}
-\dot{h}_{flare} = k \cdot (h + h_B)
-\end{align}
-在考虑到无人机地速的情况上式变为
-\begin{align}
-\dot{h}_{flare} = \frac{V_{UAV}}{T_o V_{ref}} \cdot (h + h_B)
-\end{align}
-其中$V_{UAV}$是无人机的地速，$V_{ref}$是参考速度，$T_0$和$h_B$是下滑率设计的系统参数。
-
-其中常数$k$ 和 $h_B$需要满足一些约束
-\begin{align}
-&\dot{h}_{flare} (f_{flare}) = \dot{h}_{descent} \\
-&\dot{h}_{descent}(0)  = 0
-\end{align}
-设置初始高度为$h_{flare} = 5\ m$，根据该约束，在到达期望着舰点时，相对速度为零。
-
-​\section{TECS耦合控制器设计}
-\subsection{总能量的基本定义}
-总能量控制求出无人机单纯的抬头动作（Nose-up），不仅会提升无人机的高度，同时会降低无人机的速度。图\ref{fig:chp07_14_Control_Response}所示为无人机升降舵和推力控制对无人机的高度和速度带来的影响，其中的中心点表示无人机的平衡点（Trim Point）。
-
-\begin{figure}[ht]   
+\begin{figure}[!ht]
 	\centering
-	\includegraphics[width=0.4\textwidth]{figs/chp07/chp07_14_Control_Response.pdf}
-	\caption{推力和升降舵控制对速度和高度的耦合影响示意图}
-	\label{fig:chp07_14_Control_Response}
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_18_ground_short_ptus.pdf}	
+	\caption{第二版引导系统工作图}
+	\label{fig:chp08_18_ground_short_ptus}
 \end{figure}
 
-总能量控制中的能量主要指动能（Kinetic）和势能（Potential）之和。其中电机的推力变化对总能量的变化
-\begin{align}
-P_{thrust} = T \cdot V
-\end{align}
-其中$T$是电机的推力，$V$是无人机的速度。
+第二版系统的检测能力和距离虽然有所提升，但由于其放置位置不适用于实际需求场景，同时，基线长度仍然无法满足对中型无人机的远距离降落的引导需求指标。因此，本文考虑突破原因固定基线物理机构的约束，通过将两个独立的引导单元进行独立配置，使得引导的基线距离能够根据物理场地约束和无人机尺寸大小进行最优配置。在基线长度为$10\  m$时，地面引导系统的配置情况如图\ref{fig:chp08_17_ground_ptus}所示。上述三个版本引导系统的具体参数和配置情况如表\ref{lab:three_ground_ptu}所示。
 
-阻力对总能量的变化
-\begin{align}
-P_{drat} = -D \cdot V
-\end{align}
-其中$D$是阻力的大小。因此总能量在单位时间变化的计算公式为
-\begin{align}
-P=(T-D)\cdot V
-\end{align}
-从能量的定义角度来看，无人机的总能量的表达为
-\begin{align}
-\label{eq:energy}
-E = \frac{1}{2} mV^2 + mg(h - h_0)
-\end{align}
-由此可以得到总能量的变化率
-\begin{align}
-\label{eq:energy_dot}
-\dot{E} = mV\dot{V} + mg\dot{h}
-\end{align}
-根据公式\ref{eq:energy}和\ref{eq:energy_dot}，可以得到
-\begin{align}
-mV\dot{V} + mg\dot{h} =(T-D)\cdot V
-\end{align}
-将上述公式继续整理，可以得到一个没有量纲的表达
-\begin{align}
-\label{eq:energy_3}
-\frac{\dot{V}}{g} + \frac{\dot{h}}{V}  =\frac{T-D}{mg}
-\end{align}
-
-\subsection{内环设计和外环设计化简}
-根据无人机运动的集合关系
-\begin{align}
-\frac{\dot{h}}{V} = \sin \gamma
-\end{align}
-由于无人机降落过程中，下滑角的大小一般在$3\degree \sim 7\degree$，因此$\sin \gamma \approx \gamma$，可以得到公式\ref{eq:energy_3}的进一步化简
-\begin{align}
-\frac{\dot{V}}{g} + \gamma =\frac{T-D}{mg}
-\end{align}
-考虑到阻力的变化一般比较小，因此可以用$T-D\approx \delta T$近似，可以得到
-\begin{align}
-\frac{\dot{V}}{g} + \gamma = \frac{\delta T}{mg}
-\end{align}
-由上式可以看到，系统通过电机推力的变化对能量的变化率进行控制。左侧两项的计算可以通过升降舵的控制来实现，因为升降舵的控制并不影响总能量的变化率。一般而言，升降舵的控制影响攻角的变化，与无人机加速度的变化成正比，与下滑角的变化成反比，因此控制量一般用$\frac{\dot{V}}{g} - \gamma $进行表达。
-
-在实际系统中，TECS方法的s函数表达为
-\begin{align}
-&\frac{T_{des}}{\mathsf{m}g} = \frac{K_{TI}}{s} (\gamma_{des} - \gamma + \frac{\dot{V_{des}}}{g} - \frac{\dot{V}}{g}) - K_{TP}(\gamma + \frac{ \dot{V}}{g}) \\
-&\theta_{des} = \frac{K_{EI}}{s} (\gamma_{des} - \gamma - \frac{\dot{V_{des}}}{g} + \frac{\dot{V}}{g}) - K_{EP}(\gamma - \frac{ \dot{V}}{g})
-\end{align}
-上式中的控制方法主要通过比例-积分（PI）方法实现，其中比例部分并没有与期望下滑角之差进行比较。由此可以得到，TECS的输出为期望俯仰角$\theta_{des}$和无量纲的期望推力$T_{des}/\mathsf{m}g$。
-
-内环控制器主要解决无人机对于TECS的两个输出了的控制。对于期望俯仰角的控制主要通过无人机的升降舵来实现
-\begin{align}
-\delta_e = -(K_\theta+\frac{K_{i\theta}}{s})(\theta_{des}-\theta)-K_q(q_{turn}-q)
-\end{align}
-其中$q_{turn}$是完成协同转弯的指令，其具体表达为
-\begin{align}
-q_{turn} = \sin\phi \cos\theta\tan \phi \frac{g}{V_k}
-\end{align}
-此时无人机推力的控制主要通过电机转速的控制来实现
-\begin{align}
-\delta_t = (K_T + \frac{K_{iT}}{s})(T_{des} - T) + \delta_{tFF}
-\end{align}
-
-外环设计主要是TECS模块的输入，即$\gamma$和$\dot{V}$两个控制量。此外，还困成通过与期望值的之差的比例控制方法得到
-\begin{align}
-&\gamma_{des} = \frac{\dot{h}_{des}}{V_k} \\
-&\dot{V}_{des} = K_V(V_{des}-V_a) 
-\end{align}
-其中$\dot{h}_{des} = K_h(h_{des}-h)$。无人机的飞行特性存在一定的约束，因此根据总能量公式，期望数值必须满足如下约束
-\begin{align}
-&\dot{V} _{des} \le -\frac{Dg}{\mathsf{m}g} \\
-&\gamma_{des} \le \frac{T_{max} - D}{\mathsf{m}g}
-\end{align}
-
-由于一般无人机无法测量侧滑角，所以横向控制器的设计主要通过对航向角的变化率进行控制，输出值为
-\begin{align}
-&\delta_r = -K_r (r_{turn - r}) \\
-&r_{turn} = \cos \phi \cos \theta \tan \phi \frac{g}{V_k}
-\end{align}
-
-\section{MPC控制方法}
-
-\subsection{侧风扰动情况下的轨迹规划方法}
-在许多开源飞行控制器中，对于轨迹的跟踪通常采用L1引导控制方法，该方法实质上类似于比例-微分控制器（PD Controller）。但如果考虑在不同海况情况下的风速的影响，无人机实际上很难正确跟踪上一节生成的Dubins曲线。因此，可以通过引入水平方向的扰动，进一步分析问题，并使用最优化的方法进行求解。该方法实质上是一种模型预测控制（Model Predictive Control，MPC）。无人机的优化目标为从初始位置到达终止位置的所需时间$T$最短，其数学表达为 
-\begin{align}
-	\textsf{minimize}\ \ T \label{eq:gust_dubins_1} \\
-	\textsf{subject to}\  \ &\dot{\mathbf{p}}(t) = {V}_a(\cos \psi(t)\ \ \sin \psi(t))^T + \mathbf{\omega}  \nonumber \\
-	& \dot{\psi}(t) = \frac{g}{{V}_a} \tan \phi(t) \nonumber \\
-	& \dot{\phi}(t) = u(t) \nonumber \\
-	& \mathbf{p}(0) = \mathbf{p}_{start} \nonumber \\
-	& \psi(0) = \psi_{start} \nonumber \\
-	& \phi(0) = \phi_{start} \nonumber \\
-	& \mathbf{p}(T) = \mathbf{p}_{final} \nonumber \\
-	& \psi(T) = \psi_{final} \nonumber \\
-	& \phi(T) = \phi_{final} \nonumber \\
-	& |u(t)| \le \bar{u}  \nonumber \\
-	& |\phi(t)| \le \bar{\phi} \nonumber \\
-	& x(y), y(t) \in \mathbb{C} \nonumber \\
-	& t \in [0, T] \nonumber
-\end{align}
-
-其中无人机的空速仍然定义为$V_a$，为简化问题设定该段时间的风速为一个恒定值$\omega$。通过最优方法得到的轨迹用$x(t) = (\mathbf{p}(t)\ \ \psi(t)\ \ \phi(t)\ \ u(t) )^T$进行描述，其中$\mathbf{p}(t)$是无人机当前在惯性坐标系下的位置，$\psi(t)$是无人机的航向角，$\phi(t)$是无人机的横滚角，$u(t)$是无人机的横滚角速度控制量。此外，无人机的初始位置定义为$x_{start}=x(0)$，终止位置为$x_{final}=x(T)$，该问题的几何表达如图\ref{fig:chp07_09_scp_path}所示。由于无人机自身模型和执行机构的约束，设定横滚角和最大速度输出为$\bar{\phi}$和$\bar{u}$。
-\begin{figure}[ht]   
+\begin{figure}[!t]
 	\centering
-	\includegraphics[width=\textwidth]{figs/chp07/chp07_09_scp_path.pdf}
-	\caption{引入等距螺旋线的无人机降落曲线示意图}
-	\label{fig:chp07_09_scp_path}
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_17_ground_ptus.pdf}	
+	\caption{第三版引导系统工作图}
+	\label{fig:chp08_17_ground_ptus}
 \end{figure}
 
-分析上述公式可以发现，其约束条件中存在大量非线性部分，所以求解过程相对复杂，且无法满足无人机实时性需要，因此需要对相关函数进行线性化。无人机位置的变化率可以通过Taylor展开进行线性化，
-\begin{align} {\dot{\mathbf{p}}(\phi\ \omega\ t) \approx {V}_a \begin{bmatrix} \cos \hat{\psi}(t)^{(i)} - \sin\hat{\psi}(t)^{(i)} ({\psi}(t)^{(i)} - \hat{\psi}(t)^{(i)}) \\ \sin \hat{\psi}(t)^{(i)}+ \cos \hat{\psi}(t)^{(i)}({\psi}(t)^{(i)} - \hat{\psi}(t)^{(i)})  \end{bmatrix} + \omega}
-\end{align}
-其中$\hat{\psi}(t)^{(i)}$表示沿轨迹各个点估计的航向角。
-
-横滚角速率可以通过如下公式近似
-\begin{align}
-	\dot{\psi}(t) \approx \frac{g}{V_a} \phi(t)
-\end{align}
-
-连续曲线生成之后，需要设计方法将上述曲线离散化。在时间段$t \in [0, T]$之间，一般使用$N$个离散点将期望的轨迹长度$L$进行分割，由此得到每一个时间间隔为
-\begin{align}
-	\Delta s_{path} = \frac{T}{N}
-\end{align}
-由此，当前时刻可以用$t =k \Delta s_{path}$表达，则每个航迹点变化率可以写成相邻离散点之差的形式
-\begin{align}
-	\dot{\mathbf{p}}(t) &\approx \dot{\mathbf{p}}(k \Delta s_{path}) \\
-	&= \frac{\mathbf{p}_{k+1}-\mathbf{p}_{k}}{\Delta s_{path}}
-\end{align}
-将上述公式线性化之后，选择以横滚角的一范数作为目标函数，由此可以得到拟最优化（Quasi-convex）问题
-\begin{align}
-	\textsf{minimize}\ \ &||\phi|| \\
-	\textsf{subject to}\  \ x(k+1) &= \mathbf{A}(k, \hat{\psi}, \Delta s_{path}, {V}_a, \omega)x(k) + \mathbf{B}(k, \hat{\psi}, \Delta s_{path}, {V}_a) \nonumber  \\
-	|x(k)| & \preceq x_{max} \nonumber \\
-	x(0) &= x_{start} \nonumber \\
-	x(N) &= x_{final} \nonumber \\
-	k &= 1... N \nonumber
-\end{align}
-其中$x(k) = (\mathbf{p}(k)\ \ \psi(k)\ \ \phi(k)\ \ u(k))^T,\ \ k=1,2,...,N$表示无人机在第$k$时间段的状态，$\mathbf{A} \in \mathbb{R}^{5\times5}$和$\mathbf{B} \in \mathbb{R}^{5\times1}$是状态迭代过程中的状态转换矩阵。根据序列凸优化（Sequential Convex Programming）方法，此时需要对线性化之后的$\hat\psi$设定一个置信区域（Trust Region），该区域的表达为
-\begin{align}
-	\psi \le \rho \in \mathcal{T}
-\end{align}
-SCP方法主要是通过迭代更新$\hat{\psi}(k)$来计算局部最优轨迹，该轨迹满足原始非凸优化问题的约束，公式\ref{eq:gust_dubins_1}。$\hat{\psi}(k)$本质上就是每个离散航点位置无人机的航向角，由此可以得到无人机状态量的迭代公式
-\begin{align}
-	\mathbf{p}(k+1) - \mathbf{p}(k)  &= V_a \Delta S_{path} \begin{bmatrix} \sin \hat{\psi}(k) \\ \cos\hat{\psi}(k)   \end{bmatrix} \\
-	\dot{\mathbf{p}}(k+1) - \dot{\mathbf{p}}(k) &=  \Delta S_{path} (V_a \begin{bmatrix} \cos \hat{\psi}(k) + \sin \hat{\psi}(k)\cdot \hat{\psi}(k) \\ \sin \hat{\psi}(k) - \cos \hat{\psi}(k)\cdot \hat{\psi}(k)  \end{bmatrix} + w) \\
-	\phi(k+1) - \phi(k) &=   \Delta S_{path}  \frac{g}{V_a} 
-\end{align}
-
-综上所示，可以算法基本步骤如下：
-\begin{compactenum}
-	\item 求解序列初始化：与传统最优化方法随机产生初始值不同，$\hat{\psi}(k)$序列的初始化是通过简单的线性迭代方法得到，其初始值和终止值分别为$\psi(0)$和$\psi(N)$。具体到本文的路径规划问题，首先通过主要无人机的初始位置和终止位置进行直线连接，随后根据无人机的运动约束得到离散之后各个航点的位置和航向角，这些航向角作为$\hat{\psi}(k)$序列的初始值。
-	\item 置信区域初始化：一般而言初始化区域是围绕在当前点周边的区域，在序列求解过程中的序列表达为
-	\begin{align}
-		\mathcal{T}(k) = \{\psi(k)|\ |\hat{\psi}(k)-{\psi}(k)| \le \rho(k),\ k=1,2,...,N \}
-	\end{align}
-	置信区间在迭代过程根据误差值进行缩放，通常引入缩放因子$\gamma_{trust}$进行进行描述。
-	
-	\item 最优结果的输出：通过迭代，最后得到在给定初始状态和约束条件下每一步的无人机状态$\hat{x}(t)^{(i)}$。
-	
-	\item 迭代终止条件：设定状态量各个分量的线性误差$x_{error} \le \alpha$ 且$|x^{*(i)} - x^{*(i-1)} | \le \beta$时终止迭代。
-	
-	\item 原始非凸最优问题的系统输入计算：在每一步迭代过程中，将单步最优解$\hat{x}^{*}(k)$与$x(k)$进行比较，即可估计出系统的期望输入$\hat{u}(k)$，该输入即为原始非凸最优问题的输入。
-\end{compactenum}
-在代码实现的过程中，SCP问题的求解主要依赖CVXGEN\cite{mattingley2012cvxgen}计算进行求解。综上所述，在侧方扰动下的最优轨迹求解算法如算法\ref{alg:gust_scp}所示。
-
-\begin{algorithm2e}
-	\SetAlgoLined
-	\SetKwInOut{Input}{Input}
-	\SetKwInOut{Output}{Output}
-	\Input{Initialized sequence $\hat{\psi}(k),\ \ k=1,2,..., N$}
-	
-	\KwResult{$x(k)$}
-	%initialization\;
-	\While{$\Sigma |x_{error}| \le \alpha$ and $|x^{*(i)} - x^{*(i-1)} | \le \beta$}
-	{
-		Update UAV states \;
-		$\mathbf{p}(k+1) \leftarrow$ Update($\mathbf{p}(k)$)\;
-		$\dot{\mathbf{p}}(k+1) \leftarrow$ Update($\dot{\mathbf{p}}(k)$)\;
-		${\phi}(k+1) \leftarrow$ Update(${\phi}(k)$)\;
-		Solve SCP using CVXGEN Solver\;
-		\For{$j\leftarrow 1$ \KwTo $N-1$}{
-			Calculate $x_{error}$ \;
-		}
-		Update $\hat{\psi}(k)^{i+1} = \hat{\psi}(k)^{i} $\;
-		Update Trust Region, $\rho(k)^{i+1} = \gamma_{path}(k)^{i} \rho(k)^{i}$ \;
-		$i = i + 1$
-	}
-	\caption{侧风扰动下的最优轨迹求解}
-	\label{alg:gust_scp}
-\end{algorithm2e}
-
-由于无人机降落方向一般是逆风飞行，因此在进入降落曲线的进近阶段无人机周边的风速一般以顺风或正侧风。由此，根据上述求解方法，设定初始航点和终止航点在降落曲线局部坐标系的坐标分别为$p_{start} = (0,0)$和$p_{final}=(140,100)$，初始航点航向角和终止航点航向角为$\psi_{start}=180\degree$和$\psi_{final} = -90\degree$，SCP算法的置信区间为$180\degree$。在风速为$3\ m/s$，风向为$0\degree$的侧风扰动情况下，Dubins路径规划方法、普通MPC路径规划方法和考虑侧风影响情况下的MPC路径规划方法的运算结果如图\ref{fig:chp07_12_three_path}所示。图中的深蓝色实线为传统Dubins方法在二维空间对起始点和终止点的路径规划，绿色点画线和紫色曲线分别是MPC方法在不考虑侧风扰动和考虑侧风扰动情况下的曲线规划，浅蓝色箭头为方向指示。此时Dubins路径的长度为$282.25\ m$，MPC无侧风扰动的路径长度为$314.94\ m$，MPC有侧风扰动的路径长度为$323.25\ m$。MPC两种方法的横滚角、输入控制量和地速的比较如图\ref{fig:chp07_10_compare_mdp_path}所示，使用CVXGEN迭代过程的比较如图\ref{fig:chp07_11_mdp_path_compute}所示。在风速为$3\ m/s$，风向为$135\degree$的侧风扰动情况下，Dubins路径规划方法、普通MPC路径规划方法和考虑侧风影响情况下的MPC路径规划方法的运算结果如图\ref{fig:chp07_12_three_path}所示，此时路径长度为$343.57\ m$。基于CVXGEN库求解上述最优问题的平均运行时间为$0.048\ s$，约$20\ Hz$。
-
-\begin{figure}[ht]   
+\begin{table}[!t]
 	\centering
-	\includegraphics[width=0.7\textwidth]{figs/chp07/chp07_12_three_path.pdf}
-	\caption{在风向为0$\degree$情况下三种曲线生成方式的比较}
-	\label{fig:chp07_12_three_path}
-\end{figure}
+	\caption{三版不同配置的地面引导系统}
+	\label{lab:three_ground_ptu}
+	\begin{tabular}{clll}
+		\hline
+		& \multicolumn{1}{c}{\textbf{布局模式}} & \multicolumn{1}{c}{\textbf{传感器系统}} & \multicolumn{1}{c}{\textbf{目标检测距离}} \\ \hline
+		\textbf{\begin{tabular}[c]{@{}c@{}}第一版\\ 引导系统\end{tabular}} & \begin{tabular}[c]{@{}l@{}}普通安防转台 $\times$ 1\\ 基线长度 $0.25\ m$\end{tabular} & 远红外相机 $\times$ 2 & \begin{tabular}[c]{@{}l@{}}对MD4-200四旋翼无人机\\ 的检测距离为$90\ m$\end{tabular} \\ \hline
+		\textbf{\begin{tabular}[c]{@{}c@{}}第二版\\ 引导系统\end{tabular}} & \begin{tabular}[c]{@{}l@{}}FLIR转台 $\times$ 1\\ 基线长度 $0.45\ m$\end{tabular} & \begin{tabular}[c]{@{}l@{}}远红外相机 $\times$ 2\\ 可见光相机 $\times$ 2\end{tabular} & \begin{tabular}[c]{@{}l@{}}对中型无人机的\\ 检测距离为$400\ m$\end{tabular} \\ \hline
+		\textbf{\begin{tabular}[c]{@{}c@{}}第三版\\ 引导系统\end{tabular}} & \begin{tabular}[c]{@{}l@{}}FLIR转台 $\times$ 2\\ 基线长度可自由配置，\\ 一般为$10\ m$\end{tabular} & \begin{tabular}[c]{@{}l@{}}远红外相机 $\times$ 2\\ 可见光相机 $\times$ 2\\ 激光照射器 $\times$ 1\\ UWB雷达 $\times$ 1\end{tabular} & \begin{tabular}[c]{@{}l@{}}对中型无人机的\\ 检测距离为$1000\ m$\end{tabular} \\ \hline
+	\end{tabular}
+\end{table}
 
-\begin{figure}[ht]   
+
+\subsection{地面引导降落实验结果}
+地基无人机降落实验主要通过在地面配置基线为$10\ m$的引导系统完成。其基本就工作顺序如下：（1）飞机首先由飞行操作手起飞或自主起飞，在进入指定空域后，切换至依赖DGPS的航线飞行模式。一般为在跑道上空飞行训练航线，即四边航线。（2）在地面引导设备和飞行器工作状态正常的情况下，在飞机完成一次低空通场飞行后，启动引导系统的跟踪模式和飞机的降落模式。（3）无人机根据当前位置和期望降落位置对降落轨迹进行实施规划，一般在最后一个转弯时，能够被地面引导系统的视觉传感器捕获。（4）在引导数据的精读和更新速率满足条件后，在飞控端停止DGPS数据对位置信息的修正，只记录位置用于后续数据分析。无人机在该阶段的相对位置信息由地面引导系统提供，并完成最后降落。图\ref{fig:chp08_23_ground_landing}所示为其中一组在湖南长沙进行的地面引导无人机降落实验全过程示意图。
+\begin{figure}[!th]
 	\centering
-	\includegraphics[width=0.8\textwidth]{figs/chp07/chp07_10_compare_mdp_path.pdf}
-	\caption{在有侧风和无侧风情况下的横滚角、控制量和地速的比较}
-	\label{fig:chp07_10_compare_mdp_path}
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_23_ground_landing.pdf}	
+	\caption{地面引导系统引导降落无人机回收过程图}
+	\label{fig:chp08_23_ground_landing}
 \end{figure}
 
-\begin{figure}[ht]   
+图\ref{fig:chp08_23_ground_landing}的上半部分为降落过程中的四个重要时间节点，下半部分为实际飞行数据的轨迹和误差比较。其中紫色部分为地面引导系统提供有效引导信息的工作范围，该部分的三个坐标轴方向的误差在下半部分的右侧第一列所示，经过EKF方法之后的数据与DGPS数据的比较结果为右侧第二列所示。通过三维图示中的紫色视觉解算结果可以发现，尽管视觉系统可以有效跟踪无人机目标，且通过对转台信息进行了补偿，但其解算结果的波动依然较大。在使用EKF之后，数据的波动得到有效缓解，能够完成引导降落任务。
+
+地面引导实验分别于2014年和2015年在湖南长沙和江西吉安共进行全系统测试，共完成八组测试，具体实验数据如表\ref{lab:eight_ground_landing}所示。 其中根据测试时的气象条件不同对实验数据进行分类统计，每一类别的最远检测距离和误差最小数值用粗体表示，最近检测距离和误差最大数值用下划线标注。通过图表可以发现气象条件对光学系统的检测距离影响依然较大，同时对三个方向的引导精度也产生了较大影响。通过第三章的分析可知，在远端的系统理论误差较大，随着目标进一步靠近引导系统，理论误差迅速变小，因此单纯比较一组实验的三个方向的平均引导精读说服力有限。
+
+\begin{table}[]
 	\centering
-	\includegraphics[width=0.6\textwidth]{figs/chp07/chp07_11_mdp_path_compute.pdf}
-	\caption{在有侧风和无侧风情况下的迭代步数的比较}
-	\label{fig:chp07_11_mdp_path_compute}
-\end{figure}
+	\caption{八组不同气象条件下的实验结果}
+	\label{lab:eight_ground_landing}
+	\begin{tabular}{cccccc}
+		\hline
+		\multicolumn{1}{l}{\textbf{实验序号}} & \multicolumn{1}{l}{\textbf{光照条件}} & \multicolumn{1}{l}{\textbf{最远检测距离}} & \multicolumn{1}{l}{\textbf{RMSE $\mathbf{i}^{O,c}$(m)}} & \multicolumn{1}{l}{\textbf{RMSE $\mathbf{j}^{O,c}$(m)}} & \multicolumn{1}{l}{\textbf{RMSE $\mathbf{k}^{O,c}$(m)}} \\ \hline
+		\textbf{1} & 晴天 & 848.735 & \underline{0.325} & \underline{1.451} & 0.280 \\
+		\textbf{2} & 晴天 & \textbf{892.134} & 0.239 & 1.281 & \textbf{0.212} \\
+		\textbf{3} & 晴天 & 872.311 & 0.373 & 1.319 & 0.282 \\
+		\textbf{4} & 晴天 & \underline{847.373} & 0.259 & 1.401 & 0.233 \\
+		\textbf{5} & 晴天 & 857.117 & \textbf{0.242} & \textbf{1.241} & \underline{0.301} \\ \hline
+		\textbf{6} & 阴天 & \underline{491.193} & \underline{0.491} & 1.676 & \underline{0.599} \\
+		\textbf{7} & 阴天 & 503.175 & 0.483 & \textbf{1.345} & \textbf{0.576} \\
+		\textbf{8} & 阴天 & \textbf{534.238} & \textbf{0.470} & \underline{1.772} & 0.581 \\ \hline
+	\end{tabular}
+\end{table}
 
+因此，本文统计了将引导距离以$20\ m$为单位进行切分，分段评估引导的效果，表\ref{lab:ground_landing}所示为不同阶段的引导系统在引导坐标系$\mathcal{O}_c$中三个坐标轴方向的平均误差。通过表中数据可以发现，深度方向$\mathbf{j}^{O,c}$方向的误差受视觉解算的引导误差相对较大，其他两个轴的误差相对较小。
 
-
-\begin{figure}[ht]   
+\begin{table}[!th]
 	\centering
-	\includegraphics[width=0.7\textwidth]{figs/chp07/chp07_13_45_three_path.pdf}
-	\caption{在风向为135$\degree$情况下三种曲线生成方式的比较}
-	\label{fig:chp07_13_45_three_path}
-\end{figure}
+	\caption{在距离降落点不同位置时，引导系统三个方向的平均误差}
+	\label{lab:ground_landing}
+	\begin{tabular}{cccc|cccc}
+		\hline
+		\textbf{Interval(m)} & \textbf{$\mathbf{i}^{O,c}$(m)} & \textbf{$\mathbf{j}^{O,c}$(m)} & \textbf{$\mathbf{k}^{O,c}$(m)} & \textbf{Interval(m)} & \textbf{$\mathbf{i}^{O,c}$(m)} & \textbf{$\mathbf{j}^{O,c}$(m)} & \textbf{$\mathbf{k}^{O,c}$(m)} \\ \hline
+		\textbf{600$\sim$580} & 0.332 & 1.856 & 0.431 & \textbf{300$\sim$280} & 0.128 & 1.426 & 0.171 \\
+		\textbf{580$\sim$560} & 0.311 & 1.434 & 0.371 & \textbf{280$\sim$260} & 0.123 & 1.313 & 0.159 \\
+		\textbf{560$\sim$540} & 0.208 & 1.542 & 0.300 & \textbf{260$\sim$240} & 0.104 & 1.104 & 0.114 \\
+		\textbf{540$\sim$520} & 0.182 & 1.569 & 0.276 & \textbf{240$\sim$220} & 0.086 & 0.612 & 0.129 \\
+		\textbf{520$\sim$500} & 0.217 & 1.863 & 0.180 & \textbf{220$\sim$200} & 0.099 & 0.882 & 0.131 \\
+		\textbf{500$\sim$480} & 0.209 & 1.049 & 0.216 & \textbf{200$\sim$180} & 0.162 & 0.933 & 0.157 \\
+		\textbf{480$\sim$460} & 0.185 & 1.478 & 0.253 & \textbf{180$\sim$160} & 0.154 & 0.730 & 0.136 \\
+		\textbf{460$\sim$440} & 0.198 & 1.245 & 0.243 & \textbf{160$\sim$140} & 0.134 & 0.922 & 0.201 \\
+		\textbf{440$\sim$420} & 0.171 & 1.412 & 0.151 & \textbf{140$\sim$120} & 0.143 & 0.696 & 0.125 \\
+		\textbf{420$\sim$400} & 0.186 & 1.674 & 0.119 & \textbf{120$\sim$100} & 0.172 & 0.900 & 0.118 \\
+		\textbf{400$\sim$380} & 0.159 & 1.679 & 0.145 & \textbf{100$\sim$80} & 0.139 & 0.668 & 0.079 \\
+		\textbf{380$\sim$360} & 0.153 & 1.527 & 0.197 & \textbf{80$\sim$60} & 0.170 & 0.696 & 0.067 \\
+		\textbf{360$\sim$340} & 0.171 & 1.292 & 0.138 & \textbf{60$\sim$40} & 0.105 & 0.460 & 0.055 \\
+		\textbf{340$\sim$320} & 0.164 & 1.360 & 0.217 & \textbf{40$\sim$20} & 0.126 & 0.276 & 0.082 \\
+		\textbf{320$\sim$300} & 0.156 & 1.420 & 0.204 & \textbf{20$\sim$00} & 0.070 & 0.261 & 0.095 \\ \hline
+	\end{tabular}
+\end{table}
 
-\subsection{基于横向控制的模型预测控制策略}
 
-上一节介绍的方法虽然能够通过模型预测控制的方法给出了在侧风扰动情况下的控制量求解方法，但由于无人机底层控制的控制回路的实时性要求高，上述方法约$20\ Hz$的控制频率往往不能满足无人机姿态的控制需要。因此，需要考虑将底层控制与顶层控制独立设计的控制框架。无人机的控制器设计主要采用级联控制的设计思路（Casade Control），其中内环控制主要为底层控制（Low-level Control），外环控制是基于模型的轨迹跟踪控制器。该设计思路的具体实现如图\ref{fig:chp07_15_control_diagram}所示。
- 
-\begin{figure}[ht]   
-\centering
-\includegraphics[width=\textwidth]{figs/chp07/chp07_15_control_diagram.pdf}
-\caption{底层控制和顶层控制框图}
-\label{fig:chp07_15_control_diagram}
-\end{figure}
+\subsection{水面环境引导系统测试实验设计}
+根据上一小节的介绍，引导系统在水面上的设计方案是基于第三版进一步改进和完善。由于缺少舰船作为载体，本文通过使用油桶和脚手架搭建简易浮体来模拟在水面的浮体运动。该系统的设计图如图\ref{fig:chp08_22_landing_diagram}所示。图中中部的为浮体上的木板，平台大小约为$12\ m\times 12\ m$，中间位置安装高度为$8\ m$，宽度为$10\ m$的无人机回收网，为了避免回收网对视觉系统的干扰，在回收网前端设置两个引导单元。该浮体自身并无动力，在水面实验时，需要通过右侧的牵引船只通过缆绳对浮体进行拖动。浮体和设备整体重量相对较重，在江面实验时，只对牵引船只的运动方向进行设定，对运动速度不做要求。
 
-由于使用Pixhawk作为无人机的底层控制器，其内环控制实现是基于修正后的PID级联控制结构。对于姿态控制，采用PI控制方法；对于角速度控制回路，采用PD控制方法。其中考虑到无人机在进行协调转弯过程中的侧滑影响（Slipping Effect），则航向角的控制指令为
-\begin{align}
-r_r=\frac{g\sin\phi}{V}
-\end{align}
-其中TECS来完成对系统的速度和高度控制。
-
-为便于问题分析，假设无人机机体坐标系与风向坐标系重合，根据第二章的无人机机体坐标系定义可以得到化简的无人机动力学公式
-\begin{align}
-&\dot{n}(t) = V\cos \psi(t) + w_n \\
-&\dot{e}(t) = V\sin \psi(t) + w_e \\
-&\dot{\psi}(t) = \frac{g}{V}\tan\phi(t) \\
-&\dot{\phi}(t) = p(t) \\
-&\dot{p}(t) = b_0\phi_{des}-a_1p-a_0\phi \label{eq:roll_s_function}
-\end{align}
-其中$\dot{n}$和$\dot{e}$表示无人机在惯性坐标系的位置变化量，$a_0$、$a_1$和$b_0$是无人机模型的系数。其他数学符号的含义与第二章的相同。如公式所示，选用没有零点的二阶模型来描述无人机的横滚运动。
-
-考虑到实际实验中使用的Odroid XU4的综合运算能力仍然有限，因此只对滚转控制通道进行模型预测控制。在底层控制器工作相对理想的情况下，需要在俯仰角控制指令不变的情况下，对滚转通道进行辨识。参考信号的一般使用2-1-1方波信号。文献\cite{morelli2003low}在设计Tu-144超音速飞行器的过程中发现，该类型的激励信号能够在飞行时间有限的情况下，尽可能多的采集到相应数据，相比传统的频率切换激励方法，该方法的测试时间仅为传统方法的1/6。因此，使用连续的2-1-1信号可以满足不同频域和时域的系统辨识。
-
-在实际系统参数辨识的过程中，首先通过对Pixhawk的底层控制PID参数进行调节。在底层控制器对姿态达到较好的控制品质的情况下，通过对横滚通道输入2-1-1参考信号，从而实现对该通道参数的辨识。因此可以通过在实际飞行中对底层控制器给出期望的滚转角控制信号$\phi_{der}$，通过传感器测得的$\phi$，即可计算出横滚角通道的传递函数$\phi / \phi_{des}(s)$。对于横滚通道而言，一般使用频率为$1\ Hz$，赋值为$30 \degree$的方波。通过使用Matlab/Simulink来搭建仿真环境来进行横滚通道的辨识和验证，该仿真系统如图\ref{fig:chp07_17_system_identification}所示。通过图中左下侧的参考信号生成模块，在高度和速度保持不变的情况下，横滚角通道的期望输入和实际输出如图\ref{fig:chp08_18_roll_roll_desired_compare}所示。
-
-\begin{figure}[ht]   
+\begin{figure}[!th]
 	\centering
-	\includegraphics[width=\textwidth]{figs/chp07/chp07_17_system_identification.pdf}
-	\caption{横滚角通道系统识别仿真系统}
-	\label{fig:chp07_17_system_identification}
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_22_landing_diagram.pdf}	
+	\caption{水面实验验证设计图}
+	\label{fig:chp08_22_landing_diagram}
 \end{figure}
 
-\begin{figure}[ht]   
+基于实验设计图，该系统的实际配置情况如图\ref{fig:chp08_16_ship_ptus}所示。该系统相对于第三版地基系统主要进行了如下改进：（1）为采集浮体运动的真实数据，在左侧引导单元后方安装DGPS天线，本文假设通过该DGPS天线采集到的经纬高坐标，经第二章介绍的坐标系转换方法进行转换后，得到舰船惯性坐标系相对于系统坐标系的相对位置。（2）为了检测和估计浮体的运动情况，在左侧引导单元一侧的木板上设置了XSens公司的IMU传感器，如图中坐下角所示。（3）在实验准备过程中，由于浮体的金属结构较多，转台的连续运动产生了比较复杂的电磁干扰。因此在转台驱动机构部分和IMU表面均使用锡箔纸进行多层包裹，以此来进行电磁干扰的初步隔离。
+
+\begin{figure}[!ht]
 	\centering
-	\includegraphics[width=\textwidth]{figs/chp07/chp08_18_roll_roll_desired_compare.pdf}
-	\caption{使用2-1-1信号激励横滚角通道的实验结果}
-	\label{fig:chp08_18_roll_roll_desired_compare}
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_16_ship_ptus.pdf}	
+	\caption{引导系统在水面浮提的配置情况}
+	\label{fig:chp08_16_ship_ptus}
 \end{figure}
 
-在得到上述实验数据之后，通过设计一个二阶传递函数来得到\ref{eq:roll_s_function}中的参数值。该二阶传递函数为
-\begin{equation}
-\frac{b_0}{s^2+a_1s+a_0}
-\end{equation}
 
-在得到滚转通道的系统模型之后，需要进一步求解非线性模型预测控制的方程。对于连续时间的最优问题，其数学表达形式为
-\begin{align}
-\min_{UX} \int_{t=0}^T &(y(t)-y_{ref}(t))^TQ_y(y(t)-y_{ref}(t))+(u(t)-u_{ref}(t))^T R_u (u(t)-u_{ref}(t))dt\\
-&+ (y(T)-y_{ref}(T))^T P (y(T)-y_{ref}(T))
-\end{align}
-\begin{align}
-\textsf{subject to}\  &\dot{x}=f(x,u) \\
-&y=h(x,u) \\
-&u(t) \in \mathbb{U} \\
-&x(0) = x(t_0)
-\end{align}
-其中系统的状态向量为$x=[n,e,\phi,\psi,p]$，系统的输出为滚转角控制指令$u=\phi_{des}$。
+\subsection{水面引导降落实验结果}
+在实际测试过程中，在岸边水域对小型无人机进行实验。此时，水面浮体在当前位置浮动，但六个自由度的扰动相对较小。在此情况下，进行了三组实验测试，图\ref{fig:chp08_20_near_river_landing}所示是其中一组实验的撞网回收过程。
 
-对于路径跟踪问题，其控制目标之一是最小化距离，该距离定义为
-\begin{align}
-e_t = (\mathbf{d}-\mathbf{p}) \times \mathbf{T}_d
-\end{align}
-其中$\mathbf{T}_d$是当前无人机位置距离跟踪曲线最近点$\mathbf{d}$的切线方向，$\mathbf{p}$为无人机的当前位置。另一个控制目标是航迹航向角与当前点的方位角之差同时变小，该误差定义为
-\begin{align}
-e_{\chi} = \chi_d-\chi
-\end{align}
-其中$\chi_d$可以通过以下公式求解
-\begin{align}
-\chi_d = \text{atan} (T_{d_e}, T_{d_n}) \in [-\pi, \pi]
-\end{align}
-由此可以得到目标控制量为$y=[e_t,e_\chi,\phi,p,\phi_r]$。上述变量的几何关系如图\ref{fig:chp07_16_path_design}所示。
-
-\begin{figure}[ht]   
+\begin{figure}[!th]
 	\centering
-	\includegraphics[width=\textwidth]{figs/chp07/chp07_16_path_design.pdf}
-	\caption{轨迹设计几何关系示意图}
-	\label{fig:chp07_16_path_design}
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_20_near_river_landing.pdf}	
+	\caption{靠近岸边水域无人机撞网回收过程图}
+	\label{fig:chp08_20_near_river_landing}
 \end{figure}
 
+基于上述实验，通过使用拖船将浮体拖至水中央后，进一步进行中型无人机的撞网回收测试实验。该实验的回收过程和相关细节如图\ref{fig:chp08_21_river_landing}所示。图中中间一行左侧所示为无人机的降落轨迹在Google Map卫星图片上的对应点；右所示为对无人机轨迹和水面浮体运动轨迹的具体描述；图中第一行分别是引导系统的工作状态、实验时的江面场景和无人机触网瞬间图像；图中下方所示是无人机降落和移动浮体的三维运动轨迹与引导坐标系下三个坐标轴的误差值。
 
-为了表述方便，将Dubins曲线中的直线部分和结束虚拟圆部分用数学参数表达，其中直线段的数学公式为
-\begin{align}
-\mathcal{P}_{line} = \{type=0,\mathbf{P}_{s,exit},\mathbf{P}_{f,entry}\}
-\end{align}
-其中$\mathbf{P}_{s,exit}$和$\mathbf{P}_{f,entry}$定义了Dubins曲线中的直线段的起始点。Dubins曲线中的结束虚拟圆的数学表达为
-\begin{align}
-\mathcal{P}_{arc} = \{type=1,\mathbf{O}_{cf},R_f,direction,\psi_f\}
-\end{align}
-其中$\mathbf{O}_{cf}$是Dubins曲线结束位置虚拟圆的圆心，该圆的半径为$R_f$，$direction$是旋转方向。
-通过引导系统给出的无人机当前位置，在满足Dubins Path切换条件的情况下，实时期望跟踪曲线的转换。
+\begin{figure}[!t]
+	\centering
+	\includegraphics[width=\textwidth]{figs/chp08/chp08_21_river_landing.pdf}	
+	\caption{湘江水域无人机撞网回收过程图}
+	\label{fig:chp08_21_river_landing}
+\end{figure}
+
+由于在江面的水面情况和气象条件相对复杂，实验中存在无人机因环境扰动导致坠落或引导失败的情况，所以完成采集并实现回收的数据只有三组，如表\ref{lab:three_ship_landing}所示。通过分析地面和水面引导降落数据可以得到以下结论：
+
+（1）实际实验数据的误差值与理论分析的结果相符合。在基线为$10\ m$时，视觉引导系统具备在$1\ km$距离发现中型固定翼无人机目标和在$800\ m$距离发现小型固定翼无人机目标的能力。虽然距离较远时深度方向引导误差相对较大，但随着目标靠近期望降落点，引导系统能够提供分米级的相对位置信息。
+
+（2）无人机的引导精度受视觉传感器的解算结果的影响较大。在综合使用UWB雷达和激光照射方法等多传感器方案时，可以适当降低视觉算法提供位置信息的权重来减少误差。
+
+（3）引导系统中的目标跟踪和位置解算算法与飞控系统中的顶层控制回路的实时性得到验证。本文使用的理论繁杂程度相对简单，主要考虑到通过C语言在嵌入式系统和Linux系统的实现。通过实际实验，上述算法的实时性得到测试。
+
+（4）在实验过程中，仍然出现飞机失控和引导系统失效的情况，其主要原因是环境风等扰动超过系统最初设计的阈值。因此，系统的鲁棒性需要进一步提高。
+
+\begin{table}[!th]
+	\centering
+	\caption{三组水面降落测试数据}
+	\label{lab:three_ship_landing}
+	\begin{tabular}{cccccc}
+		\hline
+		\multicolumn{1}{l}{\textbf{实验序号}} & \multicolumn{1}{l}{\textbf{光照条件}} & \multicolumn{1}{l}{\textbf{最远检测距离}} & \multicolumn{1}{l}{\textbf{RMSE $\mathbf{i}^{O,c}$(m)}} & \multicolumn{1}{l}{\textbf{RMSE $\mathbf{j}^{O,c}$(m)}} & \multicolumn{1}{l}{\textbf{RMSE $\mathbf{k}^{O,c}$(m)}} \\ \hline
+		\textbf{1} & 晴天 & 628.735 & 0.514 & 1.721 & 0.371 \\
+		\textbf{2} & 晴天 & \textbf{632.134} & 0.547 & 1.363 & 0.342 \\
+		\textbf{3} & 晴天 & \underline{622.311} & 0.583 & 1.571 & 0.389 \\ \hline
+	\end{tabular}
+\end{table}
+
 
 \section{本章小结}
-本章主要针无人机的指导与控制系统进行设计。首先针对无人机的降落曲线进行设计，通过使用Dubins Path设计方法，针对无人机下降过程中的需要，设计了满足实际需要的无人机的下降曲线和进阶曲线。与传统的无人机在地面回收不同，无人机在着舰过程中，需要考虑无人机与舰船速度的相互关系，为此专门设计了协同速度控制策略。考虑到无人机着舰过程中容易受到侧风等环境扰动的影响，在平衡机载设备运算能力的情况下，设计了基于总能量控制和模型预测控制的外环控制策略与基于PD和PID控制的内环控制策略。
-
+本章主要介绍了综合实验仿真环境的构建和真实环境实验方案和测试结果。综合仿真实验环境主要依托Matlab/Simulink环境主要完成无人机底层控制回路和底层控制回路的算法验证。为了引入视觉等其他传感器，本文使用ROS和Gazebo共同搭建的软件在回路仿真系统和硬件在回路仿真系统对传感器层面的算法进行测试，并通过将底层算法在Pixhawk和Odroid XU4上的真实测试来验证算法的可靠性和稳定性。通过三版地基引导系统的迭代设计和引导降落实验验证以及舰基引导系统的引导测试，证明本文设计的基于多传感器的无人机自主着舰引导与控制系统的可行性和有效性。
