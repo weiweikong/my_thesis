@@ -58,7 +58,7 @@ Gazebo仿真环境是独立于ROS系统的一套优秀的仿真软件。通过Ga
 
 \begin{figure}[!ht]
 	\centering
-	\includegraphics[height=\textheight]{figs/chp08/chp08_01_rosgraph.pdf}	
+	\includegraphics[height=0.95\textheight]{figs/chp08/chp08_01_rosgraph.pdf}	
 	\caption{ROS仿真环境中全部节点关系示意图}
 	\label{fig:chp08_01_rosgraph}
 \end{figure}
@@ -206,8 +206,8 @@ Gazebo仿真环境是独立于ROS系统的一套优秀的仿真软件。通过Ga
 \end{figure}
 
 
-
-
+\subsection{国产化器件使用分析}
+目前，可见光设备、红外设备和激光收发装置可选配国产器件，可由深圳和武汉的民营企业供货，其性能指标满足外场测试需要。但UWB收发装置、电台设备和转台设备目前在调研过程中尚未发现有能更在满足条件的国产产品。此外，在软件驱动，国外设备一般均提供ROS控制接口，驱动的兼容性和鲁棒性相对较高。
 
 \section{综合实验结果分析}
 \subsection{地面环境引导系统测试实验设计}
@@ -268,7 +268,6 @@ Gazebo仿真环境是独立于ROS系统的一套优秀的仿真软件。通过Ga
 	\caption{地面引导系统引导降落无人机回收过程图}
 	\label{fig:chp08_23_ground_landing}
 \end{figure}
-
 图\ref{fig:chp08_23_ground_landing}的上半部分为降落过程中的四个重要时间节点，下半部分为实际飞行数据的轨迹和误差比较。其中紫色部分为地面引导系统提供有效引导信息的工作范围，该部分的三个坐标轴方向的误差在下半部分的右侧第一列所示，经过EKF方法之后的数据与DGPS数据的比较结果为右侧第二列所示。通过三维图示中的紫色视觉解算结果可以发现，尽管视觉系统可以有效跟踪无人机目标，且通过对转台信息进行了补偿，但其解算结果的波动依然较大。在使用EKF之后，数据的波动得到有效缓解，能够完成引导降落任务。
 
 地面引导实验分别于2014年和2015年在湖南长沙和江西吉安共进行全系统测试，共完成八组测试，具体实验数据如表\ref{lab:eight_ground_landing}所示。 其中根据测试时的气象条件不同对实验数据进行分类统计，每一类别的最远检测距离和误差最小数值用粗体表示，最近检测距离和误差最大数值用下划线标注。通过图表可以发现气象条件对光学系统的检测距离影响依然较大，同时对三个方向的引导精度也产生了较大影响。通过第三章的分析可知，在远端的系统理论误差较大，随着目标进一步靠近引导系统，理论误差迅速变小，因此单纯比较一组实验的三个方向的平均引导精读说服力有限。
@@ -291,7 +290,7 @@ Gazebo仿真环境是独立于ROS系统的一套优秀的仿真软件。通过Ga
 	\end{tabular}
 \end{table}
 
-因此，本文统计了将引导距离以$20\ m$为单位进行切分，分段评估引导的效果，表\ref{lab:ground_landing}所示为不同阶段的引导系统在引导坐标系$\mathcal{O}_c$中三个坐标轴方向的平均误差。通过表中数据可以发现，深度方向$\mathbf{j}^{O,c}$方向的误差受视觉解算的引导误差相对较大，其他两个轴的误差相对较小。
+因此，本文统计了将引导距离以$20\ m$为单位进行切分，分段评估引导的效果，表\ref{lab:ground_landing}所示为不同阶段的引导系统在引导坐标系$\mathcal{O}_c$中三个坐标轴方向的平均误差。通过表中数据可以发现，深度方向$\mathbf{j}^{O,c}$方向的误差受视觉解算的引导误差相对较大，其他两个轴的误差相对较小。各类方法在三个坐标轴的误差结果如图\ref{lab:algorithms_i}、图\ref{lab:algorithms_j}和\ref{lab:algorithms_k}所示。
 
 \begin{table}[!th]
 	\centering
@@ -318,6 +317,73 @@ Gazebo仿真环境是独立于ROS系统的一套优秀的仿真软件。通过Ga
 	\end{tabular}
 \end{table}
 
+
+\begin{table}[H]
+	\centering
+	\caption{各方法在$\mathbf{i}^{O,c}$轴的分阶段误差结果 (m).}
+	\label{lab:algorithms_i}
+	\scalebox{0.95}[0.95]{	\begin{tabular}{ccccccc}
+			%		\hline
+			\toprule
+			
+			\multirow{2}{*}{\textbf{Interval}}\vspace{-2pt}
+& \multicolumn{4}{c}{\textbf{Previous Methods}}                               & \multicolumn{2}{c}{\textbf{Proposed Methods}} \\ \cmidrule(lr){2-5} \cmidrule(lr){6-7} 
+\multicolumn{1}{l}{} & \textbf{Mean shift}  & \textbf{AdaBoost}  & \textbf{Chan--Vese}  & \multicolumn{1}{c}{\textbf{Saliency-Inspired}} & \textbf{DSST + BBP}   & \textbf{Fusion} \\\midrule
+			%\hline
+			500--400      & 1.113       & 0.911       & 1.201       & \multicolumn{1}{c}{1.181}          & 0.134       & 0.132       \\
+			400--300      & 0.932       & 0.891       & 0.921       & \multicolumn{1}{c}{0.943}          & 0.099       & 0.825       \\
+			300--200      & 0.562       & 0.416       & 0.713       & \multicolumn{1}{c}{0.765}          & 0.068       & 0.617       \\
+			200--100      & 0.329       & 0.287       & 0.512       & \multicolumn{1}{c}{0.447}          & 0.027       & 0.013       \\
+			\textless100    & 0.213       & 0.120       & 0.341       & \multicolumn{1}{c}{0.281}          & 0.015       & 0.011       \\ \bottomrule
+			%\hline
+			%\multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{}             & \multicolumn{1}{l}{} & \multicolumn{1}{l}{}
+	\end{tabular}}
+\end{table}
+\unskip
+\begin{table}[H]
+	\centering
+	\caption{各方法在$\mathbf{j}^{O,c}$轴的分阶段误差结果 (m).}
+	\label{lab:algorithms_j}
+	\scalebox{0.95}[0.95]{\begin{tabular}{ccccccc}
+			%		\hline
+			\toprule
+			
+			\multirow{2}{*}{\textbf{Interval}}\vspace{-2pt}
+& \multicolumn{4}{c}{\textbf{Previous Methods}}                               & \multicolumn{2}{c}{\textbf{Proposed Methods}} \\ \cmidrule(lr){2-5} \cmidrule(lr){6-7} 
+\multicolumn{1}{l}{} & \textbf{Mean shift}  & \textbf{AdaBoost}  & \textbf{Chan--Vese}  & \multicolumn{1}{c}{\textbf{Saliency-Inspired}} & \textbf{DSST + BBP}   & \textbf{Fusion} \\\midrule
+			%\hline
+			500--400             & 11.923       & 6.238       & 3.661       & \multicolumn{1}{c}{3.231}          & 2.218       & 1.462       \\
+			400--300             & 7.317       & 5.721       & 2.887       & \multicolumn{1}{c}{2.902}          & 1.876       & 1.331       \\
+			300--200             & 5.365       & 2.576       & 1.799       & \multicolumn{1}{c}{1.767}          & 1.703       & 1.275       \\
+			200--100             & 3.897       & 1.739       & 1.310       & \multicolumn{1}{c}{1.134}          & 0.981       & 0.536       \\
+			\textless100          & 1.762       & 0.780       & 0.737       & \multicolumn{1}{c}{0.692}          & 0.763       & 0.541       \\ \bottomrule
+			%\hline
+			%	\multicolumn{1}{l}{}       & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} 
+	\end{tabular}}
+\end{table}
+\unskip
+\begin{table}[H]
+	\centering
+	\caption{各方法在$\mathbf{k}^{O,c}$轴的分阶段误差结果 (m).}
+	\label{lab:algorithms_k}
+	\scalebox{0.95}[0.95]{	\begin{tabular}{ccccccc}
+			%		\hline
+			\toprule
+			
+			\multirow{2}{*}{\textbf{Interval}}\vspace{-2pt}
+& \multicolumn{4}{c}{\textbf{Previous Methods}}                               & \multicolumn{2}{c}{\textbf{Proposed Methods}} \\ \cmidrule(lr){2-5} \cmidrule(lr){6-7} 
+\multicolumn{1}{l}{} & \textbf{Mean shift}  & \textbf{AdaBoost}  & \textbf{Chan--Vese}  & \multicolumn{1}{c}{\textbf{Saliency-Inspired}} & \textbf{DSST + BBP}   & \textbf{Fusion} \\\midrule
+			% \hline
+			500--400             & 1.231       & 1.087       & 1.387       & \multicolumn{1}{c}{1.299}          & 0.487       & 0.427       \\
+			400--300             & 0.976       & 0.901       & 0.762       & \multicolumn{1}{c}{0.876}          & 0.370       & 0.315       \\
+			300--200             & 0.812       & 0.557       & 0.337       & \multicolumn{1}{c}{0.612}          & 0.459       & 0.313       \\
+			200--100             & 0.438       & 0.312       & 0.489       & \multicolumn{1}{c}{0.532}          & 0.141       & 0.139       \\
+			\textless100          & 0.301       & 0.211       & 0.401       & \multicolumn{1}{c}{0.321}          & 0.102       & 0.103       \\ 
+			\bottomrule
+			%\hline
+			%	\multicolumn{1}{l}{}       & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{}             & \multicolumn{1}{l}{} & \multicolumn{1}{l}{}	
+	\end{tabular}}
+\end{table}
 
 \subsection{水面环境引导系统测试实验设计}
 根据上一小节的介绍，引导系统在水面上的设计方案是基于第三版进一步改进和完善。由于缺少舰船作为载体，本文通过使用油桶和脚手架搭建简易浮体来模拟在水面的浮体运动。该系统的设计图如图\ref{fig:chp08_22_landing_diagram}所示。图中中部的为浮体上的木板，平台大小约为$12\ m\times 12\ m$，中间位置安装高度为$8\ m$，宽度为$10\ m$的无人机回收网，为了避免回收网对视觉系统的干扰，在回收网前端设置两个引导单元。该浮体自身并无动力，在水面实验时，需要通过右侧的牵引船只通过缆绳对浮体进行拖动。浮体和设备整体重量相对较重，在江面实验时，只对牵引船只的运动方向进行设定，对运动速度不做要求。
